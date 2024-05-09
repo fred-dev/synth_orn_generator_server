@@ -1,0 +1,20 @@
+{
+  "name": "synth_orn_generator_app",
+  "version": "1.0.0",
+  "description": "test generator interface for synth orn website",
+  "type": "module",
+  "main": "server.js",
+
+  "scripts": {
+    "test": "test",
+    "start": "node server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@gradio/client": "^0.18.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "openai": "^4.43.0"
+  }
+}
