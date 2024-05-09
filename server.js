@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { Client } from "@gradio/client";
+import { spawn } from "child_process";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -27,7 +28,6 @@ app.use(express.static("public"));
 
 async function initializeGradio() {
   try {
-    
     const app_info = await gradioApp.view_api();
     console.log(app_info);
   } catch (error) {
@@ -132,7 +132,6 @@ app.delete("/markers/:id", async (req, res) => {
   }
 });
 
-
 // Endpoint to generate audio content using Gradio API
 app.post("/generate-audio", async (req, res) => {
   try {
@@ -173,12 +172,12 @@ app.post("/generate-text", async (req, res) => {
         {
           role: "system",
           content:
-            'You are a science fiction story teller in the future  that uses grim, news presenter  style text. You will be given an input that includes a time and date, a real location, and a set of climate conditions. You are to make a short grim statement about the location, and referencing specific unique things about the location, and commenting how things are destroyed due to climate change.  Use your knowledge of the location to do this, for example if there are usually some species of animal living there, then say that they are almost all gone, and the last are sick and dying. Always talk about the birdlife at the location and how it is being affected badly by climate change. \n\nIf you know for sure there are specific species of birds or animals in the area mention them.\n\nIf there are specific seasonal events mention them.\n\nIf there are some poignant historical events from the location mention it.\n\nDOnt use the whole name given, but a more local one. For example this: "Branding Yard Track, Mount Cole, Rural City of Ararat, Victoria, Australia"\nwould just be Mount Cole Ararat Victoria.\n\nYou should never say that a bird species is extinct, gone or silent, you can mention that the extreme weather has caused their calls to be strained and sometimes unrecognisable.\n\nThe response must not exceed 100 words and should always start with "it is {day} of (month} in the year {year} at {location}.... You must use a lot of variation in generating each response as users will see many and they must all seem reasonable unique',
+            'You are a science fiction story teller in the future  that uses grim, news presenter  style text. You will be given an input that includes a time and date, a real location, and a set of climate conditions. You are to make a short grim statement about the location, and referencing specific unique things about the location, and commenting how things are destroyed due to climate change.  Use your knowledge of the location to do this, for example if there are usually some species of animal living there, then say that they are almost all gone, and the last are sick and dying. Always talk about the birdlife at the location and how it is being affected badly by climate change. \n\nIf you know for sure there are specific species of birds or animals in the area mention them.\n\nIf there are specific seasonal events mention them.\n\nIf there are some poignant historical events from the location mention it.\n\nDOnt use the whole name given, but a more local one. For example this: "Branding Yard Track, Mount Cole, Rural City of Ararat, Victoria, Australia"\nwould just be Mount Cole Ararat Victoria.\n\nYou should never say that a bird species is extinct, gone or silent, you can mention that the extreme weather has caused their calls to be strained and sometimes unrecognisable.\n\nThe response must not exceed 100 words and should always start with "it is {day} of (month} in the year {year} at {location}.... You must use a lot of variation in generating each response as users will see many and they must all seem reasonable unique, You will also get som einfomration about the closest inland water adn the closest coast line. Add these to the text in some form, manye in the opneing, after the data and town, you can say xxxkm from the coast and xx km from the nearest water, you have the place names for the locations of the nearst coastal and ainland water. Alternately if these distnaces are small you can say close by to the ....',
         },
         {
           role: "assistant",
           content:
-            'You are a science fiction story teller in the future  that uses grim, news presenter  style text. You will be given an input that includes a time and date, a real location, and a set of climate conditions. You are to make a short grim statement about the location, and referencing specific unique things about the location, and commenting how things are destroyed due to climate change.  Use your knowledge of the location to do this, for example if there are usually some species of animal living there, then say that they are almost all gone, and the last are sick and dying. Always talk about the birdlife at the location and how it is being affected badly by climate change. \n\nIf you know for sure there are specific species of birds or animals in the area mention them.\n\nIf there are specific seasonal events mention them.\n\nIf there are some poignant historical events from the location mention it.\n\nDOnt use the whole name given, but a more local one. For example this: "Branding Yard Track, Mount Cole, Rural City of Ararat, Victoria, Australia"\nwould just be Mount Cole Ararat Victoria.\n\nYou should never say that a bird species is extinct, gone or silent, you can mention that the extreme weather has caused their calls to be strained and sometimes unrecognisable.\n\nThe response must not exceed 100 words and should always start with "it is {day} of (month} in the year {year} at {location}.... You must use a lot of variation in generating each response as users will see many and they must all seem reasonable unique',
+            'You are a science fiction story teller in the future  that uses grim, news presenter  style text. You will be given an input that includes a time and date, a real location, and a set of climate conditions. You are to make a short grim statement about the location, and referencing specific unique things about the location, and commenting how things are destroyed due to climate change.  Use your knowledge of the location to do this, for example if there are usually some species of animal living there, then say that they are almost all gone, and the last are sick and dying. Always talk about the birdlife at the location and how it is being affected badly by climate change. \n\nIf you know for sure there are specific species of birds or animals in the area mention them.\n\nIf there are specific seasonal events mention them.\n\nIf there are some poignant historical events from the location mention it.\n\nDOnt use the whole name given, but a more local one. For example this: "Branding Yard Track, Mount Cole, Rural City of Ararat, Victoria, Australia"\nwould just be Mount Cole Ararat Victoria.\n\nYou should never say that a bird species is extinct, gone or silent, you can mention that the extreme weather has caused their calls to be strained and sometimes unrecognisable.\n\nThe response must not exceed 100 words and should always start with "it is {day} of (month} in the year {year} at {location}.... You must use a lot of variation in generating each response as users will see many and they must all seem reasonable unique, You will also get som einfomration about the closest inland water adn the closest coast line. Add these to the text in some form, manye in the opneing, after the data and town, you can say xxxkm from the coast and xx km from the nearest water, you have the place names for the locations of the nearst coastal and ainland water. Alternately if these distnaces are small you can say close by to the ....',
         },
         {
           role: "user",
@@ -207,26 +206,54 @@ app.post("/generate-text", async (req, res) => {
   }
 });
 
-app.get('/weather', async (req, res) => {
+app.get("/weather", async (req, res) => {
   console.log("weather request");
   console.log(openWeatherMapsAPIKey);
 
   const { lat, lon, date } = req.query;
 
-
   // Ensure all necessary data is provided
   if (!lat || !lon || !date) {
-      return res.status(400).json({ error: 'Missing required parameters' });
+    return res.status(400).json({ error: "Missing required parameters" });
   }
 
   const url = `https://api.openweathermap.org/data/3.0/onecall/timemachine?lat=${lat}&lon=${lon}&dt=${date}&appid=${openWeatherMapsAPIKey}&units=metric`;
 
   try {
-      const response = await fetch(url);
-      const data = await response.json();
-      res.json(data);
+    const response = await fetch(url);
+    const data = await response.json();
+    res.json(data);
   } catch (error) {
-      console.error("Error fetching weather data:", error);
-      res.status(500).json({ error: 'Failed to fetch weather data' });
+    console.error("Error fetching weather data:", error);
+    res.status(500).json({ error: "Failed to fetch weather data" });
   }
+});
+
+app.post("/waterdistance", (req, res) => {
+  console.log("Received request:", req.body); // Log the incoming request body
+
+  const { lat, lon } = req.body; // Expect lat and lon in the request body
+
+  // Spawn a new Python process
+  const pythonProcess = spawn("python3", ["distance_to_water/distance_to_water.py", lat, lon]);
+
+  pythonProcess.stdout.on("data", (data) => {
+    try {
+      const jsonData = JSON.parse(data.toString()); // Parse the JSON string
+      res.json(jsonData); // Send JSON response back to client
+    } catch (error) {
+      console.error("Error parsing JSON:", error);
+      res.status(500).send("Server error in parsing Python response");
+    }
+  });
+
+  pythonProcess.stderr.on("data", (data) => {
+    // Capture any errors
+    //console.error(`stderr: ${data}`);
+    //res.status(500).send(`Error in Python script: ${data}`);
+  });
+
+  pythonProcess.on("close", (code) => {
+    console.log(`Child process exited with code ${code}`);
+  });
 });

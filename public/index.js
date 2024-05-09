@@ -14,8 +14,8 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 // Function to perform reverse geocoding
-async function reverseGeocode(latlng) {
-  const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`;
+async function reverseGeocode(lat, lon) {
+  const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
   try {
     const response = await fetch(url);
     const data = await response.json();
@@ -47,36 +47,30 @@ function constructHistoricalDate(date) {
   return formattedDate;
 }
 
-async function fetchWeatherData(latlng, date) {
-  altered_date = constructHistoricalDate(date)
-    try {
-        const response = await fetch(`/weather?lat=${latlng.lat}&lon=${latlng.lng}&date=${altered_date}`);
-        const data = await response.json();
-        console.log(data);
-        return data;
-    } catch (error) {
-        console.error("Error fetching weather data from server:", error);
-        return null;
-    }
+async function getWaterDistanceData(lat, lon) {
+
+  const url = '/waterdistance'; // Relative URL for your Node.js server endpoint
+
+  try {
+      const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ lat, lon })
+      });
+      const data = await response.json();
+      //add the data to the userGeneratedData object
+      userGeneratedData.waterDistance = data;
+      console.log(userGeneratedData);
+      userGeneratedData.waterDistance.inland_water.display_name = await reverseGeocode(userGeneratedData.waterDistance.inland_water.closest_point.lat,  userGeneratedData.waterDistance.inland_water.closest_point.lon );
+      userGeneratedData.waterDistance.coastal_water.display_name = await reverseGeocode(userGeneratedData.waterDistance.coastal_water.closest_point.lat,  userGeneratedData.waterDistance.coastal_water.closest_point.lon );
+      console.log(userGeneratedData);
+  } catch (error) {
+      console.error('Error:', error);
+  }
 }
-// Function to fetch weather data from OpenWeather API
-// async function fetchWeatherData(latlng, date) {
-//   const apiKey = openweathermap_api_key; // Replace with your OpenWeather API Key
-//   //calulate timestamp by getting the month day and time and making the year 2023
-//   altered_date = constructHistoricalDate(date);
 
-//   const url = `https://api.openweathermap.org/data/3.0/onecall/timemachine?lat=${latlng.lat}&lon=${latlng.lng}&dt=${altered_date}&appid=${apiKey}&units=metric`;
-
-//   try {
-//     const response = await fetch(url);
-//     const data = await response.json();
-
-//     return data;
-//   } catch (error) {
-//     console.error("Error fetching weather data:", error);
-//     return null;
-//   }
-// }
 
 // Function to calculate variance based on the selected year
 function calculateVariance(selectedYear, weatherData) {
@@ -104,7 +98,9 @@ function calculateVariance(selectedYear, weatherData) {
 // Right-click event for creating a new marker
 map.on("contextmenu", async function (event) {
   const latlng = event.latlng;
-  const locationName = await reverseGeocode(latlng);
+  const locationName = await reverseGeocode(latlng.lat, latlng.lng);
+  getWaterDistanceData(latlng.lat, latlng.lng);
+
 
   const marker = L.marker(latlng, {
     title: "Temporary Marker",
@@ -144,9 +140,21 @@ map.on("contextmenu", async function (event) {
     onChange: function (selectedDates, dateStr, instance) {
       // this function will be called when the date is confirmed
       fillSuggestedWeatherData(dateStr);
+      
     },
   });
-
+  async function fetchWeatherData(latlng, date) {
+    altered_date = constructHistoricalDate(date)
+      try {
+          const response = await fetch(`/weather?lat=${latlng.lat}&lon=${latlng.lng}&date=${altered_date}`);
+          const data = await response.json();
+          console.log(data);
+          return data;
+      } catch (error) {
+          console.error("Error fetching weather data from server:", error);
+          return null;
+      }
+  }
   async function fillSuggestedWeatherData(selectedDate) {
     const weatherData = await fetchWeatherData(latlng, selectedDate);
     if (weatherData) {
@@ -236,3 +244,5 @@ async function fetchDataAndDisplay() {
     console.error("Failed to fetch response:", error);
   }
 }
+
+getWaterDistanceData();
