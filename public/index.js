@@ -217,7 +217,16 @@ async function fetchDataAndDisplay() {
 
     const streamedText = document.getElementById("streamedText");
     const closeBtn = document.getElementById("closeBtn");
-    closeBtn.addEventListener("click", () => resultDiv.remove());
+    //clear all map markers
+    
+    closeBtn.addEventListener("click", () => {
+      resultDiv.remove();
+      map.eachLayer(function (layer) {
+        if (layer instanceof L.Marker) {
+          map.removeLayer(layer);
+        }
+      });
+  });
 
     // Read the stream using a reader
     const reader = response.body.getReader();

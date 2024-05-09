@@ -208,7 +208,6 @@ app.post("/generate-text", async (req, res) => {
 
 app.get("/weather", async (req, res) => {
   console.log("weather request");
-  console.log(openWeatherMapsAPIKey);
 
   const { lat, lon, date } = req.query;
 
