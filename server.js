@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { Client } from "@gradio/client";
 import { spawn } from "child_process";
+import fetch from "node-fetch";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -26,45 +27,84 @@ app.use((req, res, next) => {
 
 app.use(express.static("public"));
 
+// generateWithGradio(
+//   0,
+//   22,
+//   -54.617412,
+//   96.8233,
+//   10,
+//   88,
+//   0.550,
+//   940,
+//   340,
+//   11,
+//   4.0,
+//   100,
+//   0,
+//   -1,
+//   "dpmpp-2m-sde",
+//   0.3,
+//   50,
+//   0.4,
+//   1.0
+// );
+
 async function initializeGradio() {
   try {
-    const app_info = await gradioApp.view_api();
-    console.log(app_info);
+    const app = await Client.connect("fred-dev/audio_test", {
+      hf_token: HF_TOKEN,
+      space_status: (status) => console.log("Space status:", status),
+    });
+    const appInfo = await app.view_api();
+    console.log(appInfo);
+    return app;
   } catch (error) {
     console.error("Failed to initialize Gradio:", error);
+    throw error;
   }
 }
 
-//initializeGradio();
+async function generateWithGradio(lat, lon, temp, humidity, wind_speed, pressure, minutes_of_day, day_of_year) {
+  try {
+    const gradioApp = await initializeGradio();
+    console.log("Generating with Gradio");
 
-async function generateWithGradio() {
-  const result = await gradioApp.predict("/generate", [
-    "Hello!!",
-    "Hello!!",
-    0,
-    0,
-    -54.617412,
-    96.8233,
-    -10,
-    1,
-    0,
-    800,
-    340,
-    11,
-    2.5,
-    100,
-    0,
-    "Hello!!",
-    "dpmpp-2m-sde",
-    0,
-    80,
-    0.2,
-    false,
-    "https://github.com/gradio-app/gradio/raw/main/test/test_files/audio_sample.wav",
-    0.2,
-  ]);
+    const submission = gradioApp.submit("/generate", [0, 22, lat, lon, temp, humidity, wind_speed, pressure, minutes_of_day, day_of_year, 4.0, 200, 0, -1, "dpmpp-2m-sde", 0.3, 30, 0.3, 1.0]);
+
+    return new Promise((resolve, reject) => {
+      submission.on("data", (data) => {
+        console.log("Data received:", data);
+        if (data && data.data && data.data[0] && data.data[0].url) {
+          resolve(data.data[0].url);
+        } else {
+          reject(new Error("Invalid data format"));
+        }
+      });
+
+      submission.on("status", (status) => {
+        console.log("Status update:", status);
+      });
+
+      submission.on("error", (error) => {
+        console.error("Error received:", error);
+        reject(error);
+      });
+    });
+  } catch (error) {
+    console.error("Error occurred:", error);
+    throw error;
+  }
 }
-//generateWithGradio();
+
+app.post("/generateAudio", async (req, res) => {
+  const { lat, lon, temp, humidity, wind_speed, pressure, minutes_of_day, day_of_year } = req.body;
+  try {
+    const result = await generateWithGradio(lat, lon, temp, humidity, wind_speed, pressure, minutes_of_day, day_of_year);
+    res.json({ audioUrl: result });
+  } catch (error) {
+    res.status(500).send({ error: error.message });
+  }
+});
 
 // api_name="/generate"
 const openai = new OpenAI({

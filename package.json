@@ -12,11 +12,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@gradio/client": "^0.18.0",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "node-fetch": "^3.3.2",
     "openai": "^4.43.0",
     "parcel": "^2.12.0",
     "pm2": "^5.3.1"
+  },
+  "devDependencies": {
+    "@gradio/client": "^0.19.0"
   }
 }
