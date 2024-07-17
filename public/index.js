@@ -101,6 +101,12 @@ function calculateVariance(selectedYear, weatherData) {
 
 // Right-click event for creating a new marker
 map.on("contextmenu", async function (event) {
+  //let's remove the existing markers
+  map.eachLayer(function (layer) {
+    if (layer instanceof L.Marker) {
+      map.removeLayer(layer);
+    }
+  });
   const latlng = event.latlng;
   const marker = L.marker(latlng, {
     title: "Temporary Marker",
@@ -141,7 +147,7 @@ map.on("contextmenu", async function (event) {
     minDate: "today",
     maxDate: new Date().fp_incr(365 * 20), // 20 years from now
     plugins: [new confirmDatePlugin({ confirmText: "Confirm date and time" })], // customize confirm button text
-    onChange: function ( dateStr) {
+    onChange: function (dateStr) {
       //calculate the the day of the year between 1 and 365
       function getDayOfYear(date) {
         const start = new Date(date.getFullYear(), 0, 0);
@@ -153,7 +159,7 @@ map.on("contextmenu", async function (event) {
       const selectedDate = new Date(dateStr);
       const day_of_year = getDayOfYear(selectedDate);
       userGeneratedData.day_of_year = day_of_year;
-      
+
       //calculate the minute of the day between 0 and 1440
       const minutes_of_day = new Date(dateStr).getHours() * 60 + new Date(dateStr).getMinutes();
       userGeneratedData.minutes_of_day = minutes_of_day;
@@ -270,7 +276,11 @@ async function fetchDataAndDisplay() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ userInput: JSON.stringify(userGeneratedData) }),
+      //lets print the userGeneratedData object to the console
+     
+
     });
+    
 
     if (!response.ok) {
       throw new Error("Network response was not ok");
@@ -298,7 +308,7 @@ async function fetchDataAndDisplay() {
     resultDiv.innerHTML = '<p id="streamedText">Loading...</p><button id="closeBtn">Close</button>';
 
     document.body.appendChild(resultDiv);
-    loadAudio();
+    // loadAudio();
 
     const streamedText = document.getElementById("streamedText");
     const closeBtn = document.getElementById("closeBtn");
