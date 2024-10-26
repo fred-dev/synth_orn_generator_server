@@ -20,6 +20,6 @@
     "pm2": "^5.3.1"
   },
   "devDependencies": {
-    "@gradio/client": "^0.19.0"
+    "@gradio/client": "^1.7.1"
   }
 }

@@ -29,12 +29,12 @@ app.use(express.static("public"));
 
 async function initializeGradio() {
   try {
-    const app = await Client.connect("fred-dev/audio_test", {
+    const app = await Client.connect("fred-dev/synthetic_ornithology", {
       hf_token: HF_TOKEN,
       space_status: (status) => console.log("Space status:", status),
     });
     const appInfo = await app.view_api();
-    console.log(appInfo);
+    console.log("This isthe app API" + appInfo);
     return app;
   } catch (error) {
     console.error("Failed to initialize Gradio:", error);
@@ -47,55 +47,56 @@ async function generateWithGradio(lat, lon, temp, humidity, wind_speed, pressure
     const gradioApp = await initializeGradio();
     console.log("Generating with Gradio");
 
-    const submission = gradioApp.submit("/generate", [
-      0,
-      22,
-      lat,
-      lon,
-      temp,
-      humidity,
-      wind_speed,
-      pressure,
-      minutes_of_day,
-      day_of_year,
-      4.0,
-      200,
-      0,
-      -1,
-      "dpmpp-2m-sde",
-      0.3,
-      30,
-      0.3,
-      1.0,
-    ]);
-
-    return new Promise((resolve, reject) => {
-      submission.on("data", (data) => {
-        console.log("Data received:", data);
-        if (data && data.data && data.data[0] && data.data[0].url) {
-          resolve(data.data[0].url);
-        } else {
-          reject(new Error("Invalid data format"));
-        }
-      });
-
-      submission.on("status", (status) => {
-        console.log("Status update:", status);
-      });
-
-      submission.on("error", (error) => {
-        console.error("Error received:", error);
-        reject(error);
-      });
+    // Using the submit() method with the updated payload format
+    const submission = gradioApp.submit("/generate", {
+      seconds_start: 0,
+      seconds_total: 22,
+      latitude: lat,
+      longitude: lon,
+      temperature: temp,
+      humidity: humidity,
+      wind_speed: wind_speed,
+      pressure: pressure,
+      minutes_of_day: minutes_of_day,
+      day_of_year: day_of_year,
+      cfg_scale: 8.0,
+      steps: 250,
+      preview_every: 0,
+      seed: "-1",
+      sampler_type: "dpmpp-2m-sde",
+      sigma_min: 0.3,
+      sigma_max: 30,
+      cfg_rescale: 0.3,
+      use_init: 0.3,
     });
+
+    // Iterate over async submission response
+    for await (const message of submission) {
+      if (message.type === "data") {
+        console.log("Data received:", JSON.stringify(message.data, null, 2));  // Print the full response for debugging
+        if (message.data && message.data[0] && message.data[0].url) {
+          return message.data[0].url;  // Resolve with the URL for the generated audio
+        } else {
+          throw new Error("Invalid data format or missing URL in the response.");
+        }
+      }
+
+      if (message.type === "status") {
+        console.log("Status update:", message);  // Log status updates
+      }
+    }
   } catch (error) {
-    console.error("Error occurred:", error);
+    console.error("Error occurred during Gradio generation:", error);
     throw error;
   }
 }
 
+
 app.post("/generateAudio", async (req, res) => {
   const { lat, lon, temp, humidity, wind_speed, pressure, minutes_of_day, day_of_year } = req.body;
+  console.log("Received request:", req.body);
+  console.log("minutes_of_day: ", minutes_of_day);
+  console.log("day_of_year: ", day_of_year);
   try {
     const result = await generateWithGradio(lat, lon, temp, humidity, wind_speed, pressure, minutes_of_day, day_of_year);
     res.json({ audioUrl: result });
@@ -203,13 +204,18 @@ app.listen(port, () => {
 app.post("/generate-text", async (req, res) => {
   const userInput = JSON.parse(req.body.userInput);
   const { locationName, date, temperature, humidity, windSpeed } = userInput;
+  //log the date to the console
 
   const [fullDate] = date;
   const dateObj = new Date(fullDate);
   const year = dateObj.getUTCFullYear();
   const month = dateObj.getUTCMonth() + 1; // Months are zero-indexed
+ 
   const day = dateObj.getUTCDate();
-  const hours = dateObj.getUTCHours();
+  //get the hours in the corret time zone
+  const hours = dateObj.getHours();
+  console.log("Hours: "+hours);
+ 
   const minutes = dateObj.getUTCMinutes();
   const seconds = dateObj.getUTCSeconds();
 

@@ -38,11 +38,15 @@ function constructHistoricalDate(date) {
   const minutes = date.getMinutes();
   const seconds = date.getSeconds();
   date = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  ///log the date bfeore it is formamted
+  console.log("preformat" + date);
   //convert the date string to a date object
   let formattedDate = new Date(date);
   //convert the date into a unix timestamp in seconds
   formattedDate = formattedDate.getTime() / 1000;
   // add the date to the user generated data object
+  //log the date to the console
+  console.log("Formatted" + formattedDate);
 
   return formattedDate;
 }
@@ -195,6 +199,13 @@ map.on("contextmenu", async function (event) {
   document.getElementById("confirmBtn").addEventListener("click", async () => {
     //close the popup
     marker.closePopup();
+
+    userGeneratedData.temperature = parseFloat(document.getElementById("temperature").value);
+    userGeneratedData.humidity = parseFloat(document.getElementById("humidity").value);
+    userGeneratedData.pressure = parseFloat(document.getElementById("pressure").value);
+    userGeneratedData.windSpeed = parseFloat(document.getElementById("windSpeed").value);
+    //userGeneratedData.date = document.getElementById("date").value;
+
     fetchDataAndDisplay();
   });
 });
@@ -308,7 +319,7 @@ async function fetchDataAndDisplay() {
     resultDiv.innerHTML = '<p id="streamedText">Loading...</p><button id="closeBtn">Close</button>';
 
     document.body.appendChild(resultDiv);
-    // loadAudio();
+    loadAudio();
 
     const streamedText = document.getElementById("streamedText");
     const closeBtn = document.getElementById("closeBtn");
