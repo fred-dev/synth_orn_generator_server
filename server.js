@@ -29,7 +29,7 @@ app.use(express.static("public"));
 
 async function initializeGradio() {
   try {
-    const app = await Client.connect("fred-dev/synthetic_ornithology", {
+    const app = await Client.connect("fred-dev/synth_orn_gen", {
       hf_token: HF_TOKEN,
       space_status: (status) => console.log("Space status:", status),
     });
@@ -59,15 +59,15 @@ async function generateWithGradio(lat, lon, temp, humidity, wind_speed, pressure
       pressure: pressure,
       minutes_of_day: minutes_of_day,
       day_of_year: day_of_year,
-      cfg_scale: 8.0,
-      steps: 250,
+      cfg_scale: 3.3,
+      steps: 110,
       preview_every: 0,
       seed: "-1",
       sampler_type: "dpmpp-2m-sde",
       sigma_min: 0.3,
-      sigma_max: 30,
-      cfg_rescale: 0.3,
-      use_init: 0.3,
+      sigma_max: 50,
+      cfg_rescale: 1.3,
+      use_init: -1.0,
     });
 
     // Iterate over async submission response
@@ -94,11 +94,13 @@ async function generateWithGradio(lat, lon, temp, humidity, wind_speed, pressure
 
 app.post("/generateAudio", async (req, res) => {
   const { lat, lon, temp, humidity, wind_speed, pressure, minutes_of_day, day_of_year } = req.body;
-  console.log("Received request:", req.body);
-  console.log("minutes_of_day: ", minutes_of_day);
-  console.log("day_of_year: ", day_of_year);
+  console.log("Received request to generate audio:", req.body);
+  // console.log("minutes_of_day: ", minutes_of_day);
+  // console.log("day_of_year: ", day_of_year);
   try {
     const result = await generateWithGradio(lat, lon, temp, humidity, wind_speed, pressure, minutes_of_day, day_of_year);
+    console.log("Awaited result returned");
+
     res.json({ audioUrl: result });
   } catch (error) {
     res.status(500).send({ error: error.message });
