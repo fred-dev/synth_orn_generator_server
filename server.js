@@ -29,7 +29,7 @@ app.use(express.static("public"));
 
 async function initializeGradio() {
   try {
-    const app = await Client.connect("fred-dev/synthetic_ornithology", {
+    const app = await Client.connect("fred-dev/synth_orn_gen", {
       hf_token: HF_TOKEN,
       space_status: (status) => console.log("Space status:", status),
     });
@@ -59,8 +59,8 @@ async function generateWithGradio(lat, lon, temp, humidity, wind_speed, pressure
       pressure: pressure,
       minutes_of_day: minutes_of_day,
       day_of_year: day_of_year,
-      cfg_scale: 8.0,
-      steps: 250,
+      cfg_scale: 3.0,
+      steps: 90,
       preview_every: 0,
       seed: "-1",
       sampler_type: "dpmpp-2m-sde",
