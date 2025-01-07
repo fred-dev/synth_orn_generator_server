@@ -13,6 +13,7 @@ let selectedYear = new Date().getFullYear();
 let selectedMonth = new Date().getMonth();
 let selectedDay = new Date().getDate();
 let selectedDayName = "";
+let selectedMonthName = "";
 let selectedHour = 12;
 let selectedMinute = 0;
 let selectedAMPM = "PM";
@@ -28,9 +29,16 @@ let customPickerContainer = null;
 
 export function initCustomDatePicker({ containerId, onFinish }) {
   finishCallback = onFinish;
+  containerElement = document.getElementById(containerId);
+  // Start on step 0
+  currentStep = 0;
+  setupPickerUIInBubble();
+  loadYearStep();
+  updateUI();
+}
 
+function setupPickerUIInBubble() {
   // Find or create the container element
-  containerElement = document.getElementById("popup_bubble");
   if (!containerElement) {
     console.error(`Element with ID popup_bubble not found!`);
     return;
@@ -40,7 +48,7 @@ export function initCustomDatePicker({ containerId, onFinish }) {
     dateDisplay = document.createElement("div");
     dateDisplay.id = "date-display";
     dateDisplay.className = "date-display";
-    dateDisplay.innerHTML = "Select a year";
+    dateDisplay.innerHTML = "Selected date: ";
 
     progressBar = document.createElement("div");
     progressBar.className = "progress-bar";
@@ -50,7 +58,6 @@ export function initCustomDatePicker({ containerId, onFinish }) {
     progressBar.appendChild(progressBarFill);
     containerElement.appendChild(dateDisplay);
     containerElement.appendChild(progressBar);
-
 
     pickerInstructions = document.createElement("div");
     pickerInstructions.id = "picker-instructions";
@@ -74,48 +81,39 @@ export function initCustomDatePicker({ containerId, onFinish }) {
     navButtons.appendChild(backBtn);
     navButtons.appendChild(nextBtn);
     containerElement.appendChild(navButtons);
-
-   
+    //print the container element and all its children to the console
+    console.log(containerElement);
   }
-
-  // Start on step 0
-  currentStep = 0;
-  loadYearStep();
-  updateUI();
 }
-
 // Helper to destroy old picker
 function destroyPicker() {
+  customPicker;
   if (customPicker) {
-    document.getElementById("custom-picker").innerHTML = "";
-    customPicker = null;
-    console.log("destroyed picker");
+    customPicker.destroy();
   }
 }
 
 // Year step
 function loadYearStep() {
   console.log("loadYearStep");
-  destroyPicker();
   customPicker = new Picker(document.getElementById("custom-picker"), {
     inline: true,
     controls: true,
     rows: 3,
     format: "YYYY",
     increment: { year: 1 },
-    date: new Date(), // Start at "now"
-    min: new Date(new Date().getFullYear(), 0, 1),
-    max: new Date(new Date().getFullYear() + 20, 11, 31),
-    pick(date) {
+    date: new Date(),
+    min: new Date(new Date().getFullYear(), 0, 1),         // Jan 1, current year
+    max: new Date(new Date().getFullYear() + 20, 11, 31), // Dec 31, 20 years from now
+    pick: function (date) {
       selectedYear = date.getFullYear();
+      console.log("selectedYear", selectedYear);
     },
   });
 }
 
 // Month step
 function loadMonthStep() {
-  console.log("loadMonthStep");
-  destroyPicker();
   customPicker = new Picker(document.getElementById("custom-picker"), {
     inline: true,
     controls: true,
@@ -125,14 +123,21 @@ function loadMonthStep() {
     date: new Date(selectedYear, 0),
     pick(date) {
       selectedMonth = date.getMonth();
+      selectedMonthName = getMonthName(selectedMonth);
+      console.log("selectedMonth", selectedMonth);
+      console.log("selectedMonthName", selectedMonthName);
     },
+    // ,
+    // extraOpts: {
+    //   //add a min and max date
+    //   min: new Date(selectedYear, 0),
+    //   max: new Date(selectedYear, 11)
+    // }
   });
 }
 
 // Day step
 function loadDayStep() {
-  console.log("loadDayStep");
-  destroyPicker();
   customPicker = new Picker(document.getElementById("custom-picker"), {
     inline: true,
     controls: true,
@@ -143,6 +148,8 @@ function loadDayStep() {
     pick(date) {
       selectedDay = date.getDate();
       selectedDayName = getDayName(date.getDay());
+      console.log("selectedDay", selectedDay);
+      console.log("selectedDayName", selectedDayName);
     },
   });
 }
@@ -150,7 +157,6 @@ function loadDayStep() {
 // Time step
 function loadTimeStep() {
   console.log("loadTimeStep");
-  destroyPicker();
   customPicker = new Picker(document.getElementById("custom-picker"), {
     inline: true,
     controls: true,
@@ -162,19 +168,24 @@ function loadTimeStep() {
       selectedHour = date.getHours();
       selectedMinute = date.getMinutes();
       selectedAMPM = selectedHour >= 12 ? "PM" : "AM";
+      console.log("selectedHour", selectedHour);
+      console.log("selectedMinute", selectedMinute);
+      console.log("selectedAMPM", selectedAMPM);
     },
   });
 }
 
 // "Next" step
 function nextStep() {
-  // Force the current pick
   if (customPicker?.options?.pick) {
     customPicker.options.pick(customPicker.getDate());
   }
 
+  destroyPicker();
+
   if (currentStep === 0) {
     currentStep = 1;
+
     loadMonthStep();
   } else if (currentStep === 1) {
     currentStep = 2;
@@ -183,9 +194,14 @@ function nextStep() {
     currentStep = 3;
     loadTimeStep();
   } else if (currentStep === 3) {
+    currentStep = 4;
     // Final step done
+    displayFinalSelection();
+  } else if (currentStep === 4) {
+    currentStep = 5;
     finishSelection();
   }
+
   updateUI();
 }
 
@@ -217,6 +233,9 @@ function finishSelection() {
   }
 }
 
+function displayFinalSelection(){
+
+}
 // Build a proper Date from the chosen pieces
 function buildFinalDate() {
   const date = new Date(selectedYear, selectedMonth, selectedDay, selectedHour, selectedMinute);
@@ -229,20 +248,29 @@ function updateUI() {
   if (!instructions) return;
 
   let msg = "";
+  let accumulatedDate = "";
   switch (currentStep) {
     case 0:
+      accumulatedDate = "Selected date: ";
       msg = "Select a Year";
       break;
     case 1:
       msg = "Select a Month";
+      accumulatedDate = `Selected date: ${selectedYear}`;
       break;
     case 2:
       msg = "Select a Day";
+      accumulatedDate = `Selected date: ${selectedMonthName} ${selectedYear}`;
       break;
     case 3:
       msg = "Select a Time";
+      accumulatedDate = `Selected date: ${selectedDayName} ${selectedDay} ${selectedMonthName} ${selectedYear}`;
+      break;
+    case 4:
+      accumulatedDate = `Selected date: ${selectedDayName} ${selectedDay} ${selectedMonthName} ${selectedYear} ${selectedHour}:${selectedMinute} ${selectedAMPM}`;
       break;
   }
+  dateDisplay.innerHTML = accumulatedDate;
   instructions.textContent = msg;
 }
 
@@ -251,5 +279,27 @@ function getDayName(dayIdx) {
   const names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   return names[dayIdx] || "";
 }
-
+function getMonthName(monthIdx) {
+  const names = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+  return names[monthIdx] || "";
+}
 // Export if using modules
+function setProgressBar(step) {
+  if      (step === 0) progressBar.style.width = "0%";
+  else if (step === 1) progressBar.style.width = "25%";
+  else if (step === 2) progressBar.style.width = "50%";
+  else if (step === 3) progressBar.style.width = "75%";
+}
