@@ -58,6 +58,7 @@ function setupPickerUIInBubble() {
     progressBar.appendChild(progressBarFill);
     containerElement.appendChild(dateDisplay);
     containerElement.appendChild(progressBar);
+    progressBarFill.style.width = "0%";
 
     pickerInstructions = document.createElement("div");
     pickerInstructions.id = "picker-instructions";
@@ -185,19 +186,24 @@ function nextStep() {
 
   if (currentStep === 0) {
     currentStep = 1;
+    setProgressBar(currentStep);
 
     loadMonthStep();
   } else if (currentStep === 1) {
     currentStep = 2;
+    setProgressBar(currentStep);
     loadDayStep();
   } else if (currentStep === 2) {
     currentStep = 3;
+    setProgressBar(currentStep);
     loadTimeStep();
   } else if (currentStep === 3) {
     currentStep = 4;
+    setProgressBar(currentStep);
     // Final step done
     displayFinalSelection();
   } else if (currentStep === 4) {
+    setProgressBar(4);
     currentStep = 5;
     finishSelection();
   }
@@ -298,8 +304,8 @@ function getMonthName(monthIdx) {
 }
 // Export if using modules
 function setProgressBar(step) {
-  if      (step === 0) progressBar.style.width = "0%";
-  else if (step === 1) progressBar.style.width = "25%";
-  else if (step === 2) progressBar.style.width = "50%";
-  else if (step === 3) progressBar.style.width = "75%";
+  if      (step === 0) progressBarFill.style.width = "0%";
+  else if (step === 1) progressBarFill.style.width = "25%";
+  else if (step === 2) progressBarFill.style.width = "50%";
+  else if (step === 3) progressBarFill.style.width = "75%";
 }
