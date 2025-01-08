@@ -42,8 +42,23 @@ body {
   background-color: #aaa;
 }
 .date-display {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  font-size: 15px;
+  color: #333;
+  text-align: center;
+}
+#picker-instructions {
+  margin-top: 20px;
+  font-size: 15px;
+  color: #333;
+  text-align: center;
+}
+
+#location-display {
   margin-top: 20px;
   font-size: 18px;
   color: #333;
-  text-align: center;
+  text-align: left;
+  font-weight: 350; /* Makes the font heavier but not totally bold */
 }

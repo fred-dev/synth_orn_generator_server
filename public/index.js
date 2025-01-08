@@ -124,7 +124,10 @@ map.on("contextmenu", async function (event) {
   //lets create a new div to add to the popup
   const popupContent = document.createElement("div");
   popupContent.id = "popup_bubble";
-  popupContent.innerHTML = `<strong>Location:</strong> ${locationName}<br>`;
+  const locationDiv = document.createElement("div");
+  locationDiv.innerHTML = ` ${locationName}<br>`;
+  locationDiv.id = "location-display";
+  popupContent.appendChild(locationDiv);
 
 
   

@@ -49,25 +49,31 @@ function setupPickerUIInBubble() {
     dateDisplay.id = "date-display";
     dateDisplay.className = "date-display";
     dateDisplay.innerHTML = "Selected date: ";
+    containerElement.appendChild(dateDisplay);
+
+  
+
+
+
+    customPickerContainer = document.createElement("div");
+    customPickerContainer.id = "custom-picker";
+    containerElement.appendChild(customPickerContainer);
+
+    pickerInstructions = document.createElement("div");
+    pickerInstructions.id = "picker-instructions";
+    // pickerInstructions.style = "margin-bottom: 8px; font-weight: bold;";
+    containerElement.appendChild(pickerInstructions);
 
     progressBar = document.createElement("div");
     progressBar.className = "progress-bar";
     progressBarFill = document.createElement("div");
     progressBarFill.className = "progress-bar-fill";
     progressBarFill.id = "progress";
-    progressBar.appendChild(progressBarFill);
-    containerElement.appendChild(dateDisplay);
-    containerElement.appendChild(progressBar);
     progressBarFill.style.width = "0%";
+    progressBar.appendChild(progressBarFill);
+    containerElement.appendChild(progressBar);
 
-    pickerInstructions = document.createElement("div");
-    pickerInstructions.id = "picker-instructions";
-    pickerInstructions.style = "margin-bottom: 8px; font-weight: bold;";
-    containerElement.appendChild(pickerInstructions);
 
-    customPickerContainer = document.createElement("div");
-    customPickerContainer.id = "custom-picker";
-    containerElement.appendChild(customPickerContainer);
     navButtons = document.createElement("div");
     navButtons.className = "nav-buttons";
     backBtn = document.createElement("button");
