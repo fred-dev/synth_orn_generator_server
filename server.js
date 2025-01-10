@@ -286,17 +286,23 @@ app.get("/weather", async (req, res) => {
 
   const { lat, lon, date } = req.query;
 
+  console.log("server weather request lat: " + lat + " lon: " + lon + " date: " + date);
+
   // Ensure all necessary data is provided
   if (!lat || !lon || !date) {
     return res.status(400).json({ error: "Missing required parameters" });
   }
 
   const url = `https://api.openweathermap.org/data/3.0/onecall/timemachine?lat=${lat}&lon=${lon}&dt=${date}&appid=${openWeatherMapsAPIKey}&units=metric`;
+  console.log("server weather request url: " + url);
 
   try {
     const response = await fetch(url);
     const data = await response.json();
     res.json(data);
+    //print the response to the console serialised
+    console.log("server weather response complete:: " + JSON.stringify(data));
+
   } catch (error) {
     console.error("Error fetching weather data:", error);
     res.status(500).json({ error: "Failed to fetch weather data" });

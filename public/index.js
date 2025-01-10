@@ -1,6 +1,34 @@
 import { initCustomDatePicker } from "./customDatePicker.js";
 
 let userGeneratedData = {};
+userGeneratedData.minutes_of_day = 0;
+userGeneratedData.day_of_year = 0;
+userGeneratedData.date = new Date();
+userGeneratedData.temperature = 0;
+userGeneratedData.humidity = 0;
+userGeneratedData.pressure = 0;
+userGeneratedData.windSpeed = 0;
+userGeneratedData.lat = 0;
+userGeneratedData.lon = 0;
+userGeneratedData.locationName = "";
+userGeneratedData.waterDistance = {
+  inland_water: {
+    closest_point: {
+      lat: 0,
+      lon: 0,
+    },
+    display_name: "",
+  },
+  coastal_water: {
+    closest_point: {
+      lat: 0,
+      lon: 0,
+    },
+    display_name: "",
+  },
+};
+let mapChoicelatlng = null;
+console.log(userGeneratedData);
 const map = L.map("map", {
   center: [-25.2744, 133.7751],
   zoom: 4,
@@ -25,25 +53,20 @@ async function reverseGeocode(lat, lon) {
   }
 }
 
-function constructHistoricalDate(date) {
-  userGeneratedData.date = date;
-  const year = 2023;
-  date = new Date(date);
-  const month = date.getMonth();
-  const day = date.getDate();
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  const seconds = date.getSeconds();
-  date = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-  ///log the date bfeore it is formamted
-  console.log("preformat" + date);
-  //convert the date string to a date object
-  let formattedDate = new Date(date);
-  //convert the date into a unix timestamp in seconds
-  formattedDate = formattedDate.getTime() / 1000;
-  // add the date to the user generated data object
-  //log the date to the console
-  console.log("Formatted" + formattedDate);
+function constructHistoricalDate() {
+//make a new date object from the user data
+  let historicalDate = userGeneratedData.date;
+  //set the year to the current year minus 1
+  historicalDate.setFullYear(new Date().getFullYear() - 1);
+
+  // //log the date bfeore it is formamted
+  console.log("preformated historical date: " + historicalDate);
+  //convert the date to a unix timestamp in seconds
+  let formattedDate = historicalDate.getTime() / 1000;
+  //remove any decimal places from the formatted date
+  formattedDate = Math.floor(formattedDate);
+  console.log("Historical date unix timestamp: " + formattedDate);
+
 
   return formattedDate;
 }
@@ -71,32 +94,38 @@ async function getWaterDistanceData(lat, lon) {
       userGeneratedData.waterDistance.coastal_water.closest_point.lat,
       userGeneratedData.waterDistance.coastal_water.closest_point.lon
     );
-    console.log(userGeneratedData);
+    console.log("getWaterDistanceData" + userGeneratedData);
   } catch (error) {
     console.error("Error:", error);
   }
 }
 
 // Function to calculate variance based on the selected year
-function calculateClimateVariance(selectedYear, weatherData) {
+function calculateClimateVariance(weatherData) {
+  console.log("calculateClimateVariance start");
   const currentYear = new Date().getFullYear();
-  const yearsIntoFuture = selectedYear - currentYear;
+  const yearsIntoFuture = userGeneratedData.date.getFullYear() - currentYear;
   const maxVariance = 0.15; // 15%
   const minVariance = 0.02; // 2%
   const varianceFactor = Math.min(yearsIntoFuture * minVariance, maxVariance);
   const variance = 1 + (Math.random() - 0.5) * varianceFactor;
 
   //add the data to the userGeneratedData object
-  userGeneratedData.temperature = weatherData.data[0].temp * variance;
-  userGeneratedData.humidity = weatherData.data[0].humidity * variance;
-  userGeneratedData.pressure = weatherData.data[0].pressure * variance;
-  userGeneratedData.windSpeed = weatherData.data[0].wind_speed * variance; // corrected from 'pressure' to 'windSpeed'
+  userGeneratedData.temperature = (weatherData.data[0].temp * variance).toFixed(2);
+  userGeneratedData.humidity = (weatherData.data[0].humidity * variance).toFixed(2);
+  userGeneratedData.pressure = (weatherData.data[0].pressure * variance).toFixed(2);
+  userGeneratedData.windSpeed = (weatherData.data[0].wind_speed * variance).toFixed(2);
+
+  console.log("calculateClimateVariance temperature: " + userGeneratedData.temperature);
+  console.log("calculateClimateVariance humidity: " + userGeneratedData.humidity);
+  console.log("calculateClimateVariance pressure: " + userGeneratedData.pressure);
+  console.log("calculateClimateVariance windSpeed: " + userGeneratedData.windSpeed);
 
   return {
-    temperature: weatherData.data[0].temp * variance,
-    humidity: weatherData.data[0].humidity * variance,
-    pressure: weatherData.data[0].pressure * variance,
-    windSpeed: weatherData.data[0].wind_speed * variance, // corrected from 'pressure' to 'windSpeed'
+    temperature: (weatherData.data[0].temp * variance).toFixed(2),
+    humidity: (weatherData.data[0].humidity * variance).toFixed(2),
+    pressure: (weatherData.data[0].pressure * variance).toFixed(2),
+    windSpeed: (weatherData.data[0].wind_speed * variance).toFixed(2)
   };
 }
 
@@ -108,18 +137,18 @@ map.on("contextmenu", async function (event) {
       map.removeLayer(layer);
     }
   });
-  const latlng = event.latlng;
-  const marker = L.marker(latlng, {
+  mapChoicelatlng = event.latlng;
+
+  const marker = L.marker(mapChoicelatlng, {
     title: "Temporary Marker",
     alt: "Temporary Marker",
     draggable: true,
   }).addTo(map);
-  const locationName = await reverseGeocode(latlng.lat, latlng.lng);
-  getWaterDistanceData(latlng.lat, latlng.lng);
-  userGeneratedData = {};
+  const locationName = await reverseGeocode(mapChoicelatlng.lat, mapChoicelatlng.lng);
+  getWaterDistanceData(mapChoicelatlng.lat, mapChoicelatlng.lng);
   userGeneratedData.locationName = locationName;
-  userGeneratedData.lat = latlng.lat;
-  userGeneratedData.lon = latlng.lng;
+  userGeneratedData.lat = mapChoicelatlng.lat;
+  userGeneratedData.lon = mapChoicelatlng.lng;
 
   //lets create a new div to add to the popup
   const popupContent = document.createElement("div");
@@ -129,74 +158,55 @@ map.on("contextmenu", async function (event) {
   locationDiv.id = "location-display";
   popupContent.appendChild(locationDiv);
 
-
-  
-
   marker.bindPopup(popupContent);
 
   // Listen for when the popup is actually opened
   marker.on("popupopen", () => {
     initCustomDatePicker({
       containerId: "popup_bubble",
+      userGeneratedData,
       onFinish: (finalDate) => {
         console.log("Final date/time chosen:", finalDate);
-        marker.closePopup();
+        fillSuggestedWeatherData(userGeneratedData.date);
+        //marker.closePopup();
       },
     });
   });
 
   // Finally, open it
   marker.openPopup();
+  
 
-  // Initialize flatpickr for date selection
-  // flatpickr("#date", {
-  //   enableTime: true,
-  //   dateFormat: "Y-m-d H:i",
-  //   minDate: "today",
-  //   maxDate: new Date().fp_incr(365 * 20), // 20 years from now
-  //   plugins: [new confirmDatePlugin({ confirmText: "Confirm date and time" })], // customize confirm button text
-  //   onChange: function (dateStr) {
-  //     //calculate the the day of the year between 1 and 365
-  //     function getDayOfYear(date) {
-  //       const start = new Date(date.getFullYear(), 0, 0);
-  //       const diff = date - start;
-  //       const oneDay = 1000 * 60 * 60 * 24;
-  //       const day = Math.floor(diff / oneDay);
-  //       return day;
-  //     }
-  //     const selectedDate = new Date(dateStr);
-  //     const day_of_year = getDayOfYear(selectedDate);
-  //     userGeneratedData.day_of_year = day_of_year;
-
-  //     //calculate the minute of the day between 0 and 1440
-  //     const minutes_of_day = new Date(dateStr).getHours() * 60 + new Date(dateStr).getMinutes();
-  //     userGeneratedData.minutes_of_day = minutes_of_day;
-  //     // this function will be called when the date is confirmed
-  //     fillSuggestedWeatherData(dateStr);
-  //   },
-  // });
-  async function fetchWeatherData(latlng, date) {
-    altered_date = constructHistoricalDate(date);
+  async function fetchWeatherData() {
+    console.log("fetchWeatherData start");
+    let altered_date = constructHistoricalDate();
     try {
-      const response = await fetch(`/weather?lat=${latlng.lat}&lon=${latlng.lng}&date=${altered_date}`);
+      const response = await fetch(`/weather?lat=${mapChoicelatlng.lat}&lon=${mapChoicelatlng.lng}&date=${altered_date}`);
       const data = await response.json();
-      console.log(data);
+      //print the response to the console serialissed
+      console.log("fetchWeatherData recieved response" + JSON.stringify(data));
       return data;
     } catch (error) {
       console.error("Error fetching weather data from server:", error);
       return null;
     }
   }
-  async function fillSuggestedWeatherData(selectedDate) {
-    const weatherData = await fetchWeatherData(latlng, selectedDate);
+  async function fillSuggestedWeatherData() {
+    console.log("fillSuggestedWeatherData start");
+    const weatherData = await fetchWeatherData();
     if (weatherData) {
-      const selectedYear = new Date(selectedDate).getFullYear();
+      const selectedYear = userGeneratedData.date.getFullYear();
 
-      const weatherVariance = calculateClimateVariance(selectedYear, weatherData);
-      document.getElementById("temperature").value = weatherVariance.temperature;
-      document.getElementById("humidity").value = weatherVariance.humidity;
-      document.getElementById("pressure").value = weatherVariance.pressure;
-      document.getElementById("windSpeed").value = weatherVariance.windSpeed;
+      const weatherVariance = calculateClimateVariance(weatherData);
+      userGeneratedData.temperature = weatherVariance.temperature;
+      userGeneratedData.humidity = weatherVariance.humidity;
+      userGeneratedData.pressure = weatherVariance.pressure;
+      userGeneratedData.windSpeed = weatherVariance.windSpeed;
+
+      document.getElementById("temperature-input").value = userGeneratedData.temperature;
+      document.getElementById("humidity-input").value = userGeneratedData.humidity;
+      document.getElementById("pressure-input").value = userGeneratedData.pressure;
+      document.getElementById("wind-speed-input").value = userGeneratedData.windSpeed;
     }
   }
   // Event listener for confirm button to handle user input
@@ -361,4 +371,3 @@ async function fetchDataAndDisplay() {
   }
 }
 
-getWaterDistanceData();

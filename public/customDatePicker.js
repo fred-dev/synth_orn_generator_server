@@ -1,30 +1,6 @@
-// customDatePicker.js
-// Minimal multi-step picker implementation using Picker.js
-// Provides an init function that accepts a callback for the final date.
-//prepare this so we can import it in the main.js
-//import Picker from "https://cdn.jsdelivr.net/npm/pickerjs/dist/picker.min.js";
-
-// windy.png
-// cloudy.png
-// drizzle_freezingdrizzle.png
-// drizzle_night.png
-// fog.png
-// freezingrain_sleet.png
-// haze.png
-// heavy_rain.png
-// heavy_snow.png
-// night_clear_mostlyclear.png
-// night_partly_cloudy.png
-// partly_cloudy.png
-// rain.png
-// snow.png
-// sunset.png
-// surnise.png
-// thunderstorm.png
-// clear_mostlyclear.png
 
 let currentStep = 0;
-let finishCallback = null;
+let dateFinishCallback = null;
 let containerElement = null;
 let imageIconArrayDay = null;
 let imageIconArrayNight = null;
@@ -55,6 +31,7 @@ imageIconArrayNight = [
 let selectedYear = new Date().getFullYear();
 let selectedMonth = new Date().getMonth();
 let selectedDay = new Date().getDate();
+let userSelectedDate = new Date();
 let selectedDayName = "";
 let selectedMonthName = "";
 let selectedHour = 12;
@@ -69,15 +46,19 @@ let nextBtn = null;
 let pickerInstructions = null;
 let customPicker = null;
 let customPickerContainer = null;
+let moduleUserData = {};
 
-export function initCustomDatePicker({ containerId, onFinish }) {
-  finishCallback = onFinish;
+export function initCustomDatePicker({ containerId, userGeneratedData, onFinish }) {
+  dateFinishCallback = onFinish;
   containerElement = document.getElementById(containerId);
   // Start on step 0
   currentStep = 0;
   setupPickerUIInBubble();
   loadYearStep();
   updateUI();
+  moduleUserData = userGeneratedData;
+  // moduleUserData.temperature = 20;
+  console.log("Snapshot of userData:initCustomDatePicker:", JSON.parse(JSON.stringify(moduleUserData)));
 }
 
 function setupPickerUIInBubble() {
@@ -152,7 +133,10 @@ function loadYearStep() {
     max: new Date(new Date().getFullYear() + 20, 11, 31), // Dec 31, 20 years from now
     pick: function (date) {
       selectedYear = date.getFullYear();
-      console.log("selectedYear", selectedYear);
+      userSelectedDate.setFullYear(selectedYear);
+      console.log("selectedYear:loadYearStep", selectedYear);
+      console.log("Snapshot of userData:loadYearStep:", JSON.parse(JSON.stringify(moduleUserData)));
+
     },
   });
 }
@@ -169,15 +153,11 @@ function loadMonthStep() {
     pick(date) {
       selectedMonth = date.getMonth();
       selectedMonthName = getMonthName(selectedMonth);
-      console.log("selectedMonth", selectedMonth);
-      console.log("selectedMonthName", selectedMonthName);
+      userSelectedDate.setMonth(selectedMonth);
+      console.log("selectedMonth:loadMonthStep", selectedMonth);
+      console.log("selectedMonthName:loadMonthStep", selectedMonthName);
     },
-    // ,
-    // extraOpts: {
-    //   //add a min and max date
-    //   min: new Date(selectedYear, 0),
-    //   max: new Date(selectedYear, 11)
-    // }
+   
   });
 }
 
@@ -193,8 +173,9 @@ function loadDayStep() {
     pick(date) {
       selectedDay = date.getDate();
       selectedDayName = getDayName(date.getDay());
-      console.log("selectedDay", selectedDay);
-      console.log("selectedDayName", selectedDayName);
+      userSelectedDate.setDate(selectedDay);
+      console.log("selectedDay:loadDayStep", selectedDay);
+      console.log("selectedDayName:loadDayStep", selectedDayName);
     },
   });
 }
@@ -213,9 +194,15 @@ function loadTimeStep() {
       selectedHour = date.getHours();
       selectedMinute = date.getMinutes();
       selectedAMPM = selectedHour >= 12 ? "PM" : "AM";
-      console.log("selectedHour", selectedHour);
-      console.log("selectedMinute", selectedMinute);
-      console.log("selectedAMPM", selectedAMPM);
+      console.log("selectedHour:loadTimeStep", selectedHour);
+      console.log("selectedMinute:loadTimeStep", selectedMinute);
+      console.log("selectedAMPM:loadTimeStep", selectedAMPM);
+      userSelectedDate.setHours(selectedHour);
+      userSelectedDate.setMinutes(selectedMinute);
+      moduleUserData.date = userSelectedDate;
+      moduleUserData.minutes_of_day = minutesOfDayFromDate(userSelectedDate);
+      moduleUserData.day_of_year = dayOfYearFromDate(userSelectedDate); 
+      console.log("Snapshot of userData:loadTimeStep:", JSON.parse(JSON.stringify(moduleUserData)));
     },
   });
 }
@@ -245,6 +232,7 @@ function nextStep() {
     currentStep = 4;
     setProgressBar(currentStep);
     // Final step done
+    finishSelection();
     displayFinalSelection();
   } else if (currentStep === 4) {
     setProgressBar(4);
@@ -262,10 +250,13 @@ function prevStep() {
   }
   currentStep--;
   if (currentStep === 0) {
+    setProgressBar(currentStep);
     loadYearStep();
   } else if (currentStep === 1) {
+    setProgressBar(currentStep);
     loadMonthStep();
   } else if (currentStep === 2) {
+    setProgressBar(currentStep);
     loadDayStep();
   }
   updateUI();
@@ -278,8 +269,8 @@ function finishSelection() {
     customPicker.options.pick(customPicker.getDate());
   }
   const finalDate = buildFinalDate();
-  if (finishCallback) {
-    finishCallback(finalDate);
+  if (dateFinishCallback) {
+    dateFinishCallback(finalDate);
   }
 }
 
@@ -341,149 +332,197 @@ function displayFinalSelection() {
   // Keep showing the final date in dateDisplay or wherever you want
 
   // Next, inject the weather snippet
-  injectWeatherSnippet();
+  createWeatherSelection();
 }
 
 // Example of injecting the snippet:
-function injectWeatherSnippet() {
+function createWeatherSelection() {
   // Create a container for the weather snippet
   const weatherContainer = document.createElement("div");
   // Give it a unique ID so we can style or reference it
-  weatherContainer.id = "weather-container-step4";
+  weatherContainer.id = "weather-container-input";
 
-  // Insert your HTML. Notice we’re not including <html>, <head>, <body>,
-  // just the part you want inside your bubble. You can rename classes or
-  // IDs if you need to avoid collisions.
+  const form = document.createElement("form");
+  form.id = "weather-form-input";
+  const temperatureLabel = document.createElement("label");
+  temperatureLabel.textContent = "Temperature (°C): ";
+  const temperatureInput = document.createElement("input");
+  temperatureInput.id = "temperature-input";
+  temperatureInput.type = "number";
+  temperatureInput.step = "0.5"; // Set the increment step to 0.5
+  temperatureInput.addEventListener("input", onWeatherDataAdjusted);
+  temperatureLabel.appendChild(temperatureInput);
+  form.appendChild(temperatureLabel);
 
-  weatherContainer.innerHTML = `
-    <style>
-      #weather-container-step4 {
-        font-family: Arial, sans-serif;
-        background-color: #f0f8ff;
-        padding: 10px;
-        border-radius: 5px;
-        color: #333;
-      }
-      #weather-container-step4 header {
-        text-align: center;
-        padding: 20px;
-        background-color: #2196f3;
-        color: white;
-        border-radius: 5px;
-      }
-      #weather-container-step4 main {
-        padding: 20px;
-        max-width: 600px;
-        margin: 0 auto;
-      }
-      #weather-container-step4 label {
-        display: block;
-        font-size: 1rem;
-        margin-bottom: 10px;
-      }
-      #weather-container-step4 input[type="number"] {
-        width: 100%;
-        padding: 10px;
-        margin-top: 5px;
-        font-size: 1rem;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        box-sizing: border-box;
-      }
-      #weather-container-step4 #weather-result {
-        text-align: center;
-        margin-top: 30px;
-        padding: 20px;
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      }
-      #weather-inline-icon-step4 {
-        display: flex;
-        align-items: left;
-        justify-content: left; /* optional: center horizontally */
-        gap: 1rem; /* space between icon and text */
-        margin-top: 1rem;
-      }
+  const humidityLabel = document.createElement("label");
+  humidityLabel.textContent = "Humidity (%): ";
+  const humidityInput = document.createElement("input");
+  humidityInput.id = "humidity-input";
+  humidityInput.type = "number";
+  humidityInput.value = "50";
+  temperatureInput.step = "0.5"; // Set the increment step to 0.5
+  humidityInput.min = "0";
+  humidityInput.max = "100";
+  humidityInput.addEventListener("input", onWeatherDataAdjusted);
+  humidityLabel.appendChild(humidityInput);
+  form.appendChild(humidityLabel);
 
-      /* Make the emoji bigger. Use !important if other styles override you. */
-      #weather-icon-step4 {
-        font-size: 40px !important;
-        line-height: 1;
-        margin: 0;
-        padding: 0;
-      }
+  const pressureLabel = document.createElement("label");
+  pressureLabel.textContent = "Pressure (hPa): ";
+  const pressureInput = document.createElement("input");
+  pressureInput.id = "pressure-input";
+  pressureInput.type = "number";
+  pressureInput.value = "1013";
+  pressureInput.min = "900";
+  pressureInput.max = "1100";
+  pressureInput.step = "0.5"; // Set the increment step to 0.5
+  pressureInput.addEventListener("input", onWeatherDataAdjusted);
+  pressureLabel.appendChild(pressureInput);
+  form.appendChild(pressureLabel);
 
-      /* Adjust text size or style as you like */
-      #weather-description-step4 {
-        font-size: 2rem;
-        font-weight: bold;
-        margin: 0;
-        padding: 0;
-      }
-      #weather-container-step4 #weather-description {
-        font-size: 1.5rem;
-        font-weight: bold;
-      }
-      #weather-container-step4 .stat {
-        margin: 10px 0;
-        font-size: 1rem;
-      }
-      #weather-container-step4 footer {
-        text-align: center;
-        margin-top: 20px;
-        font-size: 0.9rem;
-        color: #666;
-      }
-    </style>
-    <main>
-      <form id="weather-form-step4">
-        <label>Wind Speed (km/h): 
-          <input id="wind-speed-step4" type="number" value="10" min="0">
-        </label>
-        <label>Wind Direction (°): 
-          <input id="wind-direction-step4" type="number" value="180" min="0" max="360">
-        </label>
-        <label>Temperature (°C): 
-          <input id="temperature-step4" type="number" value="20">
-        </label>
-        <label>Humidity (%): 
-          <input id="humidity-step4" type="number" value="50" min="0" max="100">
-        </label>
-        <label>Pressure (hPa): 
-          <input id="pressure-step4" type="number" value="1013" min="900" max="1100">
-        </label>
-      </form>
-      <div id="weather-result-step4">
-        <div id="weather-inline-icon-step4">
-          <div id="weather-icon-step4">☀️</div>
-          <p id="weather-description-step4">Sunny</p>
-        </div>
-        <p class="stat">Rain Probability: <span id="rain-probability-step4">0%</span></p>
-        <p class="stat">Cloud Coverage: <span id="cloud-coverage-step4">0%</span></p>
-      </div>
-    </main>
-  `;
+  const windSpeedLabel = document.createElement("label");
+  windSpeedLabel.textContent = "Wind Speed (km/h): ";
+  const windSpeedInput = document.createElement("input");
+  windSpeedInput.id = "wind-speed-input";
+  windSpeedInput.type = "number";
+  windSpeedInput.value = "10";
+  windSpeedInput.min = "0";
+  windSpeedInput.step = "0.5"; // Set the increment step to 0.5
+  windSpeedInput.addEventListener("input", onWeatherDataAdjusted);
+  windSpeedLabel.appendChild(windSpeedInput);
+  form.appendChild(windSpeedLabel);
+
+  const windDirectionLabel = document.createElement("label");
+  windDirectionLabel.textContent = "Wind Direction (°): ";
+  const windDirectionInput = document.createElement("input");
+  windDirectionInput.id = "wind-direction-input";
+  windDirectionInput.type = "number";
+  windDirectionInput.value = "180";
+  windDirectionInput.min = "0";
+  windDirectionInput.max = "360";
+  windDirectionInput.step = "0.5"; // Set the increment step to 0.5
+  windDirectionInput.addEventListener("input", onWeatherDataAdjusted);
+  windDirectionLabel.appendChild(windDirectionInput);
+  form.appendChild(windDirectionLabel);
+
+  weatherContainer.appendChild(form);
+
+  const weatherResult = document.createElement("div");
+  weatherResult.id = "weather-result-input";
+
+  const weatherInlineIcon = document.createElement("div");
+  weatherInlineIcon.id = "weather-inline-icon-input";
+
+  const weatherIcon = document.createElement("div");
+  weatherIcon.id = "weather-icon";
+  weatherInlineIcon.appendChild(weatherIcon);
+
+  const weatherDescription = document.createElement("p");
+  weatherDescription.id = "weather-description-input";
+  weatherDescription.textContent = "Sunny";
+  weatherInlineIcon.appendChild(weatherDescription);
+
+  weatherResult.appendChild(weatherInlineIcon);
+
+  const rainProbability = document.createElement("p");
+  rainProbability.className = "stat";
+  rainProbability.innerHTML = 'Rain Probability: <span id="rain-probability-input">0%</span>';
+  weatherResult.appendChild(rainProbability);
+
+  const cloudCoverage = document.createElement("p");
+  cloudCoverage.className = "stat";
+  cloudCoverage.innerHTML = 'Cloud Coverage: <span id="cloud-coverage-input">0%</span>';
+  weatherResult.appendChild(cloudCoverage);
+
+  weatherContainer.appendChild(weatherResult);
 
   containerElement.appendChild(weatherContainer);
 
-  // If you want the “fake weather” JS logic, attach it here or in a separate file.
-  // E.g., re-bind event listeners:
-  initFakeWeatherLogic();
 }
 
-function initFakeWeatherLogic() {
-  // Re-select the newly created elements
-  const windSpeedInput = document.getElementById("wind-speed-step4");
-  const windDirectionInput = document.getElementById("wind-direction-step4");
-  const temperatureInput = document.getElementById("temperature-step4");
-  const humidityInput = document.getElementById("humidity-step4");
-  const pressureInput = document.getElementById("pressure-step4");
-  const weatherIcon = document.getElementById("weather-icon-step4");
-  const weatherDescription = document.getElementById("weather-description-step4");
-  const rainProbability = document.getElementById("rain-probability-step4");
-  const cloudCoverage = document.getElementById("cloud-coverage-step4");
+function onWeatherDataAdjusted() {
+  console.log("Weather data adjusted");
 
-  // Then replicate whatever logic you want for updating icons or text
-  // ...
+  moduleUserData.temperature = document.getElementById("temperature-input").value;
+  moduleUserData.humidity = document.getElementById("humidity-input").value;
+  moduleUserData.pressure = document.getElementById("pressure-input").value;
+  moduleUserData.wind_speed = document.getElementById("wind-speed-input").value;
+  moduleUserData.wind_direction = document.getElementById("wind-direction-input").value;
+
+  selectWeatherIcon();
+}
+function selectWeatherIcon() {
+  // --- 1) Determine time of day from userGeneratedData.date ---
+  // For example, day = 6AM to 6PM, else night.
+  const hour = moduleUserData.date.getHours();
+  const isNight = (hour < 6 || hour >= 18);
+
+  // Decide which icon array to pick from
+  const iconArray = isNight ? imageIconArrayNight : imageIconArrayDay;
+
+  // --- 2) Extract relevant weather data from userGeneratedData ---
+  const temperature = moduleUserData.temperature;  // °C
+  const humidity    = moduleUserData.humidity;     // 0–100
+  const pressure    = moduleUserData.pressure;     // hPa
+  const windSpeed   = moduleUserData.windSpeed;    // e.g. km/h
+
+  // --- 3) Start with a default icon for day vs. night ---
+  let chosenIcon = isNight 
+    ? "night_clear_mostlyclear.png"
+    : "clear_mostlyclear.png";
+
+  // --- 4) Very simple heuristic checks ---
+  // Thunderstorm (humid + windy)
+  if (humidity > 70 && windSpeed > 25) {
+    chosenIcon = "thunderstorm.png";
+  }
+  // Heavy rain (warm + very humid)
+  else if (temperature > 0 && humidity > 80) {
+    chosenIcon = "heavy_rain.png";
+  }
+  // Snow (below freezing + fairly humid)
+  else if (temperature < 0 && humidity > 60) {
+    chosenIcon = "snow.png";
+  }
+  // Drizzle or light rain (moderate humidity)
+  else if (humidity > 60) {
+    // We do have "drizzle_night.png", but it’s in the day array — might be a mismatch.
+    chosenIcon = isNight ? "drizzle_night.png" : "drizzle_freezingdrizzle.png";
+  }
+  // Fog (moderate humidity + low wind + lower pressure)
+  else if (humidity > 50 && windSpeed < 5 && pressure < 1010) {
+    chosenIcon = "fog.png";
+  }
+  // Cloudy
+  else if (humidity > 40) {
+    chosenIcon = "cloudy.png";
+  }
+
+  // --- 5) If chosenIcon isn’t in the chosen array, fallback to a default ---
+  if (!iconArray.includes(chosenIcon)) {
+    chosenIcon = isNight
+      ? "night_clear_mostlyclear.png"
+      : "clear_mostlyclear.png";
+  }
+  let iconDiv = document.getElementById("weather-icon");
+  //lets load an image and display iti nt heicon div
+  iconDiv.innerHTML = `<img src="/weather_icons/${chosenIcon}" alt="Weather icon" />`;
+
+  console.log("selected icon", chosenIcon);
+  return chosenIcon;
+}
+
+
+function dayOfYearFromDate(date) {
+  const start = new Date(date.getFullYear(), 0, 0);
+  const diff = date - start;
+  const oneDay = 1000 * 60 * 60 * 24;
+  const day = Math.floor(diff / oneDay);
+  console.log("day of year function", day);
+  return day;
+}
+function minutesOfDayFromDate(date) {
+  let minutes = date.getHours() * 60 + date.getMinutes();
+  console.log("minutes of day function", minutes);
+  return minutes;
 }

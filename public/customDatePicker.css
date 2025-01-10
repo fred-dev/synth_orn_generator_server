@@ -62,3 +62,81 @@ body {
   text-align: left;
   font-weight: 350; /* Makes the font heavier but not totally bold */
 }
+#weather-container-input {
+  font-family: Arial, sans-serif;
+  background-color: #f0f8ff;
+  padding: 10px;
+  border-radius: 5px;
+  color: #333;
+}
+#weather-container-input header {
+  text-align: center;
+  padding: 20px;
+  background-color: #2196f3;
+  color: white;
+  border-radius: 5px;
+}
+#weather-container-input main {
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+#weather-container-input label {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 10px;
+}
+#weather-container-input input[type="number"] {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-sizing: border-box;
+}
+#weather-container-input #weather-result {
+  text-align: center;
+  margin-top: 30px;
+  padding: 20px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+#weather-inline-icon-input {
+  display: flex;
+  align-items: left;
+  justify-content: left; /* optional: center horizontally */
+  gap: 1rem; /* space between icon and text */
+  margin-top: 1rem;
+}
+
+/* Make the emoji bigger. Use !important if other styles override you. */
+#weather-icon-input {
+  font-size: 40px !important;
+  line-height: 1;
+  margin: 0;
+  padding: 0;
+}
+
+/* Adjust text size or style as you like */
+#weather-description-input {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 0;
+  padding: 0;
+}
+#weather-container-input #weather-description {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+#weather-container-input .stat {
+  margin: 10px 0;
+  font-size: 1rem;
+}
+#weather-container-input footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 0.9rem;
+  color: #666;
+}
