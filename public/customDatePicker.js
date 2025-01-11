@@ -1,6 +1,7 @@
 
 let currentStep = 0;
-let dateFinishCallback = null;
+let dateSelectionCalback = null;
+let weatherSelectionCallback = null;
 let containerElement = null;
 let imageIconArrayDay = null;
 let imageIconArrayNight = null;
@@ -48,9 +49,16 @@ let customPicker = null;
 let customPickerContainer = null;
 let moduleUserData = {};
 
-export function initCustomDatePicker({ containerId, userGeneratedData, onFinish }) {
-  dateFinishCallback = onFinish;
+export function initCustomDatePicker({ containerId, userGeneratedData, onDateSelectionComplete, onWeatherSelectionComplete }) {
+  dateSelectionCalback = onDateSelectionComplete;
+  weatherSelectionCallback = onWeatherSelectionComplete;
   containerElement = document.getElementById(containerId);
+
+  console.log("Callbacks initialized:", {
+    onDateSelectionComplete: typeof dateSelectionCalback,
+    onWeatherSelectionComplete: typeof weatherSelectionCallback,
+  });
+
   // Start on step 0
   currentStep = 0;
   setupPickerUIInBubble();
@@ -59,7 +67,9 @@ export function initCustomDatePicker({ containerId, userGeneratedData, onFinish 
   moduleUserData = userGeneratedData;
   // moduleUserData.temperature = 20;
   console.log("Snapshot of userData:initCustomDatePicker:", JSON.parse(JSON.stringify(moduleUserData)));
+
 }
+
 
 function setupPickerUIInBubble() {
   // Find or create the container element
@@ -97,7 +107,7 @@ function setupPickerUIInBubble() {
     navButtons.className = "nav-buttons";
     backBtn = document.createElement("button");
     backBtn.id = "back-btn";
-    backBtn.disabled = true;
+    backBtn.disabled = false;
     backBtn.innerHTML = "Back";
     backBtn.addEventListener("click", prevStep);
     nextBtn = document.createElement("button");
@@ -122,6 +132,7 @@ function destroyPicker() {
 // Year step
 function loadYearStep() {
   console.log("loadYearStep");
+  backBtn.disabled = true
   customPicker = new Picker(document.getElementById("custom-picker"), {
     inline: true,
     controls: true,
@@ -140,9 +151,12 @@ function loadYearStep() {
     },
   });
 }
+ 
 
 // Month step
 function loadMonthStep() {
+  backBtn.disabled = false;
+
   customPicker = new Picker(document.getElementById("custom-picker"), {
     inline: true,
     controls: true,
@@ -163,6 +177,7 @@ function loadMonthStep() {
 
 // Day step
 function loadDayStep() {
+  backBtn.disabled = false;
   customPicker = new Picker(document.getElementById("custom-picker"), {
     inline: true,
     controls: true,
@@ -183,6 +198,7 @@ function loadDayStep() {
 // Time step
 function loadTimeStep() {
   console.log("loadTimeStep");
+  backBtn.disabled = false;
   customPicker = new Picker(document.getElementById("custom-picker"), {
     inline: true,
     controls: true,
@@ -231,13 +247,14 @@ function nextStep() {
   } else if (currentStep === 3) {
     currentStep = 4;
     setProgressBar(currentStep);
-    // Final step done
-    finishSelection();
-    displayFinalSelection();
+    dateSelectionDone();
+    createWeatherSelection();
   } else if (currentStep === 4) {
-    setProgressBar(4);
     currentStep = 5;
-    finishSelection();
+    setProgressBar(currentStep);
+    weatherSelectionDone();
+    clearPopupBubble();
+
   }
 
   updateUI();
@@ -248,7 +265,9 @@ function prevStep() {
   if (currentStep === 0) {
     return; // can't go back from year
   }
+  destroyPicker();
   currentStep--;
+  
   if (currentStep === 0) {
     setProgressBar(currentStep);
     loadYearStep();
@@ -262,18 +281,39 @@ function prevStep() {
   updateUI();
 }
 
+
 // After finishing final step, call the callback
-function finishSelection() {
+function dateSelectionDone() {
+  console.log("custompickerjs::dateSelectionDone");
   // Force final pick
   if (customPicker?.options?.pick) {
     customPicker.options.pick(customPicker.getDate());
   }
   const finalDate = buildFinalDate();
-  if (dateFinishCallback) {
-    dateFinishCallback(finalDate);
+  if (dateSelectionCalback) {
+    dateSelectionCalback(finalDate);
+  }
+  //lets clear the date selection from the container
+  containerElement.removeChild(customPickerContainer);
+  containerElement.removeChild(pickerInstructions);
+ 
+}
+
+function weatherSelectionDone() {
+  const finalWeatherData = buildFinalWeatherData();
+  if (weatherSelectionCallback) {
+    weatherSelectionCallback(finalWeatherData);
   }
 }
 
+function buildFinalWeatherData() {
+  const weatherData = {
+    temperature: moduleUserData.temperature,
+    humidity: moduleUserData.humidity,
+    pressure: moduleUserData.pressure,
+    wind_speed: moduleUserData.wind_speed};
+  return weatherData;
+}
 // Build a proper Date from the chosen pieces
 function buildFinalDate() {
   const date = new Date(selectedYear, selectedMonth, selectedDay, selectedHour, selectedMinute);
@@ -324,15 +364,11 @@ function getMonthName(monthIdx) {
 // Export if using modules
 function setProgressBar(step) {
   if (step === 0) progressBarFill.style.width = "0%";
-  else if (step === 1) progressBarFill.style.width = "25%";
-  else if (step === 2) progressBarFill.style.width = "50%";
-  else if (step === 3) progressBarFill.style.width = "75%";
-}
-function displayFinalSelection() {
-  // Keep showing the final date in dateDisplay or wherever you want
-
-  // Next, inject the weather snippet
-  createWeatherSelection();
+  else if (step === 1) progressBarFill.style.width = "20%";
+  else if (step === 2) progressBarFill.style.width = "40%";
+  else if (step === 3) progressBarFill.style.width = "60%";
+  else if (step === 4) progressBarFill.style.width = "80%";
+  else if (step === 5) progressBarFill.style.width = "100%";
 }
 
 // Example of injecting the snippet:
@@ -392,19 +428,6 @@ function createWeatherSelection() {
   windSpeedLabel.appendChild(windSpeedInput);
   form.appendChild(windSpeedLabel);
 
-  const windDirectionLabel = document.createElement("label");
-  windDirectionLabel.textContent = "Wind Direction (°): ";
-  const windDirectionInput = document.createElement("input");
-  windDirectionInput.id = "wind-direction-input";
-  windDirectionInput.type = "number";
-  windDirectionInput.value = "180";
-  windDirectionInput.min = "0";
-  windDirectionInput.max = "360";
-  windDirectionInput.step = "0.5"; // Set the increment step to 0.5
-  windDirectionInput.addEventListener("input", onWeatherDataAdjusted);
-  windDirectionLabel.appendChild(windDirectionInput);
-  form.appendChild(windDirectionLabel);
-
   weatherContainer.appendChild(form);
 
   const weatherResult = document.createElement("div");
@@ -436,7 +459,9 @@ function createWeatherSelection() {
 
   weatherContainer.appendChild(weatherResult);
 
-  containerElement.appendChild(weatherContainer);
+
+  //lets insert the weather container into the container element before the dateDisplay element
+  containerElement.insertBefore(weatherContainer, progressBar);
 
 }
 
@@ -447,7 +472,6 @@ function onWeatherDataAdjusted() {
   moduleUserData.humidity = document.getElementById("humidity-input").value;
   moduleUserData.pressure = document.getElementById("pressure-input").value;
   moduleUserData.wind_speed = document.getElementById("wind-speed-input").value;
-  moduleUserData.wind_direction = document.getElementById("wind-direction-input").value;
 
   selectWeatherIcon();
 }
@@ -525,4 +549,12 @@ function minutesOfDayFromDate(date) {
   let minutes = date.getHours() * 60 + date.getMinutes();
   console.log("minutes of day function", minutes);
   return minutes;
+}
+
+function clearPopupBubble() {
+  //remove all children from the container element
+  while (containerElement.firstChild) {
+    containerElement.removeChild(containerElement.firstChild);
+  }
+  
 }

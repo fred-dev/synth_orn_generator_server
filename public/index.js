@@ -165,13 +165,28 @@ map.on("contextmenu", async function (event) {
     initCustomDatePicker({
       containerId: "popup_bubble",
       userGeneratedData,
-      onFinish: (finalDate) => {
+      onDateSelectionComplete: (finalDate) => {
         console.log("Final date/time chosen:", finalDate);
         fillSuggestedWeatherData(userGeneratedData.date);
-        //marker.closePopup();
       },
+      onWeatherSelectionComplete: (finalWeather) => {
+        console.log("Final weather chosen:", finalWeather);
+        fetchDataAndDisplay();
+      },    
+
     });
   });
+marker.on("popupclose", async function (event) {
+  //lets remove the marker
+  map.removeLayer(marker);
+  //lets remove the location name
+  userGeneratedData.locationName = "";
+  //lets remove the lat and lon
+  userGeneratedData.lat = 0;
+  userGeneratedData.lon = 0;
+  //lets remove the water distance data
+});
+  
 
   // Finally, open it
   marker.openPopup();
@@ -334,6 +349,11 @@ async function fetchDataAndDisplay() {
 
     const streamedText = document.getElementById("streamedText");
     const closeBtn = document.getElementById("closeBtn");
+
+    //lets add an event listener to the leaflet close button to remove the marker
+    // map.eachLayer(function (layer) {
+    //   if (layer instanceof L.Marker) {
+
     //clear all map markers
 
     closeBtn.addEventListener("click", () => {
