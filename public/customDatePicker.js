@@ -1,4 +1,3 @@
-
 let currentStep = 0;
 let dateSelectionCalback = null;
 let weatherSelectionCallback = null;
@@ -23,10 +22,7 @@ imageIconArrayDay = [
   "thunderstorm.png",
   "clear_mostlyclear.png",
 ];
-imageIconArrayNight = [
-  "night_clear_mostlyclear.png",
-  "night_partly_cloudy.png"
-];
+imageIconArrayNight = ["night_clear_mostlyclear.png", "night_partly_cloudy.png"];
 
 // Selections
 let selectedYear = new Date().getFullYear();
@@ -67,9 +63,7 @@ export function initCustomDatePicker({ containerId, userGeneratedData, onDateSel
   moduleUserData = userGeneratedData;
   // moduleUserData.temperature = 20;
   console.log("Snapshot of userData:initCustomDatePicker:", JSON.parse(JSON.stringify(moduleUserData)));
-
 }
-
 
 function setupPickerUIInBubble() {
   // Find or create the container element
@@ -132,7 +126,7 @@ function destroyPicker() {
 // Year step
 function loadYearStep() {
   console.log("loadYearStep");
-  backBtn.disabled = true
+  backBtn.disabled = true;
   customPicker = new Picker(document.getElementById("custom-picker"), {
     inline: true,
     controls: true,
@@ -147,11 +141,9 @@ function loadYearStep() {
       userSelectedDate.setFullYear(selectedYear);
       console.log("selectedYear:loadYearStep", selectedYear);
       console.log("Snapshot of userData:loadYearStep:", JSON.parse(JSON.stringify(moduleUserData)));
-
     },
   });
 }
- 
 
 // Month step
 function loadMonthStep() {
@@ -171,7 +163,6 @@ function loadMonthStep() {
       console.log("selectedMonth:loadMonthStep", selectedMonth);
       console.log("selectedMonthName:loadMonthStep", selectedMonthName);
     },
-   
   });
 }
 
@@ -217,7 +208,7 @@ function loadTimeStep() {
       userSelectedDate.setMinutes(selectedMinute);
       moduleUserData.date = userSelectedDate;
       moduleUserData.minutes_of_day = minutesOfDayFromDate(userSelectedDate);
-      moduleUserData.day_of_year = dayOfYearFromDate(userSelectedDate); 
+      moduleUserData.day_of_year = dayOfYearFromDate(userSelectedDate);
       console.log("Snapshot of userData:loadTimeStep:", JSON.parse(JSON.stringify(moduleUserData)));
     },
   });
@@ -254,7 +245,6 @@ function nextStep() {
     setProgressBar(currentStep);
     weatherSelectionDone();
     clearPopupBubble();
-
   }
 
   updateUI();
@@ -267,7 +257,7 @@ function prevStep() {
   }
   destroyPicker();
   currentStep--;
-  
+
   if (currentStep === 0) {
     setProgressBar(currentStep);
     loadYearStep();
@@ -280,7 +270,6 @@ function prevStep() {
   }
   updateUI();
 }
-
 
 // After finishing final step, call the callback
 function dateSelectionDone() {
@@ -296,7 +285,6 @@ function dateSelectionDone() {
   //lets clear the date selection from the container
   containerElement.removeChild(customPickerContainer);
   containerElement.removeChild(pickerInstructions);
- 
 }
 
 function weatherSelectionDone() {
@@ -311,7 +299,8 @@ function buildFinalWeatherData() {
     temperature: moduleUserData.temperature,
     humidity: moduleUserData.humidity,
     pressure: moduleUserData.pressure,
-    wind_speed: moduleUserData.wind_speed};
+    wind_speed: moduleUserData.wind_speed,
+  };
   return weatherData;
 }
 // Build a proper Date from the chosen pieces
@@ -380,31 +369,42 @@ function createWeatherSelection() {
 
   const form = document.createElement("form");
   form.id = "weather-form-input";
-  const temperatureLabel = document.createElement("label");
-  temperatureLabel.textContent = "Temperature (°C): ";
+  form.style.display = "flex";
+  form.style.flexDirection = "column";
+
+  const createFormRow = (labelText, inputElement) => {
+    const formRow = document.createElement("div");
+    formRow.style.display = "flex";
+    formRow.style.alignItems = "center";
+    formRow.style.marginBottom = "8px";
+
+    const label = document.createElement("label");
+    label.textContent = labelText;
+    label.style.marginRight = "8px";
+
+    formRow.appendChild(label);
+    formRow.appendChild(inputElement);
+
+    return formRow;
+  };
+
   const temperatureInput = document.createElement("input");
   temperatureInput.id = "temperature-input";
   temperatureInput.type = "number";
   temperatureInput.step = "0.5"; // Set the increment step to 0.5
   temperatureInput.addEventListener("input", onWeatherDataAdjusted);
-  temperatureLabel.appendChild(temperatureInput);
-  form.appendChild(temperatureLabel);
+  form.appendChild(createFormRow("Temperature (°C): ", temperatureInput));
 
-  const humidityLabel = document.createElement("label");
-  humidityLabel.textContent = "Humidity (%): ";
   const humidityInput = document.createElement("input");
   humidityInput.id = "humidity-input";
   humidityInput.type = "number";
   humidityInput.value = "50";
-  temperatureInput.step = "0.5"; // Set the increment step to 0.5
+  humidityInput.step = "0.5"; // Set the increment step to 0.5
   humidityInput.min = "0";
   humidityInput.max = "100";
   humidityInput.addEventListener("input", onWeatherDataAdjusted);
-  humidityLabel.appendChild(humidityInput);
-  form.appendChild(humidityLabel);
+  form.appendChild(createFormRow("Humidity (%): ", humidityInput));
 
-  const pressureLabel = document.createElement("label");
-  pressureLabel.textContent = "Pressure (hPa): ";
   const pressureInput = document.createElement("input");
   pressureInput.id = "pressure-input";
   pressureInput.type = "number";
@@ -413,11 +413,8 @@ function createWeatherSelection() {
   pressureInput.max = "1100";
   pressureInput.step = "0.5"; // Set the increment step to 0.5
   pressureInput.addEventListener("input", onWeatherDataAdjusted);
-  pressureLabel.appendChild(pressureInput);
-  form.appendChild(pressureLabel);
+  form.appendChild(createFormRow("Pressure (hPa): ", pressureInput));
 
-  const windSpeedLabel = document.createElement("label");
-  windSpeedLabel.textContent = "Wind Speed (km/h): ";
   const windSpeedInput = document.createElement("input");
   windSpeedInput.id = "wind-speed-input";
   windSpeedInput.type = "number";
@@ -425,8 +422,7 @@ function createWeatherSelection() {
   windSpeedInput.min = "0";
   windSpeedInput.step = "0.5"; // Set the increment step to 0.5
   windSpeedInput.addEventListener("input", onWeatherDataAdjusted);
-  windSpeedLabel.appendChild(windSpeedInput);
-  form.appendChild(windSpeedLabel);
+  form.appendChild(createFormRow("Wind Speed (km/h): ", windSpeedInput));
 
   weatherContainer.appendChild(form);
 
@@ -459,10 +455,8 @@ function createWeatherSelection() {
 
   weatherContainer.appendChild(weatherResult);
 
-
   //lets insert the weather container into the container element before the dateDisplay element
   containerElement.insertBefore(weatherContainer, progressBar);
-
 }
 
 function onWeatherDataAdjusted() {
@@ -479,21 +473,19 @@ function selectWeatherIcon() {
   // --- 1) Determine time of day from userGeneratedData.date ---
   // For example, day = 6AM to 6PM, else night.
   const hour = moduleUserData.date.getHours();
-  const isNight = (hour < 6 || hour >= 18);
+  const isNight = hour < 6 || hour >= 18;
 
   // Decide which icon array to pick from
   const iconArray = isNight ? imageIconArrayNight : imageIconArrayDay;
 
   // --- 2) Extract relevant weather data from userGeneratedData ---
-  const temperature = moduleUserData.temperature;  // °C
-  const humidity    = moduleUserData.humidity;     // 0–100
-  const pressure    = moduleUserData.pressure;     // hPa
-  const windSpeed   = moduleUserData.windSpeed;    // e.g. km/h
+  const temperature = moduleUserData.temperature; // °C
+  const humidity = moduleUserData.humidity; // 0–100
+  const pressure = moduleUserData.pressure; // hPa
+  const windSpeed = moduleUserData.windSpeed; // e.g. km/h
 
   // --- 3) Start with a default icon for day vs. night ---
-  let chosenIcon = isNight 
-    ? "night_clear_mostlyclear.png"
-    : "clear_mostlyclear.png";
+  let chosenIcon = isNight ? "night_clear_mostlyclear.png" : "clear_mostlyclear.png";
 
   // --- 4) Very simple heuristic checks ---
   // Thunderstorm (humid + windy)
@@ -524,9 +516,7 @@ function selectWeatherIcon() {
 
   // --- 5) If chosenIcon isn’t in the chosen array, fallback to a default ---
   if (!iconArray.includes(chosenIcon)) {
-    chosenIcon = isNight
-      ? "night_clear_mostlyclear.png"
-      : "clear_mostlyclear.png";
+    chosenIcon = isNight ? "night_clear_mostlyclear.png" : "clear_mostlyclear.png";
   }
   let iconDiv = document.getElementById("weather-icon");
   //lets load an image and display iti nt heicon div
@@ -535,7 +525,6 @@ function selectWeatherIcon() {
   console.log("selected icon", chosenIcon);
   return chosenIcon;
 }
-
 
 function dayOfYearFromDate(date) {
   const start = new Date(date.getFullYear(), 0, 0);
@@ -556,5 +545,4 @@ function clearPopupBubble() {
   while (containerElement.firstChild) {
     containerElement.removeChild(containerElement.firstChild);
   }
-  
 }

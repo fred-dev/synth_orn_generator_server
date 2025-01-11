@@ -50,7 +50,7 @@ async function generateWithGradio(lat, lon, temp, humidity, wind_speed, pressure
     // Using the submit() method with the updated payload format
     const submission = gradioApp.submit("/generate", {
       seconds_start: 0,
-      seconds_total: 22,
+      seconds_total: 23,
       latitude: lat,
       longitude: lon,
       temperature: temp,
@@ -59,13 +59,13 @@ async function generateWithGradio(lat, lon, temp, humidity, wind_speed, pressure
       pressure: pressure,
       minutes_of_day: minutes_of_day,
       day_of_year: day_of_year,
-      cfg_scale: 3.0,
-      steps: 90,
+      cfg_scale: 5.0,
+      steps: 110,
       preview_every: 0,
       seed: "-1",
       sampler_type: "dpmpp-2m-sde",
       sigma_min: 0.3,
-      sigma_max: 30,
+      sigma_max: 50,
       cfg_rescale: 0.3,
       use_init: 0.3,
     });

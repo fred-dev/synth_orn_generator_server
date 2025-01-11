@@ -54,7 +54,7 @@ async function reverseGeocode(lat, lon) {
 }
 
 function constructHistoricalDate() {
-//make a new date object from the user data
+  //make a new date object from the user data
   let historicalDate = userGeneratedData.date;
   //set the year to the current year minus 1
   historicalDate.setFullYear(new Date().getFullYear() - 1);
@@ -66,7 +66,6 @@ function constructHistoricalDate() {
   //remove any decimal places from the formatted date
   formattedDate = Math.floor(formattedDate);
   console.log("Historical date unix timestamp: " + formattedDate);
-
 
   return formattedDate;
 }
@@ -125,7 +124,7 @@ function calculateClimateVariance(weatherData) {
     temperature: (weatherData.data[0].temp * variance).toFixed(2),
     humidity: (weatherData.data[0].humidity * variance).toFixed(2),
     pressure: (weatherData.data[0].pressure * variance).toFixed(2),
-    windSpeed: (weatherData.data[0].wind_speed * variance).toFixed(2)
+    windSpeed: (weatherData.data[0].wind_speed * variance).toFixed(2),
   };
 }
 
@@ -172,25 +171,22 @@ map.on("contextmenu", async function (event) {
       onWeatherSelectionComplete: (finalWeather) => {
         console.log("Final weather chosen:", finalWeather);
         fetchDataAndDisplay();
-      },    
-
+      },
     });
   });
-marker.on("popupclose", async function (event) {
-  //lets remove the marker
-  map.removeLayer(marker);
-  //lets remove the location name
-  userGeneratedData.locationName = "";
-  //lets remove the lat and lon
-  userGeneratedData.lat = 0;
-  userGeneratedData.lon = 0;
-  //lets remove the water distance data
-});
-  
+  marker.on("popupclose", async function (event) {
+    //lets remove the marker
+    map.removeLayer(marker);
+    //lets remove the location name
+    userGeneratedData.locationName = "";
+    //lets remove the lat and lon
+    userGeneratedData.lat = 0;
+    userGeneratedData.lon = 0;
+    //lets remove the water distance data
+  });
 
   // Finally, open it
   marker.openPopup();
-  
 
   async function fetchWeatherData() {
     console.log("fetchWeatherData start");
@@ -224,19 +220,6 @@ marker.on("popupclose", async function (event) {
       document.getElementById("wind-speed-input").value = userGeneratedData.windSpeed;
     }
   }
-  // Event listener for confirm button to handle user input
-  // document.getElementById("confirmBtn").addEventListener("click", async () => {
-  //   //close the popup
-  //   marker.closePopup();
-
-  //   userGeneratedData.temperature = parseFloat(document.getElementById("temperature").value);
-  //   userGeneratedData.humidity = parseFloat(document.getElementById("humidity").value);
-  //   userGeneratedData.pressure = parseFloat(document.getElementById("pressure").value);
-  //   userGeneratedData.windSpeed = parseFloat(document.getElementById("windSpeed").value);
-  //   //userGeneratedData.date = document.getElementById("date").value;
-
-  //   fetchDataAndDisplay();
-  // });
 });
 
 async function callGenerateWithGradio(lat, lon, temp, humidity, wind_speed, pressure, minutes_of_day, day_of_year) {
@@ -305,8 +288,6 @@ async function loadAudio() {
   }
 }
 
-// Include flatpickr CSS
-//import 'flatpickr/dist/flatpickr.min.css';
 async function fetchDataAndDisplay() {
   try {
     // Send a POST request to the server
@@ -350,12 +331,6 @@ async function fetchDataAndDisplay() {
     const streamedText = document.getElementById("streamedText");
     const closeBtn = document.getElementById("closeBtn");
 
-    //lets add an event listener to the leaflet close button to remove the marker
-    // map.eachLayer(function (layer) {
-    //   if (layer instanceof L.Marker) {
-
-    //clear all map markers
-
     closeBtn.addEventListener("click", () => {
       resultDiv.remove();
       map.eachLayer(function (layer) {
@@ -390,4 +365,3 @@ async function fetchDataAndDisplay() {
     console.error("Failed to fetch response:", error);
   }
 }
-
