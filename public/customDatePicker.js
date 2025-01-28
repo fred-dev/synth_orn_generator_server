@@ -282,6 +282,11 @@ function dateSelectionDone() {
   if (dateSelectionCalback) {
     dateSelectionCalback(finalDate);
   }
+
+  console.log("moon phase: " + Moon.phase(moduleUserData.date.getFullYear(), moduleUserData.date.getMonth(), moduleUserData.date.getDate()).name);
+  //lets get the moon phase for the selected date and location
+  // getMoonPhase(finalDate, moduleUserData.latitude, moduleUserData.longitude);
+
   //lets clear the date selection from the container
   containerElement.removeChild(customPickerContainer);
   containerElement.removeChild(pickerInstructions);
@@ -381,6 +386,7 @@ function createWeatherSelection() {
     const label = document.createElement("label");
     label.textContent = labelText;
     label.style.marginRight = "8px";
+    label.style.whiteSpace = "nowrap"; // Ensure label and unit stay on the same line
 
     formRow.appendChild(label);
     formRow.appendChild(inputElement);
@@ -392,13 +398,14 @@ function createWeatherSelection() {
   temperatureInput.id = "temperature-input";
   temperatureInput.type = "number";
   temperatureInput.step = "0.5"; // Set the increment step to 0.5
+  temperatureInput.min = "-20";
+  temperatureInput.max = "60";
   temperatureInput.addEventListener("input", onWeatherDataAdjusted);
   form.appendChild(createFormRow("Temperature (°C): ", temperatureInput));
 
   const humidityInput = document.createElement("input");
   humidityInput.id = "humidity-input";
   humidityInput.type = "number";
-  humidityInput.value = "50";
   humidityInput.step = "0.5"; // Set the increment step to 0.5
   humidityInput.min = "0";
   humidityInput.max = "100";
@@ -408,7 +415,6 @@ function createWeatherSelection() {
   const pressureInput = document.createElement("input");
   pressureInput.id = "pressure-input";
   pressureInput.type = "number";
-  pressureInput.value = "1013";
   pressureInput.min = "900";
   pressureInput.max = "1100";
   pressureInput.step = "0.5"; // Set the increment step to 0.5
@@ -418,8 +424,8 @@ function createWeatherSelection() {
   const windSpeedInput = document.createElement("input");
   windSpeedInput.id = "wind-speed-input";
   windSpeedInput.type = "number";
-  windSpeedInput.value = "10";
   windSpeedInput.min = "0";
+  windSpeedInput.max = "100";
   windSpeedInput.step = "0.5"; // Set the increment step to 0.5
   windSpeedInput.addEventListener("input", onWeatherDataAdjusted);
   form.appendChild(createFormRow("Wind Speed (km/h): ", windSpeedInput));
@@ -546,3 +552,31 @@ function clearPopupBubble() {
     containerElement.removeChild(containerElement.firstChild);
   }
 }
+
+var Moon = {
+  phases: ['new-moon', 'waxing-crescent-moon', 'quarter-moon', 'waxing-gibbous-moon', 'full-moon', 'waning-gibbous-moon', 'last-quarter-moon', 'waning-crescent-moon'],
+  phase: function (year, month, day) {
+    let c;
+    let  e;
+    let jd;
+    let b;
+    
+
+    if (month < 3) {
+      year--;
+      month += 12;
+    }
+
+    ++month;
+    c = 365.25 * year;
+    e = 30.6 * month;
+    jd = c + e + day - 694039.09; // jd is total days elapsed
+    jd /= 29.5305882; // divide by the moon cycle
+    b = parseInt(jd); // int(jd) -> b, take integer part of jd
+    jd -= b; // subtract integer part to leave fractional part of original jd
+    b = Math.round(jd * 8); // scale fraction from 0-8 and round
+
+    if (b >= 8) b = 0; // 0 and 8 are the same so turn 8 into 0
+    return {phase: b, name: Moon.phases[b]};
+  }
+};

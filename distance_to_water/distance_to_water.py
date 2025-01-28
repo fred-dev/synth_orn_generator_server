@@ -136,8 +136,11 @@ def calculate_bounding_box(latitude, longitude, distance_km):
 
 
 def getAllWaterDistanceData(lat, lon):
+    print(f"Begin Processing point getAllWaterDistanceData at latitude {lat}, longitude {lon}", file=sys.stderr)
 
-    country_shapefile = "distance_to_water/country_shape/World_Countries/World_Countries_Generalized.shp"
+    country_shapefile = "/Users/fredrodrigues/Dropbox/Code/OF_GITT/openFrameworks/apps/Synthetic_ornithology/synth_orn_generator_server/distance_to_water/country_shape/World_Countries/World_Countries_Generalized.shp"
+    
+    
     
     #waterbodies_shapefile = 'ga_ls_wb_3_v3/ga_ls_wb_3_v3.shp'
     country_shapes = load_shapefile(country_shapefile)
@@ -159,12 +162,13 @@ def getAllWaterDistanceData(lat, lon):
  
 
 
-if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        #print("Usage: python script.py <latitude> <longitude>")
-        sys.exit(1)
-    
-    lat = float(sys.argv[1])  # Convert latitude to float
-    lon = float(sys.argv[2])  # Convert longitude to float
-    result = getAllWaterDistanceData(lat, lon)
-    print(json.dumps(result))  # Serialize and print the result as a JSON string
+if len(sys.argv) != 3:
+    print("Usage: script.py <latitude> <longitude>", file=sys.stderr)
+    sys.exit(1)
+
+# The following lines should not be indented further
+lat = float(sys.argv[1])  # Convert latitude to float
+lon = float(sys.argv[2])  # Convert longitude to float
+print(f"Latitude: {lat}, Longitude: {lon}", file=sys.stderr)
+result = getAllWaterDistanceData(lat, lon)
+print(json.dumps(result))  # Serialize and print the result as a JSON string

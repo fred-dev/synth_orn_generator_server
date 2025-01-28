@@ -202,11 +202,9 @@ app.listen(port, () => {
 
 app.post("/generate-text", async (req, res) => {
   const userInput = JSON.parse(req.body.userInput);
-  const { locationName, date, temperature, humidity, windSpeed } = userInput;
+  //const { locationName, date, temperature, humidity, windSpeed } = userInput;
   //log the date to the console
-
-  const [fullDate] = date;
-  const dateObj = new Date(fullDate);
+  const dateObj = new Date(userInput.date);
   const year = dateObj.getUTCFullYear();
   const month = dateObj.getUTCMonth() + 1; // Months are zero-indexed
 
@@ -219,7 +217,7 @@ app.post("/generate-text", async (req, res) => {
   const seconds = dateObj.getUTCSeconds();
 
   console.log(
-    `Date: ${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")} ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
+    `Generate text: Date: ${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")} ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
       .toString()
       .padStart(2, "0")}`
   );
@@ -245,8 +243,8 @@ app.post("/generate-text", async (req, res) => {
     Date: ${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")} ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
       .toString()
       .padStart(2, "0")}
-    Location: ${locationName}
-    Climate Conditions: Temperature - ${temperature}°C, Humidity - ${humidity}%, Wind Speed - ${windSpeed} km/h
+    Location: ${userInput.locationName}
+    Climate Conditions: Temperature - ${userInput.temperature}°C, Humidity - ${userInput.humidity}%, Wind Speed - ${userInput.windSpeed} km/h
 
     Output:
     `;
@@ -310,30 +308,41 @@ app.get("/weather", async (req, res) => {
 });
 
 app.post("/waterdistance", (req, res) => {
-  console.log("Received request:", req.body); // Log the incoming request body
+  console.log("Received water distance request:", req.body);
 
-  const { lat, lon } = req.body; // Expect lat and lon in the request body
+  const { lat, lon } = req.body;
+  console.log(`Water distance request lat: ${lat}, lon: ${lon}`);
 
-  // Spawn a new Python process
-  const pythonProcess = spawn("python3", ["distance_to_water/distance_to_water.py", lat, lon]);
+  const pythonProcess = spawn("python3", [
+    "distance_to_water/distance_to_water.py",
+    lat,
+    lon,
+  ]);
 
+  // Capture stdout in a string buffer
+  let stdoutData = "";
+
+  // Whenever data is available on stdout, accumulate it
   pythonProcess.stdout.on("data", (data) => {
-    try {
-      const jsonData = JSON.parse(data.toString()); // Parse the JSON string
-      res.json(jsonData); // Send JSON response back to client
-    } catch (error) {
-      console.error("Error parsing JSON:", error);
-      res.status(500).send("Server error in parsing Python response");
-    }
+    stdoutData += data.toString();
   });
 
+  // Print Python stderr to your Node logs (debugging info only)
   pythonProcess.stderr.on("data", (data) => {
-    // Capture any errors
-    //console.error(`stderr: ${data}`);
-    //res.status(500).send(`Error in Python script: ${data}`);
+    console.error(`Python stderr: ${data.toString()}`);
   });
 
+  // When the process ends, parse the accumulated stdout as JSON
   pythonProcess.on("close", (code) => {
     console.log(`Child process exited with code ${code}`);
+    try {
+      // stdoutData should contain the entire JSON object
+      const jsonData = JSON.parse(stdoutData);
+      res.json(jsonData);
+      console.log("Water distance processed. Parsed JSON:", jsonData);
+    } catch (error) {
+      console.error("Error parsing JSON:", error);
+      res.status(500).send("Server error parsing Python response.");
+    }
   });
 });

@@ -45,6 +45,7 @@ async function reverseGeocode(lat, lon) {
     const response = await fetch(url);
     const data = await response.json();
     //add the data to the userGeneratedData object
+    console.log("reverseGeocode results: " + JSON.stringify(data));
 
     return data.display_name;
   } catch (error) {
