@@ -323,7 +323,7 @@ app.post(routingPrefix + "/waterdistance", (req, res) => {
   console.log("Received water distance request:", req.body);
 
   const { lat, lon } = req.body;
-  console.log(`Water distance request lat: ${lat}, lon: ${lon}`);
+  console.log(`Water distance request lat: ${lat}, lon: ${lon}, shapeFilePath: ${shapeFilePath}`);
 
   const pythonProcess = spawn(pythonPath, [
     "distance_to_water/distance_to_water.py",
