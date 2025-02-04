@@ -162,7 +162,7 @@ def getAllWaterDistanceData(lat, lon):
 
 
 if len(sys.argv) != 4:
-    print("Usage: script.py <latitude> <longitude>", file=sys.stderr)
+    print("Usage: script.py <latitude> <longitude> <shapefile>", file=sys.stderr)
     sys.exit(1)
 
 # The following lines should not be indented further
