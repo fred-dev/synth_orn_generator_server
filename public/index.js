@@ -72,7 +72,7 @@ function constructHistoricalDate() {
 }
 
 async function getWaterDistanceData(lat, lon) {
-  const url = "/waterdistance"; // Relative URL for your Node.js server endpoint
+  const url = "/generate/waterdistance"; // Relative URL for your Node.js server endpoint
 
   try {
     const response = await fetch(url, {
@@ -193,7 +193,7 @@ map.on("contextmenu", async function (event) {
     console.log("fetchWeatherData start");
     let altered_date = constructHistoricalDate();
     try {
-      const response = await fetch(`/weather?lat=${mapChoicelatlng.lat}&lon=${mapChoicelatlng.lng}&date=${altered_date}`);
+      const response = await fetch(`/generate/weather?lat=${mapChoicelatlng.lat}&lon=${mapChoicelatlng.lng}&date=${altered_date}`);
       const data = await response.json();
       //print the response to the console serialissed
       console.log("fetchWeatherData recieved response" + JSON.stringify(data));
@@ -225,7 +225,7 @@ map.on("contextmenu", async function (event) {
 
 async function callGenerateWithGradio(lat, lon, temp, humidity, wind_speed, pressure, minutes_of_day, day_of_year) {
   try {
-    const response = await fetch("/generateAudio", {
+    const response = await fetch("/generate/generateAudio", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -292,7 +292,7 @@ async function loadAudio() {
 async function fetchDataAndDisplay() {
   try {
     // Send a POST request to the server
-    const response = await fetch("/generate-text", {
+    const response = await fetch("/generate/generate-text", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
