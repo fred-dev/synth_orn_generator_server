@@ -138,7 +138,7 @@ def calculate_bounding_box(latitude, longitude, distance_km):
 def getAllWaterDistanceData(lat, lon):
     print(f"Begin Processing point getAllWaterDistanceData at latitude {lat}, longitude {lon}", file=sys.stderr)
 
-    country_shapefile = "/home/audioweather/synth_orn_generator_server/distance_to_water/country_shape/World_Countries/World_Countries/World_Countries_Generalized.shp"
+    country_shapefile = "/home/audioweather/synth_orn_generator_server/distance_to_water/country_shape/World_Countries/World_Countries_Generalized.shp"
     
     
     
