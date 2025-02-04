@@ -4,7 +4,7 @@ import { spawn } from "child_process";
 import fetch from "node-fetch";
 
 import dotenv from "dotenv";
-console.log(dotenv.config({ path: '/home/audioweather/synth_orn_generator_server/.env' }));
+dotenv.config({ path: '/home/audioweather/synth_orn_generator_server/.env' });
 
 import express from "express";
 // const { MongoClient } = require('mongodb');
@@ -25,6 +25,12 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use((req, res, next) => {
+  console.log('Second app request path:', req.path);
+  next();
+});
+
+
 app.use(express.static("public"));
 
 async function initializeGradio() {
@@ -34,7 +40,7 @@ async function initializeGradio() {
       space_status: (status) => console.log("Space status:", status),
     });
     const appInfo = await app.view_api();
-    console.log("This isthe app API" + appInfo);
+    console.log("This is the app API" + appInfo);
     return app;
   } catch (error) {
     console.error("Failed to initialize Gradio:", error);
