@@ -138,7 +138,6 @@ def calculate_bounding_box(latitude, longitude, distance_km):
 def getAllWaterDistanceData(lat, lon):
     print(f"Begin Processing point getAllWaterDistanceData at latitude {lat}, longitude {lon}", file=sys.stderr)
 
-    country_shapefile = "/home/audioweather/synth_orn_generator_server/distance_to_water/country_shape/World_Countries/World_Countries_Generalized.shp"
     
     
     
@@ -169,6 +168,10 @@ if len(sys.argv) != 3:
 # The following lines should not be indented further
 lat = float(sys.argv[1])  # Convert latitude to float
 lon = float(sys.argv[2])  # Convert longitude to float
+# lets make a gloabl variable for the shapefile path
+country_shapefile = sys.argv[3]
+
+
 print(f"Latitude: {lat}, Longitude: {lon}", file=sys.stderr)
 result = getAllWaterDistanceData(lat, lon)
 print(json.dumps(result))  # Serialize and print the result as a JSON string

@@ -4,8 +4,9 @@ import { spawn } from "child_process";
 import fetch from "node-fetch";
 
 import dotenv from "dotenv";
-dotenv.config({ path: '/home/audioweather/synth_orn_generator_server/.env' });
 
+//dotenv.config({ path: '/home/audioweather/synth_orn_generator_server/.env' });
+dotenv.config();
 import express from "express";
 // const { MongoClient } = require('mongodb');
 
@@ -13,6 +14,11 @@ const app = express();
 const port = process.env.PORT || 4001;
 const HF_TOKEN = process.env.HF_TOKEN;
 const openWeatherMapsAPIKey = process.env.OPENWEATHER_API_KEY; // Your API key stored in .env file
+const shapeFilePath = process.env.SHAPE_FILE_PATH;
+const routingPrefix = process.env.GET_PATH_PREFIX;
+const pythonPath = process.env.PYTHON_PATH;
+
+console.log(routingPrefix + "/generate-text");
 
 //const gradioApp = await Client.connect("fred-dev/audio_test", { hf_token: HF_TOKEN });
 
@@ -97,7 +103,7 @@ async function generateWithGradio(lat, lon, temp, humidity, wind_speed, pressure
   }
 }
 
-app.post("/generateAudio", async (req, res) => {
+app.post(routingPrefix + "/generateAudio", async (req, res) => {
   const { lat, lon, temp, humidity, wind_speed, pressure, minutes_of_day, day_of_year } = req.body;
   console.log("Received request:", req.body);
   console.log("minutes_of_day: ", minutes_of_day);
@@ -177,7 +183,7 @@ app.put("/markers/:id", async (req, res) => {
 // });
 
 // Endpoint to generate audio content using Gradio API
-app.post("/generate-audio", async (req, res) => {
+app.post(routingPrefix + "/generate-audio", async (req, res) => {
   try {
     if (req.appMode === "live") {
       // Logic to make a real API call using the Gradio API key
@@ -206,7 +212,7 @@ app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
 
-app.post("/generate-text", async (req, res) => {
+app.post(routingPrefix + "/generate-text", async (req, res) => {
   const userInput = JSON.parse(req.body.userInput);
   //const { locationName, date, temperature, humidity, windSpeed } = userInput;
   //log the date to the console
@@ -285,7 +291,7 @@ app.post("/generate-text", async (req, res) => {
   }
 });
 
-app.get("/weather", async (req, res) => {
+app.get(routingPrefix + "/weather", async (req, res) => {
   console.log("weather request");
 
   const { lat, lon, date } = req.query;
@@ -313,16 +319,17 @@ app.get("/weather", async (req, res) => {
   }
 });
 
-app.post("/waterdistance", (req, res) => {
+app.post(routingPrefix + "/waterdistance", (req, res) => {
   console.log("Received water distance request:", req.body);
 
   const { lat, lon } = req.body;
   console.log(`Water distance request lat: ${lat}, lon: ${lon}`);
 
-  const pythonProcess = spawn("/root/waterDistance/bin/python", [
+  const pythonProcess = spawn(pythonPath, [
     "distance_to_water/distance_to_water.py",
     lat,
     lon,
+    shapeFilePath,
   ]);
 
   // Capture stdout in a string buffer
