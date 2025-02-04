@@ -4,7 +4,7 @@ import { spawn } from "child_process";
 import fetch from "node-fetch";
 
 import dotenv from "dotenv";
-dotenv.config();
+console.log(dotenv.config());
 
 import express from "express";
 // const { MongoClient } = require('mongodb');
