@@ -10,7 +10,7 @@ import express from "express";
 // const { MongoClient } = require('mongodb');
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 4001;
 const HF_TOKEN = process.env.HF_TOKEN;
 const openWeatherMapsAPIKey = process.env.OPENWEATHER_API_KEY; // Your API key stored in .env file
 
