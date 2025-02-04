@@ -319,7 +319,7 @@ app.post("/waterdistance", (req, res) => {
   const { lat, lon } = req.body;
   console.log(`Water distance request lat: ${lat}, lon: ${lon}`);
 
-  const pythonProcess = spawn("python3", [
+  const pythonProcess = spawn("/root/waterDistance/bin/python", [
     "distance_to_water/distance_to_water.py",
     lat,
     lon,
