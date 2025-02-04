@@ -4,7 +4,7 @@ import { spawn } from "child_process";
 import fetch from "node-fetch";
 
 import dotenv from "dotenv";
-console.log(dotenv.config());
+console.log(dotenv.config({ path: '/home/audioweather/synth_orn_generator_server.env' }));
 
 import express from "express";
 // const { MongoClient } = require('mongodb');
