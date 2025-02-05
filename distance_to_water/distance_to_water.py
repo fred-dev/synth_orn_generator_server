@@ -137,9 +137,6 @@ def calculate_bounding_box(latitude, longitude, distance_km):
 
 def getAllWaterDistanceData(lat, lon):
     print(f"Begin Processing point getAllWaterDistanceData at latitude {lat}, longitude {lon}", file=sys.stderr)
-
-    
-    
     
     #waterbodies_shapefile = 'ga_ls_wb_3_v3/ga_ls_wb_3_v3.shp'
     country_shapes = load_shapefile(country_shapefile)

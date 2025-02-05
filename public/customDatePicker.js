@@ -1,3 +1,5 @@
+const globalLogLevel = "silent"; // "silent", "error", "warning", "info", "debug"
+
 let currentStep = 0;
 let dateSelectionCalback = null;
 let weatherSelectionCallback = null;
@@ -50,7 +52,7 @@ export function initCustomDatePicker({ containerId, userGeneratedData, onDateSel
   weatherSelectionCallback = onWeatherSelectionComplete;
   containerElement = document.getElementById(containerId);
 
-  console.log("Callbacks initialized:", {
+  customLog("debug","Callbacks initialized:", {
     onDateSelectionComplete: typeof dateSelectionCalback,
     onWeatherSelectionComplete: typeof weatherSelectionCallback,
   });
@@ -62,7 +64,7 @@ export function initCustomDatePicker({ containerId, userGeneratedData, onDateSel
   updateUI();
   moduleUserData = userGeneratedData;
   // moduleUserData.temperature = 20;
-  console.log("Snapshot of userData:initCustomDatePicker:", JSON.parse(JSON.stringify(moduleUserData)));
+  customLog("debug","Snapshot of userData:initCustomDatePicker:", JSON.parse(JSON.stringify(moduleUserData)));
 }
 
 function setupPickerUIInBubble() {
@@ -71,7 +73,7 @@ function setupPickerUIInBubble() {
     console.error(`Element with ID popup_bubble not found!`);
     return;
   } else {
-    console.log("Element with ID popup_bubble found!");
+    customLog("debug","Element with ID popup_bubble found!");
 
     dateDisplay = document.createElement("div");
     dateDisplay.id = "date-display";
@@ -112,7 +114,7 @@ function setupPickerUIInBubble() {
     navButtons.appendChild(nextBtn);
     containerElement.appendChild(navButtons);
     //print the container element and all its children to the console
-    console.log(containerElement);
+    customLog("debug",containerElement);
   }
 }
 // Helper to destroy old picker
@@ -125,7 +127,7 @@ function destroyPicker() {
 
 // Year step
 function loadYearStep() {
-  console.log("loadYearStep");
+  customLog("debug","loadYearStep");
   backBtn.disabled = true;
   customPicker = new Picker(document.getElementById("custom-picker"), {
     inline: true,
@@ -139,8 +141,8 @@ function loadYearStep() {
     pick: function (date) {
       selectedYear = date.getFullYear();
       userSelectedDate.setFullYear(selectedYear);
-      console.log("selectedYear:loadYearStep", selectedYear);
-      console.log("Snapshot of userData:loadYearStep:", JSON.parse(JSON.stringify(moduleUserData)));
+      customLog("debug","selectedYear:loadYearStep", selectedYear);
+      customLog("debug","Snapshot of userData:loadYearStep:", JSON.parse(JSON.stringify(moduleUserData)));
     },
   });
 }
@@ -160,8 +162,8 @@ function loadMonthStep() {
       selectedMonth = date.getMonth();
       selectedMonthName = getMonthName(selectedMonth);
       userSelectedDate.setMonth(selectedMonth);
-      console.log("selectedMonth:loadMonthStep", selectedMonth);
-      console.log("selectedMonthName:loadMonthStep", selectedMonthName);
+      customLog("debug","selectedMonth:loadMonthStep", selectedMonth);
+      customLog("debug","selectedMonthName:loadMonthStep", selectedMonthName);
     },
   });
 }
@@ -180,15 +182,15 @@ function loadDayStep() {
       selectedDay = date.getDate();
       selectedDayName = getDayName(date.getDay());
       userSelectedDate.setDate(selectedDay);
-      console.log("selectedDay:loadDayStep", selectedDay);
-      console.log("selectedDayName:loadDayStep", selectedDayName);
+      customLog("debug","selectedDay:loadDayStep", selectedDay);
+      customLog("debug","selectedDayName:loadDayStep", selectedDayName);
     },
   });
 }
 
 // Time step
 function loadTimeStep() {
-  console.log("loadTimeStep");
+  customLog("debug","loadTimeStep");
   backBtn.disabled = false;
   customPicker = new Picker(document.getElementById("custom-picker"), {
     inline: true,
@@ -201,15 +203,15 @@ function loadTimeStep() {
       selectedHour = date.getHours();
       selectedMinute = date.getMinutes();
       selectedAMPM = selectedHour >= 12 ? "PM" : "AM";
-      console.log("selectedHour:loadTimeStep", selectedHour);
-      console.log("selectedMinute:loadTimeStep", selectedMinute);
-      console.log("selectedAMPM:loadTimeStep", selectedAMPM);
+      customLog("debug","selectedHour:loadTimeStep", selectedHour);
+      customLog("debug","selectedMinute:loadTimeStep", selectedMinute);
+      customLog("debug","selectedAMPM:loadTimeStep", selectedAMPM);
       userSelectedDate.setHours(selectedHour);
       userSelectedDate.setMinutes(selectedMinute);
       moduleUserData.date = userSelectedDate;
       moduleUserData.minutes_of_day = minutesOfDayFromDate(userSelectedDate);
       moduleUserData.day_of_year = dayOfYearFromDate(userSelectedDate);
-      console.log("Snapshot of userData:loadTimeStep:", JSON.parse(JSON.stringify(moduleUserData)));
+      customLog("debug","Snapshot of userData:loadTimeStep:", JSON.parse(JSON.stringify(moduleUserData)));
     },
   });
 }
@@ -273,7 +275,7 @@ function prevStep() {
 
 // After finishing final step, call the callback
 function dateSelectionDone() {
-  console.log("custompickerjs::dateSelectionDone");
+  customLog("debug","custompickerjs::dateSelectionDone");
   // Force final pick
   if (customPicker?.options?.pick) {
     customPicker.options.pick(customPicker.getDate());
@@ -283,7 +285,7 @@ function dateSelectionDone() {
     dateSelectionCalback(finalDate);
   }
 
-  console.log("moon phase: " + Moon.phase(moduleUserData.date.getFullYear(), moduleUserData.date.getMonth(), moduleUserData.date.getDate()).name);
+  customLog("debug","moon phase: " + Moon.phase(moduleUserData.date.getFullYear(), moduleUserData.date.getMonth(), moduleUserData.date.getDate()).name);
   //lets get the moon phase for the selected date and location
   // getMoonPhase(finalDate, moduleUserData.latitude, moduleUserData.longitude);
 
@@ -466,7 +468,7 @@ function createWeatherSelection() {
 }
 
 function onWeatherDataAdjusted() {
-  console.log("Weather data adjusted");
+  customLog("debug","Weather data adjusted");
 
   moduleUserData.temperature = document.getElementById("temperature-input").value;
   moduleUserData.humidity = document.getElementById("humidity-input").value;
@@ -528,7 +530,7 @@ function selectWeatherIcon() {
   //lets load an image and display iti nt heicon div
   iconDiv.innerHTML = `<img src="/weather_icons/${chosenIcon}" alt="Weather icon" />`;
 
-  console.log("selected icon", chosenIcon);
+  customLog("debug","selected icon", chosenIcon);
   return chosenIcon;
 }
 
@@ -537,12 +539,12 @@ function dayOfYearFromDate(date) {
   const diff = date - start;
   const oneDay = 1000 * 60 * 60 * 24;
   const day = Math.floor(diff / oneDay);
-  console.log("day of year function", day);
+  customLog("debug","day of year function", day);
   return day;
 }
 function minutesOfDayFromDate(date) {
   let minutes = date.getHours() * 60 + date.getMinutes();
-  console.log("minutes of day function", minutes);
+  customLog("debug","minutes of day function", minutes);
   return minutes;
 }
 
@@ -580,3 +582,12 @@ var Moon = {
     return {phase: b, name: Moon.phases[b]};
   }
 };
+function customLog(logLevel, debugMessage) {
+  if (globalLogLevel != "error") {
+    if (logLevel == globalLogLevel) {
+      customLog("debug",debugMessage);
+    }
+  } else {
+    console.error(debugMessage);
+  }
+}

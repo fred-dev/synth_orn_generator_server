@@ -1,5 +1,7 @@
 import { initCustomDatePicker } from "./customDatePicker.js";
 
+const globalLogLevel = "debug"; // "silent", "error", "warning", "info", "debug"
+
 let userGeneratedData = {};
 userGeneratedData.minutes_of_day = 0;
 userGeneratedData.day_of_year = 0;
@@ -28,7 +30,7 @@ userGeneratedData.waterDistance = {
   },
 };
 let mapChoicelatlng = null;
-console.log(userGeneratedData);
+customLog("debug",userGeneratedData);
 const map = L.map("map", {
   center: [-25.2744, 133.7751],
   zoom: 4,
@@ -45,7 +47,7 @@ async function reverseGeocode(lat, lon) {
     const response = await fetch(url);
     const data = await response.json();
     //add the data to the userGeneratedData object
-    console.log("reverseGeocode results: " + JSON.stringify(data));
+    customLog("debug", "reverseGeocode results: " + JSON.stringify(data, null, 2));
 
     return data.display_name;
   } catch (error) {
@@ -61,12 +63,12 @@ function constructHistoricalDate() {
   historicalDate.setFullYear(new Date().getFullYear() - 1);
 
   // //log the date bfeore it is formamted
-  console.log("preformated historical date: " + historicalDate);
+  customLog("debug","preformated historical date: " + historicalDate);
   //convert the date to a unix timestamp in seconds
   let formattedDate = historicalDate.getTime() / 1000;
   //remove any decimal places from the formatted date
   formattedDate = Math.floor(formattedDate);
-  console.log("Historical date unix timestamp: " + formattedDate);
+  customLog("debug","Historical date unix timestamp: " + formattedDate);
 
   return formattedDate;
 }
@@ -85,7 +87,7 @@ async function getWaterDistanceData(lat, lon) {
     const data = await response.json();
     //add the data to the userGeneratedData object
     userGeneratedData.waterDistance = data;
-    console.log(userGeneratedData);
+    customLog("debug",userGeneratedData);
     userGeneratedData.waterDistance.inland_water.display_name = await reverseGeocode(
       userGeneratedData.waterDistance.inland_water.closest_point.lat,
       userGeneratedData.waterDistance.inland_water.closest_point.lon
@@ -94,7 +96,7 @@ async function getWaterDistanceData(lat, lon) {
       userGeneratedData.waterDistance.coastal_water.closest_point.lat,
       userGeneratedData.waterDistance.coastal_water.closest_point.lon
     );
-    console.log("getWaterDistanceData" + userGeneratedData);
+    customLog("debug","getWaterDistanceData" + userGeneratedData);
   } catch (error) {
     console.error("Error:", error);
   }
@@ -102,7 +104,7 @@ async function getWaterDistanceData(lat, lon) {
 
 // Function to calculate variance based on the selected year
 function calculateClimateVariance(weatherData) {
-  console.log("calculateClimateVariance start");
+  customLog("debug","calculateClimateVariance start");
   const currentYear = new Date().getFullYear();
   const yearsIntoFuture = userGeneratedData.date.getFullYear() - currentYear;
   const maxVariance = 0.15; // 15%
@@ -116,10 +118,10 @@ function calculateClimateVariance(weatherData) {
   userGeneratedData.pressure = (weatherData.data[0].pressure * variance).toFixed(2);
   userGeneratedData.windSpeed = (weatherData.data[0].wind_speed * variance).toFixed(2);
 
-  console.log("calculateClimateVariance temperature: " + userGeneratedData.temperature);
-  console.log("calculateClimateVariance humidity: " + userGeneratedData.humidity);
-  console.log("calculateClimateVariance pressure: " + userGeneratedData.pressure);
-  console.log("calculateClimateVariance windSpeed: " + userGeneratedData.windSpeed);
+  customLog("debug","calculateClimateVariance temperature: " + userGeneratedData.temperature);
+  customLog("debug","calculateClimateVariance humidity: " + userGeneratedData.humidity);
+  customLog("debug","calculateClimateVariance pressure: " + userGeneratedData.pressure);
+  customLog("debug","calculateClimateVariance windSpeed: " + userGeneratedData.windSpeed);
 
   return {
     temperature: (weatherData.data[0].temp * variance).toFixed(2),
@@ -144,6 +146,7 @@ map.on("contextmenu", async function (event) {
     alt: "Temporary Marker",
     draggable: true,
   }).addTo(map);
+  getisInAustraliaa(mapChoicelatlng.lat, mapChoicelatlng.lng);
   const locationName = await reverseGeocode(mapChoicelatlng.lat, mapChoicelatlng.lng);
   getWaterDistanceData(mapChoicelatlng.lat, mapChoicelatlng.lng);
   userGeneratedData.locationName = locationName;
@@ -166,11 +169,11 @@ map.on("contextmenu", async function (event) {
       containerId: "popup_bubble",
       userGeneratedData,
       onDateSelectionComplete: (finalDate) => {
-        console.log("Final date/time chosen:", finalDate);
+        customLog("debug","Final date/time chosen:", finalDate);
         fillSuggestedWeatherData(userGeneratedData.date);
       },
       onWeatherSelectionComplete: (finalWeather) => {
-        console.log("Final weather chosen:", finalWeather);
+        customLog("debug","Final weather chosen:", finalWeather);
         fetchDataAndDisplay();
       },
     });
@@ -190,13 +193,13 @@ map.on("contextmenu", async function (event) {
   marker.openPopup();
 
   async function fetchWeatherData() {
-    console.log("fetchWeatherData start");
+    customLog("debug","fetchWeatherData start");
     let altered_date = constructHistoricalDate();
     try {
       const response = await fetch(`/generate/weather?lat=${mapChoicelatlng.lat}&lon=${mapChoicelatlng.lng}&date=${altered_date}`);
       const data = await response.json();
       //print the response to the console serialissed
-      console.log("fetchWeatherData recieved response" + JSON.stringify(data));
+      customLog("debug","fetchWeatherData recieved response" + JSON.stringify(data, null, 2));
       return data;
     } catch (error) {
       console.error("Error fetching weather data from server:", error);
@@ -204,7 +207,7 @@ map.on("contextmenu", async function (event) {
     }
   }
   async function fillSuggestedWeatherData() {
-    console.log("fillSuggestedWeatherData start");
+    customLog("debug","fillSuggestedWeatherData start");
     const weatherData = await fetchWeatherData();
     if (weatherData) {
       const selectedYear = userGeneratedData.date.getFullYear();
@@ -247,7 +250,7 @@ async function callGenerateWithGradio(lat, lon, temp, humidity, wind_speed, pres
     }
 
     const result = await response.json();
-    console.log("Result:", result);
+    customLog("debug","Result:", result);
     return result.audioUrl;
   } catch (error) {
     console.error("Error:", error);
@@ -349,7 +352,7 @@ async function fetchDataAndDisplay() {
 
     reader.read().then(function processText({ done, value }) {
       if (done) {
-        console.log("Stream complete");
+        customLog("debug","Stream complete");
         streamedText.innerHTML = resultText; // Final update to the text
         return;
       }
@@ -364,5 +367,44 @@ async function fetchDataAndDisplay() {
     });
   } catch (error) {
     console.error("Failed to fetch response:", error);
+  }
+}
+
+async function getisInAustraliaa(lat, lon) {
+  //lets log the time to see how long it takes to get a response
+  console.time("isInAustralia");
+  const url = "/generate/isInAustralia"; // Relative URL for your Node.js server endpoint
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ lat, lon }),
+    });
+    const data = await response.json();
+    if (data.isInAustralia) {
+      customLog("debug","User location is in Australia");
+      //lets stop the timer
+      console.timeEnd("isInAustralia");
+    }
+    else{
+      customLog("debug","User location is not in Australia");
+      //lets stop the timer
+      console.timeEnd("isInAustralia");
+    }
+  } catch (error) {
+    console.error("Error:", error);
+  }
+}
+
+function customLog(logLevel, debugMessage) {
+  if (globalLogLevel != "error") {
+    if (logLevel == globalLogLevel) {
+      console.log(debugMessage);
+    }
+  } else {
+    console.error(debugMessage);
   }
 }
