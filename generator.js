@@ -45,6 +45,7 @@ logger.debug("rootMediaPath: " + rootMediaPath);
 
 logger.debug(routingPrefix + "/generate-text");
 logger.debug("isInAustralia shape file" + shapeFilePathInside);
+logger.debug("Distance to water shape file" + shapeFilePathWater);
 
 
 app.use(express.json());
