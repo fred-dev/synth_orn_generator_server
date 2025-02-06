@@ -29,7 +29,7 @@ const port = process.env.PORT || 4001;
 const HF_TOKEN = process.env.HF_TOKEN;
 const openWeatherMapsAPIKey = process.env.OPENWEATHER_API_KEY; // Your API key stored in .env file
 const shapeFilePathWater = process.env.SHAPE_FILE_PATH_WATER;
-const shapeFilePathInside = process.env.SHAPE_FILE_PATH_INSIDE;
+const shapeFilePathInside = "/Users/fredrodrigues/Dropbox/Code/OF_GITT/openFrameworks/apps/Synthetic_ornithology/synth_orn_generator_server/isInAustralia/AUS_2021_AUST_SHP_GDA2020/AUS_2021_AUST_GDA2020.shp";
 const routingPrefix = process.env.GET_PATH_PREFIX;
 const pythonPath = process.env.PYTHON_PATH;
 const tempDebugVerbose = process.env.DEBUG_VERBOSE;
@@ -355,6 +355,7 @@ app.post(routingPrefix + "/isInAustralia", (req, res) => {
   // Whenever data is available on stdout, accumulate it
   pythonProcess.stdout.on("data", (data) => {
     stdoutData += data.toString();
+    console.log("isInAustralia frm server stdoutData: ", stdoutData);
   });
 
   // Print Python stderr to your Node logs (debugging info only)

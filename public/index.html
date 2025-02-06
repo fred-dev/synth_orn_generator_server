@@ -2,34 +2,28 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Audio weather simulator</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Synthetic Ornithology</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pickerjs/dist/picker.min.css" />
     <link rel="stylesheet" href="css/datePicker.css" />
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="css/weatherPicker.css" />
-
-
-    <style>
-      #map {
-        height: 100vh;
-      }
-      input[type="number"]::-webkit-inner-spin-button,
-      input[type="number"]::-webkit-outer-spin-button {
-        -webkit-appearance: inner-spin-button;
-        opacity: 1;
-      }
-    </style>
-  </head>
-  <body>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/confirmDate/confirmDate.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://unpkg.com/leaflet-easybutton/src/easy-button.js"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/pickerjs/dist/picker.min.js"></script>
     <script type="module" src="./index.js"></script>
+  </head>
+  <body>
     <div id="map"></div>
+    <div id="instructionPopup">
+      <p>
+        Welcome to Synthetic Ornithology<br>To generate a new simulation, navigate to a location <br>within Australia by panning and zooming the map.<br>Right-click th location to start the simulation.
+      </p>
+    </div>
   </body>
 </html>

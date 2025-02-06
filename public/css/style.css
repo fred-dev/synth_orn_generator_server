@@ -1,27 +1,141 @@
-.result-div {
-    background-color: black;
-    color: white;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    padding: 20px;
-    border-radius: 10px;
-    z-index: 1000;
-    width: 80%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center; /* Vertically center content */
-    align-items: flex-start; /* Start text from left side */
-    text-align: left; /* Align text to the left within the flex item */
-    font-size: 28px;
-  }
+@font-face {
+  font-family: "Libre Franklin";
+  src: url("/fonts/Libre_Franklin/LibreFranklin-VariableFont_wght.ttf") format("truetype");
+  /* For variable fonts, you can optionally specify the weight range */
+  font-weight: 100 900;
+  font-display: swap; /* Ensures text remains visible during load */
+}
+:root {
+  --heading-font: "Libre Franklin", sans-serif;
+  --body-font: "Helvetica", sans-serif; /* or any other font you prefer */
+}
 
-  #map {
-    height: 100vh;
+/* Instruction popup styling */
+#instructionPopup {
+  position: absolute;
+  top: 2em;
+  left: 5em;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  padding: 20px 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: none; /* Initially not interactive */
+  transition: opacity 0.5s ease-in-out;
+  /* Custom text styles */
+  font-family: var(--heading-font);
+  font-size: 22px;
+  font-weight: 300;
+  color: #000000;
+  text-align: left;
+  line-height: 1.5;
+}
+
+.result-div {
+  background-color: black;
+  color: white;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 20px;
+  border-radius: 10px;
+  z-index: 1000;
+  width: 80%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Vertically center content */
+  align-items: flex-start; /* Start text from left side */
+  text-align: left; /* Align text to the left within the flex item */
+  font-size: 28px;
+}
+
+#map {
+  position: fixed; /* or absolute */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0; /* put the map behind other elements */
+}
+
+.loader {
+  border: 16px solid #f3f3f3; /* Light grey */
+  border-top: 16px solid #3498db; /* Blue */
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 2s linear infinite;
+  margin: 0 auto; /* Center horizontally */
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
   }
-  input[type="number"]::-webkit-inner-spin-button,
-  input[type="number"]::-webkit-outer-spin-button {
-    -webkit-appearance: inner-spin-button;
-    opacity: 1;
+  100% {
+    transform: rotate(360deg);
   }
+}
+.loading-popup-text {
+  background: rgba(255, 255, 255, 0.9);
+  font-family: var(--heading-font);
+  font-size: 20px;
+  color: #000000;
+}
+
+
+
+/* When visible, make it fully opaque and allow pointer events */
+#instructionPopup.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#generated_text_div {
+  background-color: black;
+  color: white;
+  position: absolute;
+  font-family: "Libre Franklin";  
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 40px;
+  border-radius: 10px;
+  z-index: 1000;
+  width: 60%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Vertically center content */
+  align-items: flex-start; /* Start text from left side */
+  text-align: left; /* Align text to the left within the flex item */
+  font-size: 50%;
+}
+.picker-body{
+  width: 200;
+  height: 100;
+}
+@media only screen and (max-width: 600px) {
+/* Instruction popup styling */
+#instructionPopup {
+  position: relative;
+  align-self: center;
+  margin-top: 260;  
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  padding: 6% 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: none; /* Initially not interactive */
+  transition: opacity 0.5s ease-in-out;
+  /* Custom text styles */
+  font-family: var(--heading-font);
+  font-size: 14px;
+  font-weight: 100;
+  color: #000000;
+  text-align: left;
+  width: 100%; /* Full width with some margin */
+}
+}
