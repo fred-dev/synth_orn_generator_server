@@ -26,6 +26,7 @@ def point_in_bounding_box(lat, lon):
         "MacDonald_Island": (-53.195662, 73.566420)
     }
     
+    #comms
     # Extract latitudes and longitudes
     lats = [pt[0] for pt in extremes.values()]
     lons = [pt[1] for pt in extremes.values()]
