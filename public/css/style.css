@@ -110,7 +110,7 @@
   justify-content: center; /* Vertically center content */
   align-items: flex-start; /* Start text from left side */
   text-align: left; /* Align text to the left within the flex item */
-  font-size: 50%;
+  font-size: 24px;
 }
 .picker-body{
   width: 200;
@@ -137,5 +137,25 @@
   color: #000000;
   text-align: left;
   width: 100%; /* Full width with some margin */
+}
+
+#generated_text_div {
+  background-color: black;
+  color: white;
+  position: absolute;
+  font-family: "Libre Franklin";  
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 40px;
+  border-radius: 10px;
+  z-index: 1000;
+  width: 60%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Vertically center content */
+  align-items: flex-start; /* Start text from left side */
+  text-align: left; /* Align text to the left within the flex item */
+  font-size: 16px;
 }
 }
