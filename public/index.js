@@ -23,7 +23,7 @@ function resetInstructionTimeout() {
   // Restart the timer: after 45 seconds of inactivity, show the popup
   instructionTimeout = setTimeout(() => {
     showInstructionPopup();
-  }, 4000);
+  }, 45000);
 }
 
 // Attach event listeners for various interactions
