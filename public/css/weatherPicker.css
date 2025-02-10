@@ -1,0 +1,144 @@
+@font-face {
+  font-family: "Libre Franklin";
+  src: url("/fonts/Libre_Franklin/LibreFranklin-VariableFont_wght.ttf") format("truetype");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  --heading-font: "Libre Franklin", sans-serif;
+  --body-font: "Helvetica", sans-serif;
+}
+
+/* Weather container */
+#weather-container-input {
+  font-family: Arial, sans-serif;
+  background-color: #f0f8ff;
+  padding: 10px;
+  border-radius: 5px;
+  color: #333;
+}
+
+/* Weather form */
+#weather-form-input {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Row for each weather input */
+.weather-input-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+/* Input group (numeric input + drag handle) */
+.weather-input-group {
+  display: flex;
+  align-items: center;
+}
+
+/* Label styling */
+.weather-input-label {
+  white-space: nowrap;
+  font-size: 1rem;
+  margin-right: 8px;
+}
+
+/* Numeric input styling (spinners removed) */
+.weather-number-input {
+  padding: 0.4rem;
+  font-size: 1rem;
+  height: 1em;
+  text-align: left;
+  -moz-appearance: textfield;
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: "Libre Franklin", sans-serif;
+  width: 4.9em;
+}
+
+
+
+/* Weather result display */
+#weather-result-input {
+  text-align: left;
+  margin-top: 10px;
+  padding: 10px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  font-family: "Libre Franklin", sans-serif;
+}
+
+/* Inline icon and description area */
+#weather-inline-icon-input {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* Weather icon image (if used) */
+#weather-icon-img {
+  height: 3em;
+  width: auto;
+}
+
+/* Weather description */
+#weather-description-input {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin: 0;
+  padding: 0;
+  font-family: "Libre Franklin", sans-serif;
+}
+
+/* Stats (rain probability, cloud coverage) */
+.stat {
+  margin: 10px 0;
+  font-size: 1rem;
+  padding-left: 1em;
+}
+
+/* Drag handle (for non‑touch devices) */
+.weather-input-drag-handle {
+    display: none;
+  }
+
+/* Hide the drag handle on touch devices */
+.touch-device .weather-input-drag-handle {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #ffffff;
+  margin-left: 8px;
+  cursor: ns-resize;
+  font-size: 3.2em;
+  color: #666666;
+}
+
+/* Mobile adjustments */
+@media only screen and (max-width: 600px) {
+  #weather-container-input {
+    padding: 5px;
+  }
+  .weather-label {
+    font-size: 0.9rem;
+  }
+  .weather-input {
+    width: 80px;
+    padding: 8px;
+    font-size: 0.9rem;
+  }
+  #weather-description-input {
+    font-size: 1.5rem;
+  }
+  .stat {
+    font-size: 0.9rem;
+  }
+}

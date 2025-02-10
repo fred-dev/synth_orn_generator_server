@@ -17,9 +17,6 @@ const logger = pino({
   }
 });
 
-//set the log level
-
-//dotenv.config({ path: '/home/audioweather/synth_orn_generator_server/.env' });
 dotenv.config();
 import express from "express";
 // const { MongoClient } = require('mongodb');

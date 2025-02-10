@@ -1,4 +1,4 @@
-const globalLogLevel = "silent"; // "silent", "error", "warning", "info", "debug"
+const globalLogLevel = "debug"; // "silent", "error", "warning", "info", "debug"
 
 let currentStep = 0;
 let dateSelectionCalback = null;
@@ -367,73 +367,106 @@ function setProgressBar(step) {
   else if (step === 5) progressBarFill.style.width = "100%";
 }
 
-// Example of injecting the snippet:
 function createWeatherSelection() {
   // Create a container for the weather snippet
   const weatherContainer = document.createElement("div");
-  // Give it a unique ID so we can style or reference it
   weatherContainer.id = "weather-container-input";
 
   const form = document.createElement("form");
   form.id = "weather-form-input";
-  form.style.display = "flex";
-  form.style.flexDirection = "column";
+  
 
-  const createFormRow = (labelText, inputElement) => {
-    const formRow = document.createElement("div");
-    formRow.style.display = "flex";
-    formRow.style.alignItems = "center";
-    formRow.style.marginBottom = "8px";
+  // Helper: Create a touch-enabled input row with a separate drag handle
+  const createTouchInput = (id, min, max, step, labelText) => {
+    // Row container: flex layout with space between label and input group
+    const rowContainer = document.createElement("div");
+    rowContainer.className = "weather-input-row";
 
+    // Label: left aligned
     const label = document.createElement("label");
+    label.className = "weather-input-label";
     label.textContent = labelText;
-    label.style.marginRight = "8px";
-    label.style.whiteSpace = "nowrap"; // Ensure label and unit stay on the same line
+    label.style.whiteSpace = "nowrap";
 
-    formRow.appendChild(label);
-    formRow.appendChild(inputElement);
+    // Input group container: holds the input and the drag handle (right aligned)
+    const inputGroup = document.createElement("div");
+    inputGroup.className = "weather-input-group";
 
-    return formRow;
+
+    // Numeric input: remove default spinner arrows and right-align text
+    const input = document.createElement("input");
+    input.className = "weather-number-input";
+    input.id = id;
+    input.type = "number";
+    input.min = min;
+    input.max = max;
+    input.step = step;
+   
+    input.addEventListener("input", onWeatherDataAdjusted);
+
+    // Drag handle: a small square to the right of the input
+    const dragHandle = document.createElement("div");
+    dragHandle.className = "weather-input-drag-handle";
+    //lets add an image to the drag handle
+    const dragHandleImage = document.createElement("img");
+    dragHandleImage.src = "/images/drag-adjust.png";
+    dragHandleImage.alt = "drag handle";
+    dragHandle.appendChild(dragHandleImage);
+    //make the image fit to whatever sie the drag handle is
+    dragHandleImage.style.width = "100%";
+    //lets make the image 80% opacity
+    dragHandleImage.style.opacity = "0.8";
+    //and when we touch down on it we will make it 100% opacity
+    //and when we touch up on it we will make it 80% opacity
+      dragHandleImage.style.opacity = "0.6";
+      
+  
+
+    // Touch events for the drag handle (so that dragging adjusts the input)
+    let startY;
+    let startValue;
+    dragHandle.addEventListener("touchstart", (e) => {
+      startY = e.touches[0].clientY;
+      startValue = parseFloat(input.value) || 0;
+      dragHandleImage.style.opacity = "1";
+      e.preventDefault();
+    });
+    dragHandle.addEventListener("touchmove", (e) => {
+      const deltaY = startY - e.touches[0].clientY;
+      const newValue = startValue + deltaY * (step / 10);
+      if (newValue >= min && newValue <= max) {
+        input.value = newValue.toFixed(1);
+        
+      }
+      e.preventDefault();
+    });
+    dragHandle.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      dragHandleImage.style.opacity = "0.6";
+      onWeatherDataAdjusted();
+    });
+    
+
+    // Assemble the input group
+    inputGroup.appendChild(input);
+    inputGroup.appendChild(dragHandle);
+
+    // Assemble the entire row
+    rowContainer.appendChild(label);
+    rowContainer.appendChild(inputGroup);
+
+    return rowContainer;
   };
 
-  const temperatureInput = document.createElement("input");
-  temperatureInput.id = "temperature-input";
-  temperatureInput.type = "number";
-  temperatureInput.step = "0.5"; // Set the increment step to 0.5
-  temperatureInput.min = "-20";
-  temperatureInput.max = "60";
-  temperatureInput.addEventListener("input", onWeatherDataAdjusted);
-  form.appendChild(createFormRow("Temperature (°C): ", temperatureInput));
-
-  const humidityInput = document.createElement("input");
-  humidityInput.id = "humidity-input";
-  humidityInput.type = "number";
-  humidityInput.step = "0.5"; // Set the increment step to 0.5
-  humidityInput.min = "0";
-  humidityInput.max = "100";
-  humidityInput.addEventListener("input", onWeatherDataAdjusted);
-  form.appendChild(createFormRow("Humidity (%): ", humidityInput));
-
-  const pressureInput = document.createElement("input");
-  pressureInput.id = "pressure-input";
-  pressureInput.type = "number";
-  pressureInput.min = "900";
-  pressureInput.max = "1100";
-  pressureInput.step = "0.5"; // Set the increment step to 0.5
-  pressureInput.addEventListener("input", onWeatherDataAdjusted);
-  form.appendChild(createFormRow("Pressure (hPa): ", pressureInput));
-
-  const windSpeedInput = document.createElement("input");
-  windSpeedInput.id = "wind-speed-input";
-  windSpeedInput.type = "number";
-  windSpeedInput.min = "0";
-  windSpeedInput.max = "100";
-  windSpeedInput.step = "0.5"; // Set the increment step to 0.5
-  windSpeedInput.addEventListener("input", onWeatherDataAdjusted);
-  form.appendChild(createFormRow("Wind Speed (km/h): ", windSpeedInput));
+  // Create inputs for temperature, humidity, pressure, and wind speed
+  form.appendChild(createTouchInput("temperature-input", -20, 60, 0.5, "Temperature (°C): "));
+  form.appendChild(createTouchInput("humidity-input", 0, 100, 0.5, "Humidity (%): "));
+  form.appendChild(createTouchInput("pressure-input", 900, 1100, 0.5, "Pressure (hPa): "));
+  form.appendChild(createTouchInput("wind-speed-input", 0, 100, 0.5, "Wind Speed (km/h): "));
 
   weatherContainer.appendChild(form);
 
+  // Create a container for the weather result display
   const weatherResult = document.createElement("div");
   weatherResult.id = "weather-result-input";
 
@@ -463,75 +496,219 @@ function createWeatherSelection() {
 
   weatherContainer.appendChild(weatherResult);
 
-  //lets insert the weather container into the container element before the dateDisplay element
+  // Insert the weather container into the container element before the progressBar element
   containerElement.insertBefore(weatherContainer, progressBar);
+
+  // Call the function to select and update the weather icon/description based on the current data
+  selectWeatherIcon();
 }
 
 function onWeatherDataAdjusted() {
   customLog("debug","Weather data adjusted");
 
   moduleUserData.temperature = document.getElementById("temperature-input").value;
-  moduleUserData.humidity = document.getElementById("humidity-input").value;
+  moduleUserData.humidity = document.getElementById("humidity-input").value; 
   moduleUserData.pressure = document.getElementById("pressure-input").value;
   moduleUserData.wind_speed = document.getElementById("wind-speed-input").value;
 
   selectWeatherIcon();
 }
+
 function selectWeatherIcon() {
-  // --- 1) Determine time of day from userGeneratedData.date ---
-  // For example, day = 6AM to 6PM, else night.
+  // Get time, date, and weather parameters
   const hour = moduleUserData.date.getHours();
   const isNight = hour < 6 || hour >= 18;
+  const temp = parseFloat(moduleUserData.temperature);
+  const humidity = parseFloat(moduleUserData.humidity);
+  const pressure = parseFloat(moduleUserData.pressure);
+  const windSpeed = parseFloat(moduleUserData.wind_speed);
 
-  // Decide which icon array to pick from
-  const iconArray = isNight ? imageIconArrayNight : imageIconArrayDay;
+  // --- Calculate derived values ---
 
-  // --- 2) Extract relevant weather data from userGeneratedData ---
-  const temperature = moduleUserData.temperature; // °C
-  const humidity = moduleUserData.humidity; // 0–100
-  const pressure = moduleUserData.pressure; // hPa
-  const windSpeed = moduleUserData.windSpeed; // e.g. km/h
+  // Rain probability (0-100)
+  let rainProb = 0;
+  if (humidity > 65) {
+    rainProb += (humidity - 65) * 1.5;
+    rainProb += Math.max(0, (1013 - pressure) * 0.5);
+    // Moderate temperatures (5°C to 28°C) make rain more likely
+    if (temp > 5 && temp < 28) {
+      rainProb += 10;
+    }
+  }
+  rainProb = Math.min(100, Math.max(0, rainProb));
 
-  // --- 3) Start with a default icon for day vs. night ---
-  let chosenIcon = isNight ? "night_clear_mostlyclear.png" : "clear_mostlyclear.png";
+  // Cloud coverage (0-100)
+  let cloudCover = 0;
+  cloudCover += Math.max(0, (humidity - 40) * 1.2); // Clouds start to form above 40% humidity
+  cloudCover += Math.min(15, windSpeed / 3);
+  cloudCover += Math.max(0, (1013 - pressure) * 0.2);
+  cloudCover = Math.min(100, Math.max(0, cloudCover));
 
-  // --- 4) Very simple heuristic checks ---
-  // Thunderstorm (humid + windy)
-  if (humidity > 70 && windSpeed > 25) {
-    chosenIcon = "thunderstorm.png";
-  }
-  // Heavy rain (warm + very humid)
-  else if (temperature > 0 && humidity > 80) {
-    chosenIcon = "heavy_rain.png";
-  }
-  // Snow (below freezing + fairly humid)
-  else if (temperature < 0 && humidity > 60) {
-    chosenIcon = "snow.png";
-  }
-  // Drizzle or light rain (moderate humidity)
-  else if (humidity > 60) {
-    // We do have "drizzle_night.png", but it’s in the day array — might be a mismatch.
-    chosenIcon = isNight ? "drizzle_night.png" : "drizzle_freezingdrizzle.png";
-  }
-  // Fog (moderate humidity + low wind + lower pressure)
-  else if (humidity > 50 && windSpeed < 5 && pressure < 1010) {
-    chosenIcon = "fog.png";
-  }
-  // Cloudy
-  else if (humidity > 40) {
-    chosenIcon = "cloudy.png";
+  // Update UI elements for rain and cloud values
+  document.getElementById("rain-probability-input").textContent = `${Math.round(rainProb)}%`;
+  document.getElementById("cloud-coverage-input").textContent = `${Math.round(cloudCover)}%`;
+
+  // --- Determine weather condition candidates ---
+  // Each candidate has a priority. The higher the number, the more severe/important it is.
+  // This modular approach allows high winds, for example, to override less extreme conditions.
+  let conditions = [];
+
+  // Extreme wind conditions: if wind speed is very high, show storm or cyclone.
+  if (windSpeed >= 60 && pressure < 1000) {
+    // For very extreme conditions you might want a "cyclone" icon.
+    conditions.push({
+      priority: 110,
+      icon: "cyclone.png",
+      description: "Cyclonic conditions"
+    });
+  } else if (windSpeed >= 40) {
+    conditions.push({
+      priority: 100,
+      icon: "storm.png",
+      description: "Stormy winds"
+    });
+  } else if (windSpeed >= 25) {
+    conditions.push({
+      priority: 80,
+      icon: "windy.png",
+      description: "Windy"
+    });
   }
 
-  // --- 5) If chosenIcon isn’t in the chosen array, fallback to a default ---
-  if (!iconArray.includes(chosenIcon)) {
-    chosenIcon = isNight ? "night_clear_mostlyclear.png" : "clear_mostlyclear.png";
+  // Fog: often occurs in high humidity, low wind, and low pressure.
+  if (humidity > 85 && windSpeed < 8 && pressure < 1010 && temp < 30 && !isNight) {
+    conditions.push({
+      priority: 90,
+      icon: "fog.png",
+      description: "Foggy"
+    });
   }
-  let iconDiv = document.getElementById("weather-icon");
-  //lets load an image and display iti nt heicon div
-  iconDiv.innerHTML = `<img src="/weather_icons/${chosenIcon}" alt="Weather icon" />`;
 
-  customLog("debug","selected icon", chosenIcon);
-  return chosenIcon;
+  // Thunderstorm: moderate temperatures with high humidity, wind and rain probability.
+  if (temp < 21 && humidity > 85 && windSpeed > 25 && rainProb > 70) {
+    conditions.push({
+      priority: 95,
+      icon: "thunderstorm.png",
+      description: "Thunderstorm"
+    });
+  }
+
+  // Snow and sleet conditions (for cold weather)
+  if (temp < 5) {
+    if (humidity > 75 && rainProb > 60) {
+      conditions.push({
+        priority: 85,
+        icon: "heavy_snow.png",
+        description: "Heavy snow"
+      });
+    } else if (humidity > 65 && rainProb > 40) {
+      conditions.push({
+        priority: 80,
+        icon: "snow.png",
+        description: "Light snow"
+      });
+    } else if (humidity > 60) {
+      conditions.push({
+        priority: 75,
+        icon: "freezingrain_sleet.png",
+        description: "Sleet"
+      });
+    }
+  }
+  // Cold rain (temperatures between 5°C and 14°C)
+  else if (temp < 14) {
+    if (humidity > 80 && rainProb > 70) {
+      conditions.push({
+        priority: 85,
+        icon: "rain.png",
+        description: "Cold rain"
+      });
+    } else if (humidity > 70 && rainProb > 50) {
+      conditions.push({
+        priority: 80,
+        icon: "drizzle_freezingdrizzle.png",
+        description: "Light cold rain"
+      });
+    }
+  }
+  // Moderate temperatures (14°C to 21°C)
+  else if (temp < 21) {
+    if (humidity > 80 && rainProb > 75) {
+      conditions.push({
+        priority: 85,
+        icon: "heavy_rain.png",
+        description: "Heavy rain"
+      });
+    } else if (humidity > 70 && rainProb > 60) {
+      conditions.push({
+        priority: 75,
+        icon: "rain.png",
+        description: "Moderate rain"
+      });
+    }
+  }
+  // Warm rain (temperatures between 21°C and 28°C)
+  else if (temp < 28) {
+    if (humidity > 70 && rainProb > 60) {
+      conditions.push({
+        priority: 75,
+        icon: "rain.png",
+        description: "Warm rain"
+      });
+    } else if (humidity > 65 && rainProb > 40) {
+      conditions.push({
+        priority: 70,
+        icon: "drizzle_freezingdrizzle.png",
+        description: "Light warm rain"
+      });
+    }
+  }
+  // Hot conditions (28°C and above)
+  else {
+    if (humidity > 75) {
+      conditions.push({
+        priority: 75,
+        icon: "haze.png",
+        description: "Hot and humid"
+      });
+    }
+  }
+
+  // Cloud cover conditions (if none of the above override)
+  if (cloudCover > 85) {
+    conditions.push({
+      priority: 60,
+      icon: "cloudy.png",
+      description: "Overcast"
+    });
+  } else if (cloudCover > 40) {
+    conditions.push({
+      priority: 50,
+      icon: isNight ? "night_partly_cloudy.png" : "partly_cloudy.png",
+      description: "Partly cloudy"
+    });
+  }
+
+  // Fallback condition: clear sky
+  if (conditions.length === 0) {
+    conditions.push({
+      priority: 10,
+      icon: isNight ? "night_clear_mostlyclear.png" : "clear_mostlyclear.png",
+      description: isNight ? "Clear night" : "Clear sky"
+    });
+  }
+
+  // --- Choose the highest priority condition ---
+  conditions.sort((a, b) => b.priority - a.priority);
+  const selected = conditions[0];
+
+  // Update weather icon and description on the UI
+  const iconDiv = document.getElementById("weather-icon");
+  iconDiv.innerHTML = `<img id="weather-icon-img" src="/images/weather_icons/${selected.icon}" alt="Weather icon" />`;
+  document.getElementById("weather-description-input").textContent = selected.description;
+
+  customLog("debug", "selected icon", selected.icon);
+  return selected.icon;
 }
 
 function dayOfYearFromDate(date) {
@@ -582,12 +759,20 @@ var Moon = {
     return {phase: b, name: Moon.phases[b]};
   }
 };
-function customLog(logLevel, debugMessage) {
-  if (globalLogLevel != "error") {
-    if (logLevel == globalLogLevel) {
-      customLog("debug",debugMessage);
+function customLog(logLevel, ...messages) {
+  const levels = ["silent", "error", "warning", "info", "debug"];
+  const currentLevelIndex = levels.indexOf(globalLogLevel);
+  const messageLevelIndex = levels.indexOf(logLevel);
+
+  if (messageLevelIndex <= currentLevelIndex && currentLevelIndex !== 0) {
+    if (logLevel === "error") {
+      console.error(...messages);
+    } else if (logLevel === "warning") {
+      console.warn(...messages);
+    } else if (logLevel === "info") {
+      console.info(...messages);
+    } else {
+      console.log(...messages);
     }
-  } else {
-    console.error(debugMessage);
   }
 }

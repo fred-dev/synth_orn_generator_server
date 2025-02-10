@@ -1,6 +1,7 @@
 function showInstructionPopup() {
   const popup = document.getElementById("instructionPopup");
-  if (popup) {
+  //we only show the popup if it is not already visible and if there is no marker on the map and if the resultDiv is not visible
+  if (popup && !popup.classList.contains("visible") && !document.getElementById("resultDiv") && !mapChoicelatlng) {
     popup.classList.add("visible");
   }
 }
@@ -25,23 +26,14 @@ function resetInstructionTimeout() {
     showInstructionPopup();
   }, 45000);
 }
-
 // Attach event listeners for various interactions
-["mousemove", "mousedown", "touchstart", "click"].forEach(evt => {
+["mousemove", "mousedown", "touchstart", "click"].forEach((evt) => {
   document.addEventListener(evt, resetInstructionTimeout);
 });
 
-// Show the popup when the page loads
-document.addEventListener("DOMContentLoaded", function () {
-  showInstructionPopup();
-  resetInstructionTimeout();
-});
-
-
-
 import { initCustomDatePicker } from "./customDatePicker.js";
 
-const globalLogLevel = "debug"; // "silent", "error", "warning", "info", "debug"
+const globalLogLevel = "silent"; // "silent", "error", "warning", "info", "debug"
 let mapChoicelatlng = null;
 let userGeneratedData = {};
 userGeneratedData.minutes_of_day = 0;
@@ -74,7 +66,7 @@ customLog("debug", userGeneratedData);
 // const map = L.map("map", {center: [-25.2744, 133.7751], zoom: 4,});
 const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const map = L.map("map", { zoomControl: true }).setView([-24.801233, 132.94551], 5);
+const map = L.map("map", { zoomControl: false }).setView([-24.801233, 132.94551], 5);
 
 map.fitBounds([
   [-10, 112],
@@ -84,6 +76,19 @@ map.fitBounds([
 const tiles = L.tileLayer(tileUrl, { attribution });
 tiles.addTo(map);
 
+function detectTouchDevice() {
+  if ("ontouchstart" in window || (window.DocumentTouch && document instanceof DocumentTouch) || window.matchMedia("(pointer: coarse)").matches) {
+    document.body.classList.add("touch-device");
+    console.log("Touch device detected");
+    return true;
+  }
+  console.log("Touch device not detected");
+  return false;
+}
+
+detectTouchDevice();
+
+showInstructionPopup();
 
 // Function to perform reverse geocoding
 async function reverseGeocode(lat, lon) {
@@ -93,7 +98,6 @@ async function reverseGeocode(lat, lon) {
     const data = await response.json();
     //add the data to the userGeneratedData object
     customLog("debug", "reverseGeocode results: " + JSON.stringify(data, null, 2));
-
     return data.display_name;
   } catch (error) {
     console.error("Error fetching location name:", error);
@@ -175,9 +179,25 @@ function calculateClimateVariance(weatherData) {
     windSpeed: (weatherData.data[0].wind_speed * variance).toFixed(2),
   };
 }
-
 // Right-click event for creating a new marker
 map.on("contextmenu", async function (event) {
+  handleMapClick(event.latlng);
+});
+
+// Custom event listener for long press on mobile devices
+let touchTimeout;
+
+map.on("touchstart", function (event) {
+  touchTimeout = setTimeout(() => {
+    handleMapClick(event.latlng);
+  }, 1000); // 1 second
+});
+
+map.on("touchend", function () {
+  clearTimeout(touchTimeout);
+});
+// Right-click event for creating a new marker
+async function handleMapClick(latlng) {
   // Remove any existing markers from the map.
   map.eachLayer(function (layer) {
     if (layer instanceof L.Marker) {
@@ -186,7 +206,7 @@ map.on("contextmenu", async function (event) {
   });
 
   // Get the coordinates for the new marker.
- mapChoicelatlng = event.latlng;
+  mapChoicelatlng = latlng;
   const lat = mapChoicelatlng.lat;
   const lon = mapChoicelatlng.lng;
   centerMarkerInView(mapChoicelatlng);
@@ -197,7 +217,6 @@ map.on("contextmenu", async function (event) {
     alt: "Temporary Marker",
     draggable: true,
   }).addTo(map);
-
 
   // Immediately bind a loading message.
   marker.bindPopup("<div class='loading-popup-text'>Checking your location. <br>Please wait.<br></div><div class='loader'></div>").openPopup();
@@ -212,7 +231,9 @@ map.on("contextmenu", async function (event) {
 
   if (!isInAustralia) {
     // If the point is not in Australia, update the popup with an error message.
-    marker.bindPopup("<div class='loading-popup-text' id='error_bubble'>The selected point is not in Australia.  <br>Please select a point on any Australian territory.</div>").openPopup();
+    marker
+      .bindPopup("<div class='loading-popup-text' id='error_bubble'>The selected point is not in Australia.  <br>Please select a point on any Australian territory.</div>")
+      .openPopup();
 
     // After 3 seconds, close the popup and remove the marker.
     setTimeout(() => {
@@ -228,6 +249,7 @@ map.on("contextmenu", async function (event) {
   const locationName = await locationNamePromise;
   const waterDistance = await waterDistancePromise;
 
+  //lets add line breaks instead of commas in the lo
   // Update your user data.
   userGeneratedData.locationName = locationName;
   userGeneratedData.lat = lat;
@@ -301,7 +323,7 @@ map.on("contextmenu", async function (event) {
       document.getElementById("wind-speed-input").value = userGeneratedData.windSpeed;
     }
   }
-});
+}
 
 async function callGenerateWithGradio(lat, lon, temp, humidity, wind_speed, pressure, minutes_of_day, day_of_year) {
   try {
@@ -403,6 +425,7 @@ async function fetchDataAndDisplay() {
           map.removeLayer(layer);
         }
       });
+      resetInstructionTimeout();
     });
 
     // Read the stream using a reader
@@ -461,16 +484,6 @@ async function getisInAustralia(lat, lon) {
   }
 }
 
-function customLog(logLevel, debugMessage) {
-  if (globalLogLevel != "error") {
-    if (logLevel == globalLogLevel) {
-      console.log(debugMessage);
-    }
-  } else {
-    console.error(debugMessage);
-  }
-}
-
 function centerMarkerInView(latlngIn) {
   console.log("centerMarkerInView start");
   const mapSize = map.getSize();
@@ -478,10 +491,16 @@ function centerMarkerInView(latlngIn) {
 
   const markerPoint = map.latLngToContainerPoint(latlngIn);
   customLog("debug", "markerPoint: " + markerPoint);
-
-  // Desired container point: center horizontally, 80% down vertically.
-  const desiredPoint = L.point(mapSize.x / 2, mapSize.y * 0.8);
-  customLog("debug", "desiredPoint: " + desiredPoint);
+  var desiredPoint;
+  if (mapSize.x > 600) {
+    // Desired container point: center horizontally, 80% down vertically.
+    desiredPoint = L.point(mapSize.x / 2, mapSize.y * 0.8);
+    customLog("debug", "desiredPoint: " + desiredPoint);
+  } else {
+    // Desired container point: center horizontally, 80% down vertically.
+    desiredPoint = L.point(mapSize.x / 2, mapSize.y * 0.95);
+    customLog("debug", "desiredPoint: " + desiredPoint);
+  }
 
   // Compute the offset needed to shift the marker to the desired container point.
   const offsetX = desiredPoint.x - markerPoint.x;
@@ -493,5 +512,22 @@ function centerMarkerInView(latlngIn) {
 
   // Pan the map by the computed offset.
   map.panBy(offset, { animate: false, duration: 1 });
+}
 
+function customLog(logLevel, ...messages) {
+  const levels = ["silent", "error", "warning", "info", "debug"];
+  const currentLevelIndex = levels.indexOf(globalLogLevel);
+  const messageLevelIndex = levels.indexOf(logLevel);
+
+  if (messageLevelIndex <= currentLevelIndex && currentLevelIndex !== 0) {
+    if (logLevel === "error") {
+      console.error(...messages);
+    } else if (logLevel === "warning") {
+      console.warn(...messages);
+    } else if (logLevel === "info") {
+      console.info(...messages);
+    } else {
+      console.log(...messages);
+    }
+  }
 }

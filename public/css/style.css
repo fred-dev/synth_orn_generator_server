@@ -4,17 +4,28 @@
   /* For variable fonts, you can optionally specify the weight range */
   font-weight: 100 900;
   font-display: swap; /* Ensures text remains visible during load */
+
 }
 :root {
   --heading-font: "Libre Franklin", sans-serif;
   --body-font: "Helvetica", sans-serif; /* or any other font you prefer */
+  -webkit-touch-callout: none; /* Safari */
+  -webkit-user-select: none; /* Chrome */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none;
 }
-
+.hidden {
+  display: none;
+}
+body {
+  font-family: "Libre Franklin";
+}
 /* Instruction popup styling */
 #instructionPopup {
-  position: absolute;
-  top: 2em;
-  left: 5em;
+  position: relative;
+  margin-top: 2em;
+  margin-left: 2em;
   background: rgba(255, 255, 255, 0.9);
   border-radius: 12px;
   padding: 20px 20px;
@@ -30,8 +41,14 @@
   color: #000000;
   text-align: left;
   line-height: 1.5;
+  width: fit-content;
 }
-
+#popup-heading {
+  margin: 0em !important;
+}
+#popup_bubble {
+  width: auto;
+}
 .result-div {
   background-color: black;
   color: white;
@@ -85,8 +102,6 @@
   color: #000000;
 }
 
-
-
 /* When visible, make it fully opaque and allow pointer events */
 #instructionPopup.visible {
   opacity: 1;
@@ -97,7 +112,7 @@
   background-color: black;
   color: white;
   position: absolute;
-  font-family: "Libre Franklin";  
+  font-family: "Libre Franklin";
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -112,48 +127,47 @@
   text-align: left; /* Align text to the left within the flex item */
   font-size: 24px;
 }
-.picker-body{
-  width: 200;
-  height: 100;
-}
-@media only screen and (max-width: 600px) {
-/* Instruction popup styling */
-#instructionPopup {
-  margin-top: 85px;  
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  padding: 6px 6px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  z-index: 10000;
-  opacity: 0;
-  width: 100%;
-  display: flex;
-  pointer-events: none; /* Initially not interactive */
-  transition: opacity 0.5s ease-in-out;
-  /* Custom text styles */
-  font-family: var(--heading-font);
-  font-size: 16px;
-  font-weight: 100;
-  color: #000000;
-  text-align: left;
-  width: 100%; /* Full width with some margin */
-}
 
-#generated_text_div {
-  background-color: black;
-  color: white;
-  position: absolute;
-  font-family: "Libre Franklin";  
-  transform: translate(-50%, -50%);
-  padding: 8px;
-  border-radius: 10px;
-  z-index: 1000;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center; /* Vertically center content */
-  align-items: flex-start; /* Start text from left side */
-  text-align: left; /* Align text to the left within the flex item */
-  font-size: 16px;
-}
+@media only screen and (max-width: 600px) {
+  /* Instruction popup styling */
+  #instructionPopup {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    opacity: 0;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 2em;
+    display: block; /* Changed from flex to block */
+    pointer-events: none; /* Initially not interactive */
+    transition: opacity 0.5s ease-in-out;
+    /* Custom text styles */
+    font-family: var(--heading-font);
+    font-size: 14px;
+    font-weight: 100;
+    color: #000000;
+    text-align: left;
+  }
+  #popup-heading {
+    margin: 0.3em 0 !important; /* Ensure margin is applied to top and bottom */
+  }
+
+  #generated_text_div {
+    background-color: black;
+    color: white;
+    position: absolute;
+    font-family: "Libre Franklin";
+    transform: translate(-50%, -50%);
+    padding: 8px;
+    border-radius: 10px;
+    z-index: 1000;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Vertically center content */
+    align-items: flex-start; /* Start text from left side */
+    text-align: left; /* Align text to the left within the flex item */
+    font-size: 16px;
+  }
 }
