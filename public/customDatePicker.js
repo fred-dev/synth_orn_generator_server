@@ -429,6 +429,8 @@ function createWeatherSelection() {
       startY = e.touches[0].clientY;
       startValue = parseFloat(input.value) || 0;
       dragHandleImage.style.opacity = "1";
+      //set the input border to red
+      input.style.border = "1px solid red";
       e.preventDefault();
     });
     dragHandle.addEventListener("touchmove", (e) => {
@@ -443,6 +445,8 @@ function createWeatherSelection() {
     dragHandle.addEventListener("touchend", (e) => {
       e.preventDefault();
       dragHandleImage.style.opacity = "0.6";
+      //set the input border back to normal
+      input.style.border = "1px solid #ccc";
       onWeatherDataAdjusted();
     });
     

@@ -190,7 +190,7 @@ let touchTimeout;
 map.on("touchstart", function (event) {
   touchTimeout = setTimeout(() => {
     handleMapClick(event.latlng);
-  }, 1000); // 1 second
+  }, 450); // 1 second
 });
 
 map.on("touchend", function () {

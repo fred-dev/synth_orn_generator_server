@@ -57,6 +57,7 @@
   appearance: none;
   font-family: "Libre Franklin", sans-serif;
   width: 4.9em;
+  border: 1px solid #ccc;
 }
 
 

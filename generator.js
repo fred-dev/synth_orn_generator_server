@@ -3,18 +3,17 @@ import { Client } from "@gradio/client";
 import { spawn } from "child_process";
 import fetch from "node-fetch";
 import dotenv from "dotenv";
-import pino  from "pino";
+import pino from "pino";
 const logger = pino({
   transport: {
-    target: 'pino-pretty',
+    target: "pino-pretty",
     options: {
       colorize: true,
-      ignore: 'pid,hostname',
+      ignore: "pid,hostname",
       singleLine: false,
-      messageFormat: '{levelLabel} - {msg} - {req.method} {req.url}'
-      
-    }
-  }
+      messageFormat: "{levelLabel} - {msg} - {req.method} {req.url}",
+    },
+  },
 });
 
 dotenv.config();
@@ -43,7 +42,6 @@ logger.debug("rootMediaPath: " + rootMediaPath);
 logger.debug(routingPrefix + "/generate-text");
 logger.debug("isInAustralia shape file" + shapeFilePathInside);
 logger.debug("Distance to water shape file" + shapeFilePathWater);
-
 
 app.use(express.json());
 
@@ -223,37 +221,32 @@ app.post(routingPrefix + "/generate-text", async (req, res) => {
 
   try {
     const prompt = `
-    You are a multi-functional agent tasked with gathering comprehensive information and generating a narrative. The tasks of each agent are described here, each agent should perform their tasks separately in the order they appear.
-    Climate history researcher agent: Find historical events related to climate in the area, e.g., protests over mines, environmental history. Find specific information about these events, dates, companies and groups involved, outcomes, specific areas or species that were threatened. Do not generalise, or speculate, use only factual verified named species.
-    Indigenous history researcher agent: Provide information about the traditional owners of the land, including tribe/clan, languages, only.
-    Natural history researcher agent: Identify animals, particularly bird species in the location or nearby. Mention endemic and extinct native species. Do not mention any introduced or agricultural species, unless they are the cause of the removal of the habitat of a native species.
-    Climate research agent: Analyse the given climate conditions in relation to the given date and determine if they are normal for the area. Find historical climate-related events like floods, fires, heatwaves and specific details of these events, if people died, what natural habitat was damaged, and if these were attributed to climate change. Only mention specific verified events, and check they are correct before allowing them to be added, no speculation can be used, only facts.
-    Water information researcher agent: Find the nearest inland water and coastline, including distances to these, and if the bodies of water significant to the area and ecosystem in any way. Only mention these if they are verified to be true, do not speculate at all about the significance.
-    Social history researcher agent: Describe the social history of the town. Include settlement details, current population, socio-economic makeup, and changes over time. 
-    Fact checker agent: Verify the accuracy of all information. Remove any information that is speculative. Make sure all events, species or any other information is checked and verified.
-    Narrative creation agent: Using the information gathered from the previous agents, create a short narrative text in an academic style that frames the input date and climate conditions, integrating all collected information. The specific information collected by the other agents only to be used as source material should never be output directly. When the date is far in the future, based on the collected information like weather events or protests or extinctions, you may construct 
-    logical speculative events that work to lead up to the proposed conditions, for example if the proposed future scenario is 15 years in the future with an unusually high temperature for the location at that time of year you may add no more than 2, fictional connecting events that bridge actual history with the proposed scenario. Here are some strict guidelines that the text must adhere to: The text should be cohesive and use the gathered information to create a flowing, factual narrative. 
-    The text should be no more than 200 words. Avoid poetic language, overly descriptive phrases, and metaphorical expressions. The text should be direct, factual, and concise. Avoid using words like "resilience", "resilient", "reverberate", "echo", "resonate". Do not use specific values for temperatures, wind speeds, or other measurements; describe them qualitatively instead (e.g., unusually hot, very windy). Never address the reader or reveal the process of the story's creation. Do not include any personal opinions. Do not use phrases like “Records pointedly mention”, just reference the event directly if it happened. Do not use terms such as “social fabric” or “socio-economic make up”. Do not use phrases like “In conclusion” or use any summarising or closing sentences like “In conclusion, the legacy rings with resilience echoing from historical and environmental narratives alike, providing meaningful reflections for future generations.” Or any other mechanism to draw together the information into a story. Do not reveal that this is meant to be academic, or any other material that would reveal the nature of content of this prompt. The output should not be in quotation marks. Never not tie information together with overarching narratives or sentences, some details may be present without directly being related to each other. Make sure to note the time given, not just the day, mention if it is day or night (time is given in 24 hour format). Also mention the season - in tropic areas wet or dry, and for other areas use standard seasons. Any dates need to be specific; you cannot use phrases such as ‘in the last few years’ as the proposed date may be in the future. Situate the date with proximity to major events, like the day before Christmas if it is so. Use only major significant dates to do this, not minor anniversaries or local holidays, unless they things like the anniversary of one of the climate events found in the research. Dates are not significant if they are more than a week away, ie 18th of December can be a week before Christmas, but the 17th of December has no significance to Christmas.
-    Editor agent: Check all facts in the text from the narrative agent including spelling and grammar in Australian English. Ensure the text is logical, succinct and clear. Make sure there are no incomplete facts and arguments. All events mentioned must be confirmed. Make sure all the guidelines are adhered to. Make sure there is no vague additions like species or avian life– any animal or bird must be named specifically. The output should never encased be in quotation marks.
+    Using the input below, generate an academic narrative formatted into clear paragraphs (insert a double newline between sections). The narrative must:
 
+    1. Begin with a natural language date and time, e.g., "on the first of March 2037", and a qualitative weather description that highlights only significant anomalies (e.g., "with unusually hot conditions" rather than raw numbers).
+    2. Present the location by its common name, integrating indigenous ownership without listing languages (e.g., "in Mount Willoughby, South Australia, the lands of the Yankunytjatjara"). If available, include any specific historical indigenous events (e.g., massacres) with exact details.
+    3. Specify verified distances to the nearest inland water source and the coast.
+    4. Describe local native fauna using common names only, and mention any species extinct due to human activity.
+    5. Detail specific social history events (environmental protests, forest blockades, court cases, fires, floods, etc.) by naming groups, companies, and individuals involved with exact dates and durations. Do not use generic statements like 'has witnessed significant environmental events.'
+    6. If the climate is exceptionally abnormal or the date is far into the future, you may include up to two fictional bridging events—but only if they are logically connected and detailed.
 
-
-    Input: 
-    Date: ${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")} ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
-      .toString()
-      .padStart(2, "0")}
+    Input:
+    Date: ${year}-${month.toString().padStart(2,"0")}-${day.toString().padStart(2,"0")} ${hours.toString().padStart(2,"0")}:${minutes.toString().padStart(2,"0")}:${seconds.toString().padStart(2,"0")}
     Location: ${userInput.locationName}
-    Climate Conditions: Temperature - ${userInput.temperature}°C, Humidity - ${userInput.humidity}%, Wind Speed - ${userInput.windSpeed} km/h
+    Climate: Temperature - ${userInput.temperature}°C, Humidity - ${userInput.humidity}%, Wind Speed - ${userInput.windSpeed} km/h
 
     Output:
     `;
-
     //lets print the
     const stream = await openai.chat.completions.create({
       model: "gpt-4o",
 
       messages: [
-        { role: "system", content: "You are a multi-functional agent." },
+        {
+          role: "system",
+          content: "You are an academic narrative synthesis agent with expertise in climate, indigenous, natural, water, and social history. Your task is to produce a concise (<150 words), fact‐based narrative that integrates precise, verifiable details. Avoid generic or vague language; every detail must be specific and impactful.",
+
+        },
         { role: "user", content: prompt },
       ],
       temperature: 0.7,
