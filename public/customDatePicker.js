@@ -1,4 +1,4 @@
-const globalLogLevel = "debug"; // "silent", "error", "warning", "info", "debug"
+const globalLogLevel = "silent"; // "silent", "error", "warning", "info", "debug"
 
 let currentStep = 0;
 let dateSelectionCalback = null;
