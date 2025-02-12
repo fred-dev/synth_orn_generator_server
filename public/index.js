@@ -487,7 +487,7 @@ async function fetchDataAndDisplay() {
 
 async function getisInAustralia(lat, lon) {
   //lets log the time to see how long it takes to get a response
-  console.time("isInAustralia");
+  //console.time("isInAustralia");
   const url = "/generate/isInAustralia"; // Relative URL for your Node.js server endpoint
 
   try {
@@ -502,12 +502,12 @@ async function getisInAustralia(lat, lon) {
     if (data == true) {
       customLog("debug", "User location is in Australia");
       //lets stop the timer
-      console.timeEnd("isInAustralia");
+      //console.timeEnd("isInAustralia");
       return true;
     } else {
       customLog("debug", "User location is not in Australia");
       //lets stop the timer
-      console.timeEnd("isInAustralia");
+      //console.timeEnd("isInAustralia");
       return false;
     }
   } catch (error) {
@@ -516,7 +516,7 @@ async function getisInAustralia(lat, lon) {
 }
 
 function centerMarkerInView(latlngIn) {
-  console.log("centerMarkerInView start");
+  customLog("debug", "centerMarkerInView start");
   const mapSize = map.getSize();
   customLog("debug", "mapSize: " + mapSize);
 
