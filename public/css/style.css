@@ -27,7 +27,16 @@ body {
 .main_text_large{
   font-family: var(--heading-font);
   font-size: 22px;
-  font-weight: bolder;
+  font-weight: 100;
+  color: #000000;
+  text-align: left;
+  line-height: 1.5;
+  width: fit-content;
+}
+.main_text_large_bold{
+  font-family: var(--heading-font);
+  font-size: 22px;
+  font-weight: bold;
   color: #000000;
   text-align: left;
   line-height: 1.5;
