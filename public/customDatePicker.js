@@ -278,7 +278,6 @@ function nextStep() {
     dateSelectionDone();
     createWeatherSelection();
   } else if (currentStep === 4) {
-    updateUI();
     currentStep = 5;
     setProgressBar(currentStep);
     weatherSelectionDone();
