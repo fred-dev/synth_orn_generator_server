@@ -27,7 +27,7 @@ function resetInstructionTimeout() {
   }, 45000);
 }
 // Attach event listeners for various interactions
-["mousemove", "mousedown", "touchstart", "click"].forEach((evt) => {
+["mousemove", "mousedown", "touchstart","touchend", "touchmove", "click"].forEach((evt) => {
   document.addEventListener(evt, resetInstructionTimeout);
 });
 
@@ -250,7 +250,7 @@ async function handleMapClick(latlng) {
   }).addTo(map);
 
   marker
-    .bindPopup("<div class='loading-popup-text'>Checking your location. <br>Please wait.<br></div><div class='loader'></div>", { autoClose: false, closeOnClick: false })
+    .bindPopup("<div id='check_location_bubble' class='main_text_medium'>Checking your chosen location. <br> <br>Please wait.<br><br></div><div class='loader'></div>", { autoClose: false, closeOnClick: false })
     .openPopup();
 
   // Launch all asynchronous tasks concurrently.
@@ -264,7 +264,7 @@ async function handleMapClick(latlng) {
   if (!isInAustralia) {
     // If the point is not in Australia, update the popup with an error message.
     marker
-      .bindPopup("<div class='loading-popup-text' id='error_bubble'>The selected point is not in Australia.  <br>Please select a point on any Australian territory.</div>")
+      .bindPopup("<div class='main_text_medium' id='error_bubble'>The selected point is not in Australia.  <br>Please select a point on any Australian territory.</div>")
       .openPopup();
 
     // After 3 seconds, close the popup and remove the marker.
@@ -295,8 +295,8 @@ async function handleMapClick(latlng) {
 
   const locationDiv = document.createElement("div");
   locationDiv.id = "location-display";
-  locationDiv.className = "simulation-info";
-  locationDiv.innerHTML = `<strong>Simulation location:</strong><br> ${locationName}`;
+  locationDiv.className = "main_text_small";
+  locationDiv.innerHTML = `<span class="main_text_medium_bold">Simulation location:</span><br> ${locationName}`;
   popupContent.appendChild(locationDiv);
 
   // Update the marker’s popup content and open it.

@@ -12,7 +12,6 @@
 
 /* Weather container */
 #weather-container-input {
-  font-family: Arial, sans-serif;
   background-color: #f0f8ff;
   padding: 10px;
   border-radius: 5px;
@@ -20,7 +19,6 @@
 }
 
 #weather-prompt-input{
-  font-size: 1rem;
   padding: 4px;
   border-radius: 8px;
   margin-bottom: 8px;
@@ -72,8 +70,8 @@
 /* Weather result display */
 #weather-result-input {
   text-align: left;
-  margin-top: 10px;
-  padding: 10px;
+  margin-top: 6px;
+  padding: 5px;
   background: white;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -86,7 +84,7 @@
   align-items: center;
   justify-content: flex-start;
   gap: 1rem;
-  margin-top: 1rem;
+  padding-bottom: 0.5rem;
 }
 
 /* Weather icon image (if used) */
@@ -105,11 +103,11 @@
 }
 
 /* Stats (rain probability, cloud coverage) */
-.stat {
+/* .stat {
   margin: 10px 0;
   font-size: 1rem;
   padding-left: 1em;
-}
+} */
 
 /* Drag handle (for non‑touch devices) */
 .weather-input-drag-handle {
@@ -129,7 +127,13 @@
   font-size: 3.2em;
   color: #666666;
 }
+#cloud_coverage{
+margin-bottom: 0.5rem;
+}
+#rain_prob{
+  margin-bottom: 0.5rem;
 
+}
 /* Mobile adjustments */
 @media only screen and (max-width: 600px) {
   #weather-container-input {

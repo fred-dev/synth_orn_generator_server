@@ -107,7 +107,7 @@ function setupPickerUIInBubble() {
 
     dateDisplay = document.createElement("div");
     dateDisplay.id = "date-display";
-    dateDisplay.className = "simulation-info";
+    dateDisplay.className = "main_text_small";
     dateDisplay.innerHTML = "Selected date: ";
     containerElement.appendChild(dateDisplay);
 
@@ -117,6 +117,7 @@ function setupPickerUIInBubble() {
 
     pickerInstructions = document.createElement("div");
     pickerInstructions.id = "picker-instructions";
+    pickerInstructions.className = "main_text_small_bold";
     // pickerInstructions.style = "margin-bottom: 8px; font-weight: bold;";
     containerElement.appendChild(pickerInstructions);
 
@@ -354,30 +355,30 @@ function buildFinalDate() {
 // Simple helper to show/hide buttons or instructions
 function updateUI() {
   const instructions = document.getElementById("picker-instructions");
+  instructions.className = "main_text_small";
   if (!instructions) return;
 
   let msg = "";
   let accumulatedDate = "";
   switch (currentStep) {
     case 0:
-      accumulatedDate = "<strong>Simulation date:</strong>";
+      accumulatedDate = "<span class=\"main_text_medium_bold\">Simulation date:</span>";
       msg = "Select a Year";
       break;
-    case 1:
+        case 1:
       msg = "Select a Month";
-      accumulatedDate = `<strong>Simulation date:</strong><br> ${selectedYear}`;
+      accumulatedDate = `<span class="main_text_medium_bold">Simulation date:</span><br> ${selectedYear}`;
       break;
-    case 2:
+        case 2:
       msg = "Select a Day";
-      accumulatedDate = `<strong>Simulation date:</strong><br> ${selectedMonthName} ${selectedYear}`;
+      accumulatedDate = `<span class="main_text_medium_bold">Simulation date:</span><br> ${selectedMonthName} ${selectedYear}`;
       break;
-    case 3:
+        case 3:
       msg = "Select a Time";
-      accumulatedDate = `<strong>Simulation date:</strong><br> ${selectedDayName} ${selectedDay} ${selectedMonthName} ${selectedYear}`;
+      accumulatedDate = `<span class="main_text_medium_bold">Simulation date:</span><br> ${selectedDayName} ${selectedDay} ${selectedMonthName} ${selectedYear}`;
       break;
-    case 4:
-      accumulatedDate = `<strong>Simulation date:</strong><br> ${selectedDayName} ${selectedDay} ${selectedMonthName} ${selectedYear} ${selectedHour}:${String(selectedMinute).padStart(2, '0')} ${selectedAMPM}`;
-      console.log("we are currentStep == 4: " + accumulatedDate)
+        case 4:
+      accumulatedDate = `<span class="main_text_medium_bold">Simulation date:</span><br> ${selectedDayName} ${selectedDay} ${selectedMonthName} ${selectedYear} ${selectedHour}:${String(selectedMinute).padStart(2, "0")} ${selectedAMPM}`;
       break;
   }
   dateDisplay.innerHTML = accumulatedDate;
@@ -410,8 +411,8 @@ function createWeatherSelection() {
 
   const weatherPrompt = document.createElement("div");
   weatherPrompt.id = "weather-prompt-input";
-  weatherPrompt.className = "weather-prompt";
-  weatherPrompt.textContent = "Adjust Simulated Weather Conditions";
+  weatherPrompt.className = "main_text_small";
+  weatherPrompt.textContent = "Adjust Weather Conditions ↬";
   weatherContainer.appendChild(weatherPrompt);
   
   const form = document.createElement("form");
@@ -425,7 +426,7 @@ function createWeatherSelection() {
 
     // Label: left aligned
     const label = document.createElement("label");
-    label.className = "weather-input-label";
+    label.className = "main_text_medium";
     label.textContent = labelText;
     label.style.whiteSpace = "nowrap";
 
@@ -522,20 +523,22 @@ function createWeatherSelection() {
   weatherIcon.id = "weather-icon";
   weatherInlineIcon.appendChild(weatherIcon);
 
-  const weatherDescription = document.createElement("p");
+  const weatherDescription = document.createElement("div");
   weatherDescription.id = "weather-description-input";
   weatherDescription.textContent = "Sunny";
   weatherInlineIcon.appendChild(weatherDescription);
 
   weatherResult.appendChild(weatherInlineIcon);
 
-  const rainProbability = document.createElement("p");
-  rainProbability.className = "stat";
+  const rainProbability = document.createElement("div");
+  rainProbability.className = "main_text_medium";
+  rainProbability.id = "rain_prob";
   rainProbability.innerHTML = 'Rain Probability: <span id="rain-probability-input">0%</span>';
   weatherResult.appendChild(rainProbability);
 
-  const cloudCoverage = document.createElement("p");
-  cloudCoverage.className = "stat";
+  const cloudCoverage = document.createElement("div");
+  cloudCoverage.className = "main_text_medium";
+  cloudCoverage.id = "cloud_coverage";
   cloudCoverage.innerHTML = 'Cloud Coverage: <span id="cloud-coverage-input">0%</span>';
   weatherResult.appendChild(cloudCoverage);
 
