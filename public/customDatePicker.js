@@ -46,6 +46,7 @@ let pickerInstructions = null;
 let customPicker = null;
 let customPickerContainer = null;
 let moduleUserData = {};
+var routingPrefix = "";
 
 export function initCustomDatePicker({ containerId, userGeneratedData, onDateSelectionComplete, onWeatherSelectionComplete }) {
   dateSelectionCalback = onDateSelectionComplete;
@@ -66,6 +67,35 @@ export function initCustomDatePicker({ containerId, userGeneratedData, onDateSel
   // moduleUserData.temperature = 20;
   customLog("debug","Snapshot of userData:initCustomDatePicker:", JSON.parse(JSON.stringify(moduleUserData)));
 }
+
+async function getRoutingPrefix() {
+  const url = "/generate/routingPrefix"; // Relative URL for your Node.js server endpoint
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+    });
+    const data = await response.json();
+    customLog("debug", "Routing Prefix inner function:", data.route);
+    return data.route;
+  } catch (error) {
+    customLog("error", "Failed to fetch Routing Prefix:", error);
+  }
+}
+document.addEventListener("DOMContentLoaded", () => {
+  customLog("debug", "DOMContentLoaded event fired");
+
+  // Call getRoutingPrefix after a delay of 3 seconds (3000 milliseconds)
+  setTimeout(async () => {
+    try {
+      routingPrefix = await getRoutingPrefix();
+      customLog("debug", "Routing Prefix received event list:", routingPrefix);
+      // Use the routingPrefix as needed in your client-side code
+    } catch (error) {
+      customLog("error", "Failed to fetch Routing Prefix:", error);
+    }
+  }, 500); // 3000 milliseconds = 3 seconds
+});
 
 function setupPickerUIInBubble() {
   // Find or create the container element
@@ -409,7 +439,7 @@ function createWeatherSelection() {
     dragHandle.className = "weather-input-drag-handle";
     //lets add an image to the drag handle
     const dragHandleImage = document.createElement("img");
-    dragHandleImage.src = "/images/drag-adjust.png";
+    dragHandleImage.src = routingPrefix + "/images/drag-adjust.png";
     dragHandleImage.alt = "drag handle";
     dragHandle.appendChild(dragHandleImage);
     //make the image fit to whatever sie the drag handle is
@@ -708,7 +738,7 @@ function selectWeatherIcon() {
 
   // Update weather icon and description on the UI
   const iconDiv = document.getElementById("weather-icon");
-  iconDiv.innerHTML = `<img id="weather-icon-img" src="/images/weather_icons/${selected.icon}" alt="Weather icon" />`;
+  iconDiv.innerHTML = `<img id="weather-icon-img" src= ${routingPrefix}"/images/weather_icons/${selected.icon}" alt="Weather icon" />`;
   document.getElementById("weather-description-input").textContent = selected.description;
 
   customLog("debug", "selected icon", selected.icon);

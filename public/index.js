@@ -63,6 +63,7 @@ userGeneratedData.waterDistance = {
   },
 };
 customLog("debug", userGeneratedData);
+var routingPrefix = "";
 // const map = L.map("map", {center: [-25.2744, 133.7751], zoom: 4,});
 const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
@@ -85,6 +86,35 @@ function detectTouchDevice() {
   console.log("Touch device not detected");
   return false;
 }
+
+async function getRoutingPrefix() {
+  const url = "/generate/routingPrefix"; // Relative URL for your Node.js server endpoint
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+    });
+    const data = await response.json();
+    customLog("debug", "Routing Prefix inner function:", data.route);
+    return data.route;
+  } catch (error) {
+    customLog("error", "Failed to fetch Routing Prefix:", error);
+  }
+}
+document.addEventListener("DOMContentLoaded", () => {
+  customLog("debug", "DOMContentLoaded event fired");
+
+  // Call getRoutingPrefix after a delay of 3 seconds (3000 milliseconds)
+  setTimeout(async () => {
+    try {
+      routingPrefix = await getRoutingPrefix();
+      customLog("debug", "Routing Prefix received event list:", routingPrefix);
+      // Use the routingPrefix as needed in your client-side code
+    } catch (error) {
+      customLog("error", "Failed to fetch Routing Prefix:", error);
+    }
+  }, 500); // 3000 milliseconds = 3 seconds
+});
 
 detectTouchDevice();
 
@@ -224,7 +254,7 @@ async function handleMapClick(latlng) {
   // Launch all asynchronous tasks concurrently.
   const isInAusPromise = getisInAustralia(lat, lon);
   const locationNamePromise = reverseGeocode(lat, lon);
-  const waterDistancePromise = getWaterDistanceData(lat, lon);
+  getWaterDistanceData(lat, lon);
 
   // Wait for the Australia check.
   const isInAustralia = await isInAusPromise;
@@ -247,14 +277,14 @@ async function handleMapClick(latlng) {
 
   // If the point is in Australia, await the remaining tasks.
   const locationName = await locationNamePromise;
-  const waterDistance = await waterDistancePromise;
+  //const waterDistance = await waterDistancePromise;
 
   //lets add line breaks instead of commas in the lo
   // Update your user data.
   userGeneratedData.locationName = locationName;
   userGeneratedData.lat = lat;
   userGeneratedData.lon = lon;
-  userGeneratedData.waterDistance = waterDistance; // if needed
+  // userGeneratedData.waterDistance = waterDistance; // if needed
 
   // Create new popup content.
   // The container (with id "popup_bubble") will also hold the date picker.
@@ -349,7 +379,8 @@ async function callGenerateWithGradio(lat, lon, temp, humidity, wind_speed, pres
     }
 
     const result = await response.json();
-    customLog("debug", "Result:", result);
+    customLog("debug", "callGenerateWithGradio::Result from audio generation: ", JSON.stringify(result, null, 2));
+
     return result.audioUrl;
   } catch (error) {
     console.error("Error:", error);
@@ -409,7 +440,7 @@ async function fetchDataAndDisplay() {
 
     // Prepare the result div when the button is pressed, before the response starts streaming
     const generatedContentDiv = document.createElement("div");
-    generatedContentDiv.id = "generated_text_div";
+    generatedContentDiv.id = "resultDiv";
     generatedContentDiv.innerHTML = '<p id="streamedText">Loading...</p><button id="closeBtn">Close</button>';
 
     document.body.appendChild(generatedContentDiv);

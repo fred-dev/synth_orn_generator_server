@@ -30,6 +30,7 @@ const routingPrefix = process.env.GET_PATH_PREFIX;
 const pythonPath = process.env.PYTHON_PATH;
 const tempDebugVerbose = process.env.DEBUG_VERBOSE;
 const rootMediaPath = process.env.ROOT_MEDIA_PATH;
+const clientPathPrefix = process.env.CLIENT_PATH_PREFIX;
 
 if (tempDebugVerbose == "true") {
   logger.level = "debug";
@@ -38,8 +39,8 @@ if (tempDebugVerbose == "true") {
 }
 
 logger.debug("rootMediaPath: " + rootMediaPath);
-
-logger.debug(routingPrefix + "/generate-text");
+logger.debug("clientPathPrefix: " + clientPathPrefix);
+logger.debug("routingPrefix: " + routingPrefix);
 logger.debug("isInAustralia shape file" + shapeFilePathInside);
 logger.debug("Distance to water shape file" + shapeFilePathWater);
 
@@ -58,6 +59,13 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static("public"));
+
+app.get(routingPrefix + "/routingPrefix", (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({
+    route: clientPathPrefix
+  });
+});
 
 async function initializeGradio() {
   try {
