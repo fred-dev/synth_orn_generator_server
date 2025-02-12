@@ -439,7 +439,7 @@ function createWeatherSelection() {
     dragHandle.className = "weather-input-drag-handle";
     //lets add an image to the drag handle
     const dragHandleImage = document.createElement("img");
-    dragHandleImage.src = routingPrefix + "/images/drag-adjust.png";
+    dragHandleImage.src = `${routingPrefix}/images/drag-adjust.png`;
     dragHandleImage.alt = "drag handle";
     dragHandle.appendChild(dragHandleImage);
     //make the image fit to whatever sie the drag handle is
@@ -738,7 +738,7 @@ function selectWeatherIcon() {
 
   // Update weather icon and description on the UI
   const iconDiv = document.getElementById("weather-icon");
-  iconDiv.innerHTML = `<img id="weather-icon-img" src= ${routingPrefix}"/images/weather_icons/${selected.icon}" alt="Weather icon" />`;
+  iconDiv.innerHTML = `<img id="weather-icon-img" src= "${routingPrefix}/images/weather_icons/${selected.icon}" alt="Weather icon" />`;
   document.getElementById("weather-description-input").textContent = selected.description;
 
   customLog("debug", "selected icon", selected.icon);
