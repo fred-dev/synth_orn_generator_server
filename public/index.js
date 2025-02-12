@@ -80,10 +80,10 @@ tiles.addTo(map);
 function detectTouchDevice() {
   if ("ontouchstart" in window || (window.DocumentTouch && document instanceof DocumentTouch) || window.matchMedia("(pointer: coarse)").matches) {
     document.body.classList.add("touch-device");
-    customLog("debug","Touch device detected");
+    customLog("debug", "Touch device detected");
     return true;
   }
-  customLog("debug","Touch device not detected");
+  customLog("debug", "Touch device not detected");
   return false;
 }
 
@@ -246,10 +246,12 @@ async function handleMapClick(latlng) {
     title: "Temporary Marker",
     alt: "Temporary Marker",
     draggable: true,
+    closeOnClick: false,
   }).addTo(map);
 
-  // Immediately bind a loading message.
-  marker.bindPopup("<div class='loading-popup-text'>Checking your location. <br>Please wait.<br></div><div class='loader'></div>").openPopup();
+  marker
+    .bindPopup("<div class='loading-popup-text'>Checking your location. <br>Please wait.<br></div><div class='loader'></div>", { autoClose: false, closeOnClick: false })
+    .openPopup();
 
   // Launch all asynchronous tasks concurrently.
   const isInAusPromise = getisInAustralia(lat, lon);
@@ -293,7 +295,8 @@ async function handleMapClick(latlng) {
 
   const locationDiv = document.createElement("div");
   locationDiv.id = "location-display";
-  locationDiv.innerHTML = `${locationName}<br>`;
+  locationDiv.className = "simulation-info";
+  locationDiv.innerHTML = `<strong>Simulation location:</strong><br> ${locationName}`;
   popupContent.appendChild(locationDiv);
 
   // Update the marker’s popup content and open it.
@@ -310,7 +313,14 @@ async function handleMapClick(latlng) {
     },
     onWeatherSelectionComplete: (finalWeather) => {
       customLog("debug", "Final weather chosen:", finalWeather);
+
       fetchDataAndDisplay();
+      //lets close the leaflet popoup and marker
+      map.eachLayer(function (layer) {
+        if (layer instanceof L.Marker) {
+          map.removeLayer(layer);
+        }
+      });
     },
   });
 
@@ -423,6 +433,7 @@ async function loadAudio() {
 }
 
 async function fetchDataAndDisplay() {
+  console.log("fetchDataAndDisplay start: " + JSON.stringify(userGeneratedData, null, 2));
   try {
     // Send a POST request to the server
     const response = await fetch("/generate/generate-text", {
@@ -444,6 +455,7 @@ async function fetchDataAndDisplay() {
     generatedContentDiv.innerHTML = '<p id="streamedText">Loading...</p><button id="closeBtn">Close</button>';
 
     document.body.appendChild(generatedContentDiv);
+
     loadAudio();
 
     const streamedText = document.getElementById("streamedText");

@@ -19,6 +19,13 @@
   color: #333;
 }
 
+#weather-prompt-input{
+  font-size: 1rem;
+  padding: 4px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background-color: #9394d044;
+}
 /* Weather form */
 #weather-form-input {
   display: flex;

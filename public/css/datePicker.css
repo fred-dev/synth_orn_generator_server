@@ -49,12 +49,11 @@
   cursor: pointer;
 }
 
-.date-display {
+#date-display {
   margin-top: 10px;
   margin-bottom: 10px;
-  font-size: 15px;
-  color: #333;
-  text-align: center;
+  white-space: normal;
+  word-wrap: normal;
 }
 #picker-instructions {
   margin-top: 20px;
@@ -65,6 +64,10 @@
 
 #location-display {
   margin-top: 20px;
+
+}
+
+.simulation-info{
   font-size: 18px;
   color: #333;
   text-align: left;

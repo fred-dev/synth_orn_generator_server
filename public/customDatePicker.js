@@ -1,4 +1,4 @@
-const globalLogLevel = "silent"; // "silent", "error", "warning", "info", "debug"
+const globalLogLevel = "debug"; // "silent", "error", "warning", "info", "debug"
 
 let currentStep = 0;
 let dateSelectionCalback = null;
@@ -107,7 +107,7 @@ function setupPickerUIInBubble() {
 
     dateDisplay = document.createElement("div");
     dateDisplay.id = "date-display";
-    dateDisplay.className = "date-display";
+    dateDisplay.className = "simulation-info";
     dateDisplay.innerHTML = "Selected date: ";
     containerElement.appendChild(dateDisplay);
 
@@ -168,7 +168,7 @@ function loadYearStep() {
     date: new Date(),
     min: new Date(new Date().getFullYear(), 0, 1), // Jan 1, current year
     max: new Date(new Date().getFullYear() + 20, 11, 31), // Dec 31, 20 years from now
-    pick: function (date) {
+    pick (date) {
       selectedYear = date.getFullYear();
       userSelectedDate.setFullYear(selectedYear);
       customLog("debug","selectedYear:loadYearStep", selectedYear);
@@ -187,7 +187,7 @@ function loadMonthStep() {
     rows: 3,
     format: "MMMM",
     increment: { month: 1 },
-    date: new Date(selectedYear, 0),
+    date: new Date(selectedYear),
     pick(date) {
       selectedMonth = date.getMonth();
       selectedMonthName = getMonthName(selectedMonth);
@@ -238,6 +238,9 @@ function loadTimeStep() {
       customLog("debug","selectedAMPM:loadTimeStep", selectedAMPM);
       userSelectedDate.setHours(selectedHour);
       userSelectedDate.setMinutes(selectedMinute);
+      userSelectedDate.setFullYear(selectedYear);
+      userSelectedDate.setMonth(selectedMonth);
+      userSelectedDate.setDate(selectedDay);
       moduleUserData.date = userSelectedDate;
       moduleUserData.minutes_of_day = minutesOfDayFromDate(userSelectedDate);
       moduleUserData.day_of_year = dayOfYearFromDate(userSelectedDate);
@@ -270,9 +273,11 @@ function nextStep() {
   } else if (currentStep === 3) {
     currentStep = 4;
     setProgressBar(currentStep);
+    updateUI();
     dateSelectionDone();
     createWeatherSelection();
   } else if (currentStep === 4) {
+    updateUI();
     currentStep = 5;
     setProgressBar(currentStep);
     weatherSelectionDone();
@@ -355,23 +360,24 @@ function updateUI() {
   let accumulatedDate = "";
   switch (currentStep) {
     case 0:
-      accumulatedDate = "Selected date: ";
+      accumulatedDate = "<strong>Simulation date:</strong>";
       msg = "Select a Year";
       break;
     case 1:
       msg = "Select a Month";
-      accumulatedDate = `Selected date: ${selectedYear}`;
+      accumulatedDate = `<strong>Simulation date:</strong><br> ${selectedYear}`;
       break;
     case 2:
       msg = "Select a Day";
-      accumulatedDate = `Selected date: ${selectedMonthName} ${selectedYear}`;
+      accumulatedDate = `<strong>Simulation date:</strong><br> ${selectedMonthName} ${selectedYear}`;
       break;
     case 3:
       msg = "Select a Time";
-      accumulatedDate = `Selected date: ${selectedDayName} ${selectedDay} ${selectedMonthName} ${selectedYear}`;
+      accumulatedDate = `<strong>Simulation date:</strong><br> ${selectedDayName} ${selectedDay} ${selectedMonthName} ${selectedYear}`;
       break;
     case 4:
-      accumulatedDate = `Selected date: ${selectedDayName} ${selectedDay} ${selectedMonthName} ${selectedYear} ${selectedHour}:${selectedMinute} ${selectedAMPM}`;
+      accumulatedDate = `<strong>Simulation date:</strong><br> ${selectedDayName} ${selectedDay} ${selectedMonthName} ${selectedYear} ${selectedHour}:${String(selectedMinute).padStart(2, '0')} ${selectedAMPM}`;
+      console.log("we are currentStep == 4: " + accumulatedDate)
       break;
   }
   dateDisplay.innerHTML = accumulatedDate;
@@ -402,9 +408,14 @@ function createWeatherSelection() {
   const weatherContainer = document.createElement("div");
   weatherContainer.id = "weather-container-input";
 
+  const weatherPrompt = document.createElement("div");
+  weatherPrompt.id = "weather-prompt-input";
+  weatherPrompt.className = "weather-prompt";
+  weatherPrompt.textContent = "Adjust Simulated Weather Conditions";
+  weatherContainer.appendChild(weatherPrompt);
+  
   const form = document.createElement("form");
   form.id = "weather-form-input";
-  
 
   // Helper: Create a touch-enabled input row with a separate drag handle
   const createTouchInput = (id, min, max, step, labelText) => {

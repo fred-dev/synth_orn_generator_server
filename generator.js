@@ -246,9 +246,13 @@ app.post(routingPrefix + "/generate-text", async (req, res) => {
     Date: ${year}-${month.toString().padStart(2,"0")}-${day.toString().padStart(2,"0")} ${hours.toString().padStart(2,"0")}:${minutes.toString().padStart(2,"0")}:${seconds.toString().padStart(2,"0")}
     Location: ${userInput.locationName}
     Climate: Temperature - ${userInput.temperature}°C, Humidity - ${userInput.humidity}%, Wind Speed - ${userInput.windSpeed} km/h
-
+    Distance to coast - ${userInput.waterDistance.coastal_water.distance} km
+    Closest coastal water name - ${userInput.waterDistance.coastal_water.display_name}
+    Distance to inland water - ${userInput.waterDistance.inland_water.distance} km
+    Closest inland water name - ${userInput.waterDistance.inland_water.display_name}
     Output:
     `;
+    console.log("prompt: ", prompt);
     //lets print the
     const stream = await openai.chat.completions.create({
       model: "gpt-4o",
