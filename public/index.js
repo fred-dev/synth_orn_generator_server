@@ -80,10 +80,10 @@ tiles.addTo(map);
 function detectTouchDevice() {
   if ("ontouchstart" in window || (window.DocumentTouch && document instanceof DocumentTouch) || window.matchMedia("(pointer: coarse)").matches) {
     document.body.classList.add("touch-device");
-    console.log("Touch device detected");
+    customLog("debug","Touch device detected");
     return true;
   }
-  console.log("Touch device not detected");
+  customLog("debug","Touch device not detected");
   return false;
 }
 
