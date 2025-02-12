@@ -148,6 +148,25 @@ function setupPickerUIInBubble() {
     customLog("debug",containerElement);
   }
 }
+function rebuildPickerUIInBubble() {
+  // Find or create the container element
+  if (!containerElement) {
+    console.error(`Element with ID popup_bubble not found!`);
+    return;
+  } else {
+    customLog("debug","Element with ID popup_bubble found!");
+
+    customPickerContainer = document.createElement("div");
+    customPickerContainer.id = "custom-picker";
+    containerElement.appendChild(customPickerContainer);
+
+    pickerInstructions = document.createElement("div");
+    pickerInstructions.id = "picker-instructions";
+    pickerInstructions.className = "main_text_small_bold";
+    containerElement.insertBefore(pickerInstructions, progressBar);
+    containerElement.insertBefore(customPickerContainer, pickerInstructions);
+  }
+}
 // Helper to destroy old picker
 function destroyPicker() {
   customPicker;
@@ -305,6 +324,12 @@ function prevStep() {
     setProgressBar(currentStep);
     loadDayStep();
   }
+  else if (currentStep === 3) {
+    setProgressBar(currentStep);
+    destroyWeatherSelection();
+    rebuildPickerUIInBubble();
+    loadTimeStep();
+  }
   updateUI();
 }
 
@@ -327,6 +352,15 @@ function dateSelectionDone() {
   //lets clear the date selection from the container
   containerElement.removeChild(customPickerContainer);
   containerElement.removeChild(pickerInstructions);
+}
+function destroyWeatherSelection() {
+  const weatherContainer = document.getElementById("weather-container-input");
+  //remove all children from the container element
+  while (weatherContainer.firstChild) {
+    weatherContainer.removeChild(weatherContainer.firstChild);
+  }
+  containerElement.removeChild(weatherContainer);
+  
 }
 
 function weatherSelectionDone() {
