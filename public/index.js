@@ -78,7 +78,7 @@ setTimeout(() => {
   instructionTimeout = setTimeout(() => {
     showInstructionPopup();
   }, 45000);
-}, 15000);
+}, 25000);
 
 ["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
   document.addEventListener(evt, resetInstructionTimeout);
