@@ -301,7 +301,7 @@ function nextStep() {
   } else if (currentStep === 3) {
     currentStep = 4;
     setProgressBar(currentStep);
-    // updateUI();
+    updateUI();
     dateSelectionDone();
     createWeatherSelection();
   } else if (currentStep === 4) {

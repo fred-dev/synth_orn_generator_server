@@ -1,36 +1,3 @@
-function showInstructionPopup() {
-  const popup = document.getElementById("instructionPopup");
-  //we only show the popup if it is not already visible and if there is no marker on the map and if the resultDiv is not visible
-  if (popup && !popup.classList.contains("visible") && !document.getElementById("resultDiv") && !mapChoicelatlng) {
-    popup.classList.add("visible");
-  }
-}
-
-// Function to hide the instruction popup (by removing the CSS class)
-function hideInstructionPopup() {
-  const popup = document.getElementById("instructionPopup");
-  if (popup) {
-    popup.classList.remove("visible");
-  }
-}
-
-// A timeout variable that will be used to trigger the popup after 45 seconds
-let instructionTimeout;
-
-// Function to reset the timeout and hide the popup immediately on interaction
-function resetInstructionTimeout() {
-  hideInstructionPopup();
-  clearTimeout(instructionTimeout);
-  // Restart the timer: after 45 seconds of inactivity, show the popup
-  instructionTimeout = setTimeout(() => {
-    showInstructionPopup();
-  }, 45000);
-}
-// Attach event listeners for various interactions
-["mousemove", "mousedown", "touchstart","touchend", "touchmove", "click"].forEach((evt) => {
-  document.addEventListener(evt, resetInstructionTimeout);
-});
-
 import { initCustomDatePicker } from "./customDatePicker.js";
 
 const globalLogLevel = "silent"; // "silent", "error", "warning", "info", "debug"
@@ -76,6 +43,48 @@ map.fitBounds([
 
 const tiles = L.tileLayer(tileUrl, { attribution });
 tiles.addTo(map);
+
+let firstLoad = true;
+let instructionTimeout;
+
+function showInstructionPopup() {
+  const popup = document.getElementById("instructionPopup");
+  if (popup && !popup.classList.contains("visible") && !document.getElementById("resultDiv") && !mapChoicelatlng) {
+    popup.classList.add("visible");
+  }
+}
+
+function hideInstructionPopup() {
+  const popup = document.getElementById("instructionPopup");
+  if (popup) {
+    popup.classList.remove("visible");
+  }
+}
+
+function resetInstructionTimeout() {
+  if (firstLoad) return;
+  hideInstructionPopup();
+  clearTimeout(instructionTimeout);
+  instructionTimeout = setTimeout(() => {
+    showInstructionPopup();
+  }, 45000);
+}
+
+showInstructionPopup();
+
+setTimeout(() => {
+  hideInstructionPopup();
+  firstLoad = false;
+  instructionTimeout = setTimeout(() => {
+    showInstructionPopup();
+  }, 45000);
+}, 15000);
+
+["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
+  document.addEventListener(evt, resetInstructionTimeout);
+});
+
+
 
 function detectTouchDevice() {
   if ("ontouchstart" in window || (window.DocumentTouch && document instanceof DocumentTouch) || window.matchMedia("(pointer: coarse)").matches) {
@@ -228,6 +237,7 @@ map.on("touchend", function () {
 });
 // Right-click event for creating a new marker
 async function handleMapClick(latlng) {
+  hideInstructionPopup();
   // Remove any existing markers from the map.
   map.eachLayer(function (layer) {
     if (layer instanceof L.Marker) {
