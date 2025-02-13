@@ -78,7 +78,7 @@ setTimeout(() => {
   instructionTimeout = setTimeout(() => {
     showInstructionPopup();
   }, 45000);
-}, 25000);
+}, 15000);
 
 ["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
   document.addEventListener(evt, resetInstructionTimeout);
@@ -431,14 +431,21 @@ async function loadAudio() {
     const audioPlayer = document.createElement("audio");
     audioPlayer.id = "audioPlayer";
     audioPlayer.controls = true;
-    audioPlayer.src = audioUrl;
 
-    // Append the audio player to the resultDiv
+    // For mobile autoplay support, you need autoplay, playsinline, and possibly muted
+    audioPlayer.setAttribute("autoplay", "");
+    audioPlayer.setAttribute("playsinline", "");
+    // audioPlayer.setAttribute("muted", "");
+    // Then unmute after a user gesture:
+    // audioPlayer.muted = false;
+
+    audioPlayer.src = audioUrl;
     resultDiv.appendChild(audioPlayer);
 
-    // Load and play the audio
     audioPlayer.load();
-    audioPlayer.play();
+    resultDiv.scrollTop = resultDiv.scrollHeight;
+    // Some devices require user interaction even if autoplay is set
+    // audioPlayer.play().catch((err) => console.log(err));
   }
 }
 

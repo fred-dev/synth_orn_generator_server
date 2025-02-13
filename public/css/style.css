@@ -219,5 +219,9 @@ body {
     z-index: 1000;
     width: 95%;
     font-size: 16px;
+    height: auto;
+    max-height: 85%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
