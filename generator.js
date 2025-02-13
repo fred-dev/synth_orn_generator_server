@@ -3,6 +3,8 @@ import { Client } from "@gradio/client";
 import { spawn } from "child_process";
 import fetch from "node-fetch";
 import dotenv from "dotenv";
+import fs from 'fs';
+import { Dropbox } from 'dropbox'; 
 import pino from "pino";
 const logger = pino({
   transport: {
@@ -15,6 +17,8 @@ const logger = pino({
     },
   },
 });
+
+var jsonToSave = {};
 
 dotenv.config();
 import express from "express";
@@ -31,6 +35,9 @@ const pythonPath = process.env.PYTHON_PATH;
 const tempDebugVerbose = process.env.DEBUG_VERBOSE;
 const rootMediaPath = process.env.ROOT_MEDIA_PATH;
 const clientPathPrefix = process.env.CLIENT_PATH_PREFIX;
+var uploadFilePrefix = "";
+var audioUrlToSave = "";
+var userInputToSave = "";
 
 if (tempDebugVerbose == "true") {
   logger.level = "debug";
@@ -66,6 +73,78 @@ app.get(routingPrefix + "/routingPrefix", (req, res) => {
     route: clientPathPrefix
   });
 });
+
+// or const { Dropbox } = require('dropbox'); if using CommonJS
+
+// 1. Create an instance of the Dropbox class with your stored token
+const dbx = new Dropbox({
+  accessToken: process.env.DROPBOX_ACCESS_TOKEN, // or hardcode, but best to keep it in env
+});
+
+async function uploadFileToDropbox(localFilePath, dropboxFolderPath, newFileName) {
+  try {
+    // Read file from disk into a Buffer
+    const fileContents = fs.readFileSync(localFilePath);
+
+    // Construct the desired Dropbox path
+    // For example, if dropboxFolderPath = "/MyGeneratedFiles", 
+    // and newFileName = "example.wav", final path = "/MyGeneratedFiles/example.wav"
+    const dropboxPath = `${dropboxFolderPath}/${newFileName}`;
+
+    // Perform the upload
+    const response = await dbx.filesUpload({
+      path: dropboxPath,
+      contents: fileContents,
+      mode: { '.tag': 'add' }, // or 'overwrite' if you'd rather overwrite
+    });
+    
+    console.log('Upload successful:', response.result);
+    //delete the file once it is uploaded it is here localFilePath
+    
+
+  } catch (error) {
+    console.error('Error uploading file:', error);
+  }
+}
+
+
+async function completeDate(audioUrl) {
+  try {
+    // 1) Fetch the WAV data from the URL
+    const response = await fetch(audioUrl);
+    const buffer = await response.buffer();
+
+    // 2) Decide on a file prefix, e.g. from the date
+    const uploadFilePrefix = new Date().toISOString().replace(/:/g, "-");
+
+    // 3) Write the WAV locally
+    fs.writeFileSync(`tempFiles/${uploadFilePrefix}.wav`, buffer);
+
+    // 4) Write the user input to JSON
+    //    (make sure to stringify if it's a JS object)
+    fs.writeFileSync(
+      `tempFiles/${uploadFilePrefix}.json`,
+      JSON.stringify(jsonToSave, null, 2)
+    );
+
+    // 5) Upload them both to Dropbox
+    await uploadFileToDropbox(
+      `tempFiles/${uploadFilePrefix}.wav`,
+      "/generated",
+      `${uploadFilePrefix}.wav`
+    );
+    await uploadFileToDropbox(
+      `tempFiles/${uploadFilePrefix}.json`,
+      "/generated",
+      `${uploadFilePrefix}.json`
+    );
+
+    console.log("completeDate done successfully");
+  } catch (error) {
+    console.error("Error in completeDate:", error);
+  }
+}
+
 
 async function initializeGradio() {
   try {
@@ -139,72 +218,19 @@ app.post(routingPrefix + "/generateAudio", async (req, res) => {
   try {
     const result = await generateWithGradio(lat, lon, temp, humidity, wind_speed, pressure, minutes_of_day, day_of_year);
     res.json({ audioUrl: result });
+    completeDate(result);
+ 
   } catch (error) {
     res.status(500).send({ error: error.message });
   }
 });
+
 
 // api_name="/generate"
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Endpoint to create a new marker entry
-app.post("/markers", async (req, res) => {
-  try {
-    const markerData = req.body;
-    // Simulate a successful insert operation with a mock response
-    const mockResult = {
-      insertedId: "mock_id",
-      ops: [markerData],
-      connection: null,
-    };
-    logger.debug("Simulated insert operation:", mockResult);
-    res.status(201).json(mockResult.ops[0]);
-  } catch (error) {
-    logger.error("Error creating new marker entry", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Placeholder endpoint to update a marker entry
-app.put("/markers/:id", async (req, res) => {
-  try {
-    const markerId = req.params.id;
-    const updateData = req.body;
-    // Simulate update operation
-    logger.debug(`Simulated update operation for marker ${markerId}:`, updateData);
-    res.status(200).json({ id: markerId, ...updateData });
-  } catch (error) {
-    logger.error("Error updating marker entry", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Endpoint to generate audio content using Gradio API
-app.post(routingPrefix + "/generate-audio", async (req, res) => {
-  try {
-    if (req.appMode === "live") {
-      // Logic to make a real API call using the Gradio API key
-      // This part will be implemented by the user with their actual API key and logic
-      res.status(501).json({ error: "Live mode not yet implemented" });
-    } else {
-      // Existing mock response logic
-      const mockResponse = {
-        id: "mock_gradio_id",
-        status: "completed",
-        data: {
-          audio: "This is a simulated audio content URL from Gradio API based on the user's input.",
-        },
-      };
-      logger.debug("Simulated Gradio API call:", mockResponse);
-      res.status(200).json(mockResponse);
-    }
-  } catch (error) {
-    logger.error("Error generating audio content", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
 
 // Start the server
 app.listen(port, () => {
@@ -212,6 +238,7 @@ app.listen(port, () => {
 });
 
 app.post(routingPrefix + "/generate-text", async (req, res) => {
+  jsonToSave = req.body.userInput;
   const userInput = JSON.parse(req.body.userInput);
   const dateObj = new Date(userInput.date);
   const year = dateObj.getUTCFullYear();
@@ -279,7 +306,9 @@ app.post(routingPrefix + "/generate-text", async (req, res) => {
       "Content-Type": "text/plain; charset=utf-8",
       "Transfer-Encoding": "chunked",
     });
+    uploadFilePrefix = dateObj.toISOString().replace(/:/g, "-");
 
+    
     for await (const chunk of stream) {
       res.write(chunk.choices[0]?.delta?.content || "");
     }
