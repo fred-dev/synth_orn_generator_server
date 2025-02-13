@@ -53,7 +53,7 @@ export function initCustomDatePicker({ containerId, userGeneratedData, onDateSel
   weatherSelectionCallback = onWeatherSelectionComplete;
   containerElement = document.getElementById(containerId);
 
-  customLog("debug","Callbacks initialized:", {
+  customLog("debug", "Callbacks initialized:", {
     onDateSelectionComplete: typeof dateSelectionCalback,
     onWeatherSelectionComplete: typeof weatherSelectionCallback,
   });
@@ -65,7 +65,7 @@ export function initCustomDatePicker({ containerId, userGeneratedData, onDateSel
   updateUI();
   moduleUserData = userGeneratedData;
   // moduleUserData.temperature = 20;
-  customLog("debug","Snapshot of userData:initCustomDatePicker:", JSON.parse(JSON.stringify(moduleUserData)));
+  customLog("debug", "Snapshot of userData:initCustomDatePicker:", JSON.parse(JSON.stringify(moduleUserData)));
 }
 
 async function getRoutingPrefix() {
@@ -103,7 +103,7 @@ function setupPickerUIInBubble() {
     console.error(`Element with ID popup_bubble not found!`);
     return;
   } else {
-    customLog("debug","Element with ID popup_bubble found!");
+    customLog("debug", "Element with ID popup_bubble found!");
 
     dateDisplay = document.createElement("div");
     dateDisplay.id = "date-display";
@@ -145,7 +145,7 @@ function setupPickerUIInBubble() {
     navButtons.appendChild(nextBtn);
     containerElement.appendChild(navButtons);
     //print the container element and all its children to the console
-    customLog("debug",containerElement);
+    customLog("debug", containerElement);
   }
 }
 function rebuildPickerUIInBubble() {
@@ -154,7 +154,7 @@ function rebuildPickerUIInBubble() {
     console.error(`Element with ID popup_bubble not found!`);
     return;
   } else {
-    customLog("debug","Element with ID popup_bubble found!");
+    customLog("debug", "Element with ID popup_bubble found!");
 
     customPickerContainer = document.createElement("div");
     customPickerContainer.id = "custom-picker";
@@ -177,7 +177,7 @@ function destroyPicker() {
 
 // Year step
 function loadYearStep() {
-  customLog("debug","loadYearStep");
+  customLog("debug", "loadYearStep");
   backBtn.disabled = true;
 
   // Use getFullYear() to produce a numeric year for minYear and maxYear:
@@ -191,8 +191,8 @@ function loadYearStep() {
     date: new Date(2030, 0, 1),
 
     // For a "Year-only" picker, just pass the numeric year bounds:
-    minYear: new Date().getFullYear(),         // e.g., 2025
-    maxYear: new Date().getFullYear() + 20,    // e.g., 2045 (20 years from now)
+    minYear: new Date().getFullYear(), // e.g., 2025
+    maxYear: new Date().getFullYear() + 20, // e.g., 2045 (20 years from now)
 
     pick(date) {
       // date is a full Date object, but your picker is set to "YYYY" only
@@ -203,7 +203,6 @@ function loadYearStep() {
     },
   });
 }
-
 
 // Month step
 function loadMonthStep() {
@@ -220,8 +219,8 @@ function loadMonthStep() {
       selectedMonth = date.getMonth();
       selectedMonthName = getMonthName(selectedMonth);
       userSelectedDate.setMonth(selectedMonth);
-      customLog("debug","selectedMonth:loadMonthStep", selectedMonth);
-      customLog("debug","selectedMonthName:loadMonthStep", selectedMonthName);
+      customLog("debug", "selectedMonth:loadMonthStep", selectedMonth);
+      customLog("debug", "selectedMonthName:loadMonthStep", selectedMonthName);
     },
   });
 }
@@ -240,15 +239,15 @@ function loadDayStep() {
       selectedDay = date.getDate();
       selectedDayName = getDayName(date.getDay());
       userSelectedDate.setDate(selectedDay);
-      customLog("debug","selectedDay:loadDayStep", selectedDay);
-      customLog("debug","selectedDayName:loadDayStep", selectedDayName);
+      customLog("debug", "selectedDay:loadDayStep", selectedDay);
+      customLog("debug", "selectedDayName:loadDayStep", selectedDayName);
     },
   });
 }
 
 // Time step
 function loadTimeStep() {
-  customLog("debug","loadTimeStep");
+  customLog("debug", "loadTimeStep");
   backBtn.disabled = false;
   customPicker = new Picker(document.getElementById("custom-picker"), {
     inline: true,
@@ -261,9 +260,9 @@ function loadTimeStep() {
       selectedHour = date.getHours();
       selectedMinute = date.getMinutes();
       selectedAMPM = selectedHour >= 12 ? "PM" : "AM";
-      customLog("debug","selectedHour:loadTimeStep", selectedHour);
-      customLog("debug","selectedMinute:loadTimeStep", selectedMinute);
-      customLog("debug","selectedAMPM:loadTimeStep", selectedAMPM);
+      customLog("debug", "selectedHour:loadTimeStep", selectedHour);
+      customLog("debug", "selectedMinute:loadTimeStep", selectedMinute);
+      customLog("debug", "selectedAMPM:loadTimeStep", selectedAMPM);
       userSelectedDate.setHours(selectedHour);
       userSelectedDate.setMinutes(selectedMinute);
       userSelectedDate.setFullYear(selectedYear);
@@ -272,7 +271,7 @@ function loadTimeStep() {
       moduleUserData.date = userSelectedDate;
       moduleUserData.minutes_of_day = minutesOfDayFromDate(userSelectedDate);
       moduleUserData.day_of_year = dayOfYearFromDate(userSelectedDate);
-      customLog("debug","Snapshot of userData:loadTimeStep:", JSON.parse(JSON.stringify(moduleUserData)));
+      customLog("debug", "Snapshot of userData:loadTimeStep:", JSON.parse(JSON.stringify(moduleUserData)));
     },
   });
 }
@@ -331,8 +330,7 @@ function prevStep() {
   } else if (currentStep === 2) {
     setProgressBar(currentStep);
     loadDayStep();
-  }
-  else if (currentStep === 3) {
+  } else if (currentStep === 3) {
     setProgressBar(currentStep);
     destroyWeatherSelection();
     rebuildPickerUIInBubble();
@@ -343,7 +341,7 @@ function prevStep() {
 
 // After finishing final step, call the callback
 function dateSelectionDone() {
-  customLog("debug","custompickerjs::dateSelectionDone");
+  customLog("debug", "custompickerjs::dateSelectionDone");
   // Force final pick
   if (customPicker?.options?.pick) {
     customPicker.options.pick(customPicker.getDate());
@@ -353,7 +351,7 @@ function dateSelectionDone() {
     dateSelectionCalback(finalDate);
   }
 
-  customLog("debug","moon phase: " + Moon.phase(moduleUserData.date.getFullYear(), moduleUserData.date.getMonth(), moduleUserData.date.getDate()).name);
+  customLog("debug", "moon phase: " + Moon.phase(moduleUserData.date.getFullYear(), moduleUserData.date.getMonth(), moduleUserData.date.getDate()).name);
   //lets get the moon phase for the selected date and location
   // getMoonPhase(finalDate, moduleUserData.latitude, moduleUserData.longitude);
 
@@ -368,7 +366,6 @@ function destroyWeatherSelection() {
     weatherContainer.removeChild(weatherContainer.firstChild);
   }
   containerElement.removeChild(weatherContainer);
-  
 }
 
 function weatherSelectionDone() {
@@ -402,23 +399,25 @@ function updateUI() {
   let accumulatedDate = "";
   switch (currentStep) {
     case 0:
-      accumulatedDate = "<span class=\"main_text_medium_bold\">Simulation date:</span>";
+      accumulatedDate = '<span class="main_text_medium_bold">Simulation date:</span>';
       msg = "Select a Year (up to 20 years from now)";
       break;
-        case 1:
+    case 1:
       msg = "Select a Month";
       accumulatedDate = `<span class="main_text_medium_bold">Simulation date:</span><br> ${selectedYear}`;
       break;
-        case 2:
+    case 2:
       msg = "Select a Day";
       accumulatedDate = `<span class="main_text_medium_bold">Simulation date:</span><br> ${selectedMonthName} ${selectedYear}`;
       break;
-        case 3:
+    case 3:
       msg = "Select a Time";
       accumulatedDate = `<span class="main_text_medium_bold">Simulation date:</span><br> ${selectedDayName} ${selectedDay} ${selectedMonthName} ${selectedYear}`;
       break;
-        case 4:
-      accumulatedDate = `<span class="main_text_medium_bold">Simulation date:</span><br> ${selectedDayName} ${selectedDay} ${selectedMonthName} ${selectedYear} ${selectedHour}:${String(selectedMinute).padStart(2, "0")} ${selectedAMPM}`;
+    case 4:
+      accumulatedDate = `<span class="main_text_medium_bold">Simulation date:</span><br> ${selectedDayName} ${selectedDay} ${selectedMonthName} ${selectedYear} ${selectedHour}:${String(
+        selectedMinute
+      ).padStart(2, "0")} ${selectedAMPM}`;
       break;
   }
   dateDisplay.innerHTML = accumulatedDate;
@@ -454,7 +453,7 @@ function createWeatherSelection() {
   weatherPrompt.className = "main_text_small";
   weatherPrompt.textContent = "Adjust Weather Conditions ↬";
   weatherContainer.appendChild(weatherPrompt);
-  
+
   const form = document.createElement("form");
   form.id = "weather-form-input";
 
@@ -474,7 +473,6 @@ function createWeatherSelection() {
     const inputGroup = document.createElement("div");
     inputGroup.className = "weather-input-group";
 
-
     // Numeric input: remove default spinner arrows and right-align text
     const input = document.createElement("input");
     input.className = "weather-number-input";
@@ -483,7 +481,7 @@ function createWeatherSelection() {
     input.min = min;
     input.max = max;
     input.step = step;
-   
+
     input.addEventListener("input", onWeatherDataAdjusted);
 
     // Drag handle: a small square to the right of the input
@@ -500,9 +498,7 @@ function createWeatherSelection() {
     dragHandleImage.style.opacity = "0.8";
     //and when we touch down on it we will make it 100% opacity
     //and when we touch up on it we will make it 80% opacity
-      dragHandleImage.style.opacity = "0.6";
-      
-  
+    dragHandleImage.style.opacity = "0.6";
 
     // Touch events for the drag handle (so that dragging adjusts the input)
     let startY;
@@ -520,7 +516,6 @@ function createWeatherSelection() {
       const newValue = startValue + deltaY * (step / 10);
       if (newValue >= min && newValue <= max) {
         input.value = newValue.toFixed(1);
-        
       }
       e.preventDefault();
     });
@@ -531,7 +526,6 @@ function createWeatherSelection() {
       input.style.border = "1px solid #ccc";
       onWeatherDataAdjusted();
     });
-    
 
     // Assemble the input group
     inputGroup.appendChild(input);
@@ -592,10 +586,10 @@ function createWeatherSelection() {
 }
 
 function onWeatherDataAdjusted() {
-  customLog("debug","Weather data adjusted");
+  customLog("debug", "Weather data adjusted");
 
   moduleUserData.temperature = document.getElementById("temperature-input").value;
-  moduleUserData.humidity = document.getElementById("humidity-input").value; 
+  moduleUserData.humidity = document.getElementById("humidity-input").value;
   moduleUserData.pressure = document.getElementById("pressure-input").value;
   moduleUserData.wind_speed = document.getElementById("wind-speed-input").value;
 
@@ -647,19 +641,19 @@ function selectWeatherIcon() {
     conditions.push({
       priority: 110,
       icon: "cyclone.png",
-      description: "Cyclonic conditions"
+      description: "Cyclonic conditions",
     });
   } else if (windSpeed >= 40) {
     conditions.push({
       priority: 100,
       icon: "storm.png",
-      description: "Stormy winds"
+      description: "Stormy winds",
     });
   } else if (windSpeed >= 25) {
     conditions.push({
       priority: 80,
       icon: "windy.png",
-      description: "Windy"
+      description: "Windy",
     });
   }
 
@@ -668,7 +662,7 @@ function selectWeatherIcon() {
     conditions.push({
       priority: 90,
       icon: "fog.png",
-      description: "Foggy"
+      description: "Foggy",
     });
   }
 
@@ -677,7 +671,7 @@ function selectWeatherIcon() {
     conditions.push({
       priority: 95,
       icon: "thunderstorm.png",
-      description: "Thunderstorm"
+      description: "Thunderstorm",
     });
   }
 
@@ -687,19 +681,19 @@ function selectWeatherIcon() {
       conditions.push({
         priority: 85,
         icon: "heavy_snow.png",
-        description: "Heavy snow"
+        description: "Heavy snow",
       });
     } else if (humidity > 65 && rainProb > 40) {
       conditions.push({
         priority: 80,
         icon: "snow.png",
-        description: "Light snow"
+        description: "Light snow",
       });
     } else if (humidity > 60) {
       conditions.push({
         priority: 75,
         icon: "freezingrain_sleet.png",
-        description: "Sleet"
+        description: "Sleet",
       });
     }
   }
@@ -709,13 +703,13 @@ function selectWeatherIcon() {
       conditions.push({
         priority: 85,
         icon: "rain.png",
-        description: "Cold rain"
+        description: "Cold rain",
       });
     } else if (humidity > 70 && rainProb > 50) {
       conditions.push({
         priority: 80,
         icon: "drizzle_freezingdrizzle.png",
-        description: "Light cold rain"
+        description: "Light cold rain",
       });
     }
   }
@@ -725,13 +719,13 @@ function selectWeatherIcon() {
       conditions.push({
         priority: 85,
         icon: "heavy_rain.png",
-        description: "Heavy rain"
+        description: "Heavy rain",
       });
     } else if (humidity > 70 && rainProb > 60) {
       conditions.push({
         priority: 75,
         icon: "rain.png",
-        description: "Moderate rain"
+        description: "Moderate rain",
       });
     }
   }
@@ -741,13 +735,13 @@ function selectWeatherIcon() {
       conditions.push({
         priority: 75,
         icon: "rain.png",
-        description: "Warm rain"
+        description: "Warm rain",
       });
     } else if (humidity > 65 && rainProb > 40) {
       conditions.push({
         priority: 70,
         icon: "drizzle_freezingdrizzle.png",
-        description: "Light warm rain"
+        description: "Light warm rain",
       });
     }
   }
@@ -757,7 +751,7 @@ function selectWeatherIcon() {
       conditions.push({
         priority: 75,
         icon: "haze.png",
-        description: "Hot and humid"
+        description: "Hot and humid",
       });
     }
   }
@@ -767,13 +761,13 @@ function selectWeatherIcon() {
     conditions.push({
       priority: 60,
       icon: "cloudy.png",
-      description: "Overcast"
+      description: "Overcast",
     });
   } else if (cloudCover > 40) {
     conditions.push({
       priority: 50,
       icon: isNight ? "night_partly_cloudy.png" : "partly_cloudy.png",
-      description: "Partly cloudy"
+      description: "Partly cloudy",
     });
   }
 
@@ -782,7 +776,7 @@ function selectWeatherIcon() {
     conditions.push({
       priority: 10,
       icon: isNight ? "night_clear_mostlyclear.png" : "clear_mostlyclear.png",
-      description: isNight ? "Clear night" : "Clear sky"
+      description: isNight ? "Clear night" : "Clear sky",
     });
   }
 
@@ -804,12 +798,12 @@ function dayOfYearFromDate(date) {
   const diff = date - start;
   const oneDay = 1000 * 60 * 60 * 24;
   const day = Math.floor(diff / oneDay);
-  customLog("debug","day of year function", day);
+  customLog("debug", "day of year function", day);
   return day;
 }
 function minutesOfDayFromDate(date) {
   let minutes = date.getHours() * 60 + date.getMinutes();
-  customLog("debug","minutes of day function", minutes);
+  customLog("debug", "minutes of day function", minutes);
   return minutes;
 }
 
@@ -821,13 +815,12 @@ function clearPopupBubble() {
 }
 
 var Moon = {
-  phases: ['new-moon', 'waxing-crescent-moon', 'quarter-moon', 'waxing-gibbous-moon', 'full-moon', 'waning-gibbous-moon', 'last-quarter-moon', 'waning-crescent-moon'],
+  phases: ["new-moon", "waxing-crescent-moon", "quarter-moon", "waxing-gibbous-moon", "full-moon", "waning-gibbous-moon", "last-quarter-moon", "waning-crescent-moon"],
   phase: function (year, month, day) {
     let c;
-    let  e;
+    let e;
     let jd;
     let b;
-    
 
     if (month < 3) {
       year--;
@@ -844,8 +837,8 @@ var Moon = {
     b = Math.round(jd * 8); // scale fraction from 0-8 and round
 
     if (b >= 8) b = 0; // 0 and 8 are the same so turn 8 into 0
-    return {phase: b, name: Moon.phases[b]};
-  }
+    return { phase: b, name: Moon.phases[b] };
+  },
 };
 function customLog(logLevel, ...messages) {
   const levels = ["silent", "error", "warning", "info", "debug"];

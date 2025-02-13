@@ -18,7 +18,7 @@
   color: #333;
 }
 
-#weather-prompt-input{
+#weather-prompt-input {
   padding: 4px;
   border-radius: 8px;
   margin-bottom: 8px;
@@ -65,8 +65,6 @@
   border: 1px solid #ccc;
 }
 
-
-
 /* Weather result display */
 #weather-result-input {
   text-align: left;
@@ -102,17 +100,10 @@
   font-family: "Libre Franklin", sans-serif;
 }
 
-/* Stats (rain probability, cloud coverage) */
-/* .stat {
-  margin: 10px 0;
-  font-size: 1rem;
-  padding-left: 1em;
-} */
-
 /* Drag handle (for non‑touch devices) */
 .weather-input-drag-handle {
-    display: none;
-  }
+  display: none;
+}
 
 /* Hide the drag handle on touch devices */
 .touch-device .weather-input-drag-handle {
@@ -127,12 +118,11 @@
   font-size: 3.2em;
   color: #666666;
 }
-#cloud_coverage{
-margin-bottom: 0.5rem;
-}
-#rain_prob{
+#cloud_coverage {
   margin-bottom: 0.5rem;
-
+}
+#rain_prob {
+  margin-bottom: 0.5rem;
 }
 /* Mobile adjustments */
 @media only screen and (max-width: 600px) {

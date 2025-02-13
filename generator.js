@@ -3,8 +3,8 @@ import { Client } from "@gradio/client";
 import { spawn } from "child_process";
 import fetch from "node-fetch";
 import dotenv from "dotenv";
-import fs from 'fs';
-import { Dropbox } from 'dropbox'; 
+import fs from "fs";
+import { Dropbox } from "dropbox";
 import pino from "pino";
 const logger = pino({
   transport: {
@@ -68,9 +68,9 @@ app.use((req, res, next) => {
 app.use(express.static("public"));
 
 app.get(routingPrefix + "/routingPrefix", (req, res) => {
-  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader("Cache-Control", "no-store");
   res.json({
-    route: clientPathPrefix
+    route: clientPathPrefix,
   });
 });
 
@@ -87,7 +87,7 @@ async function uploadFileToDropbox(localFilePath, dropboxFolderPath, newFileName
     const fileContents = fs.readFileSync(localFilePath);
 
     // Construct the desired Dropbox path
-    // For example, if dropboxFolderPath = "/MyGeneratedFiles", 
+    // For example, if dropboxFolderPath = "/MyGeneratedFiles",
     // and newFileName = "example.wav", final path = "/MyGeneratedFiles/example.wav"
     const dropboxPath = `${dropboxFolderPath}/${newFileName}`;
 
@@ -95,18 +95,15 @@ async function uploadFileToDropbox(localFilePath, dropboxFolderPath, newFileName
     const response = await dbx.filesUpload({
       path: dropboxPath,
       contents: fileContents,
-      mode: { '.tag': 'add' }, // or 'overwrite' if you'd rather overwrite
+      mode: { ".tag": "add" }, // or 'overwrite' if you'd rather overwrite
     });
-    
-    console.log('Upload successful:', response.result);
-    //delete the file once it is uploaded it is here localFilePath
-    
 
+    console.log("Upload successful:", response.result);
+    //delete the file once it is uploaded it is here localFilePath
   } catch (error) {
-    console.error('Error uploading file:', error);
+    console.error("Error uploading file:", error);
   }
 }
-
 
 async function completeDate(audioUrl) {
   try {
@@ -122,29 +119,17 @@ async function completeDate(audioUrl) {
 
     // 4) Write the user input to JSON
     //    (make sure to stringify if it's a JS object)
-    fs.writeFileSync(
-      `tempFiles/${uploadFilePrefix}.json`,
-      JSON.stringify(jsonToSave, null, 2)
-    );
+    fs.writeFileSync(`tempFiles/${uploadFilePrefix}.json`, JSON.stringify(jsonToSave, null, 2));
 
     // 5) Upload them both to Dropbox
-    await uploadFileToDropbox(
-      `tempFiles/${uploadFilePrefix}.wav`,
-      "/generated",
-      `${uploadFilePrefix}.wav`
-    );
-    await uploadFileToDropbox(
-      `tempFiles/${uploadFilePrefix}.json`,
-      "/generated",
-      `${uploadFilePrefix}.json`
-    );
+    await uploadFileToDropbox(`tempFiles/${uploadFilePrefix}.wav`, "/generated", `${uploadFilePrefix}.wav`);
+    await uploadFileToDropbox(`tempFiles/${uploadFilePrefix}.json`, "/generated", `${uploadFilePrefix}.json`);
 
     console.log("completeDate done successfully");
   } catch (error) {
     console.error("Error in completeDate:", error);
   }
 }
-
 
 async function initializeGradio() {
   try {
@@ -219,18 +204,15 @@ app.post(routingPrefix + "/generateAudio", async (req, res) => {
     const result = await generateWithGradio(lat, lon, temp, humidity, wind_speed, pressure, minutes_of_day, day_of_year);
     res.json({ audioUrl: result });
     completeDate(result);
- 
   } catch (error) {
     res.status(500).send({ error: error.message });
   }
 });
 
-
 // api_name="/generate"
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-
 
 // Start the server
 app.listen(port, () => {
@@ -273,7 +255,9 @@ app.post(routingPrefix + "/generate-text", async (req, res) => {
 
 
     Input:
-    Date: ${year}-${month.toString().padStart(2,"0")}-${day.toString().padStart(2,"0")} ${hours.toString().padStart(2,"0")}:${minutes.toString().padStart(2,"0")}:${seconds.toString().padStart(2,"0")}
+    Date: ${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")} ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
+      .toString()
+      .padStart(2, "0")}
     Location: ${userInput.locationName}
     Climate: Temperature - ${userInput.temperature}°C, Humidity - ${userInput.humidity}%, Wind Speed - ${userInput.windSpeed} km/h
     Distance to coast - ${userInput.waterDistance.coastal_water.distance} km
@@ -290,8 +274,8 @@ app.post(routingPrefix + "/generate-text", async (req, res) => {
       messages: [
         {
           role: "system",
-          content: "You are an academic narrative synthesis agent with expertise in climate, indigenous, natural, water, and social history. Your task is to produce a concise (<210 words),  narrative that integrates based on the instructions you are given.",
-
+          content:
+            "You are an academic narrative synthesis agent with expertise in climate, indigenous, natural, water, and social history. Your task is to produce a concise (<210 words),  narrative that integrates based on the instructions you are given.",
         },
         { role: "user", content: prompt },
       ],
@@ -308,7 +292,6 @@ app.post(routingPrefix + "/generate-text", async (req, res) => {
     });
     uploadFilePrefix = dateObj.toISOString().replace(/:/g, "-");
 
-    
     for await (const chunk of stream) {
       res.write(chunk.choices[0]?.delta?.content || "");
     }

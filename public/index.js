@@ -84,8 +84,6 @@ setTimeout(() => {
   document.addEventListener(evt, resetInstructionTimeout);
 });
 
-
-
 function detectTouchDevice() {
   if ("ontouchstart" in window || (window.DocumentTouch && document instanceof DocumentTouch) || window.matchMedia("(pointer: coarse)").matches) {
     document.body.classList.add("touch-device");
@@ -260,7 +258,10 @@ async function handleMapClick(latlng) {
   }).addTo(map);
 
   marker
-    .bindPopup("<div id='check_location_bubble' class='main_text_medium'>Checking your chosen location. <br> <br>Please wait.<br><br></div><div class='loader'></div>", { autoClose: false, closeOnClick: false })
+    .bindPopup("<div id='check_location_bubble' class='main_text_medium'>Checking your chosen location. <br> <br>Please wait.<br><br></div><div class='loader'></div>", {
+      autoClose: false,
+      closeOnClick: false,
+    })
     .openPopup();
 
   // Launch all asynchronous tasks concurrently.
