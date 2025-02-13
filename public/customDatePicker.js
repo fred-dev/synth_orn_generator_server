@@ -117,7 +117,7 @@ function setupPickerUIInBubble() {
 
     pickerInstructions = document.createElement("div");
     pickerInstructions.id = "picker-instructions";
-    pickerInstructions.className = "main_text_small_bold";
+    pickerInstructions.className = "main_text_small";
     // pickerInstructions.style = "margin-bottom: 8px; font-weight: bold;";
     containerElement.appendChild(pickerInstructions);
 
@@ -179,23 +179,31 @@ function destroyPicker() {
 function loadYearStep() {
   customLog("debug","loadYearStep");
   backBtn.disabled = true;
+
+  // Use getFullYear() to produce a numeric year for minYear and maxYear:
   customPicker = new Picker(document.getElementById("custom-picker"), {
     inline: true,
     controls: true,
     rows: 3,
     format: "YYYY",
     increment: { year: 1 },
-    date: new Date(),
-    min: new Date(new Date().getFullYear(), 0, 1), // Jan 1, current year
-    max: new Date(new Date().getFullYear() + 20, 11, 31), // Dec 31, 20 years from now
-    pick (date) {
+    // The current date/time
+    date: new Date(2030, 0, 1),
+
+    // For a "Year-only" picker, just pass the numeric year bounds:
+    minYear: new Date().getFullYear(),         // e.g., 2025
+    maxYear: new Date().getFullYear() + 20,    // e.g., 2045 (20 years from now)
+
+    pick(date) {
+      // date is a full Date object, but your picker is set to "YYYY" only
       selectedYear = date.getFullYear();
       userSelectedDate.setFullYear(selectedYear);
-      customLog("debug","selectedYear:loadYearStep", selectedYear);
-      customLog("debug","Snapshot of userData:loadYearStep:", JSON.parse(JSON.stringify(moduleUserData)));
+      customLog("debug", "selectedYear:loadYearStep", selectedYear);
+      customLog("debug", "Snapshot of userData:loadYearStep:", JSON.parse(JSON.stringify(moduleUserData)));
     },
   });
 }
+
 
 // Month step
 function loadMonthStep() {
@@ -293,7 +301,7 @@ function nextStep() {
   } else if (currentStep === 3) {
     currentStep = 4;
     setProgressBar(currentStep);
-    updateUI();
+    // updateUI();
     dateSelectionDone();
     createWeatherSelection();
   } else if (currentStep === 4) {
@@ -388,7 +396,6 @@ function buildFinalDate() {
 // Simple helper to show/hide buttons or instructions
 function updateUI() {
   const instructions = document.getElementById("picker-instructions");
-  instructions.className = "main_text_small";
   if (!instructions) return;
 
   let msg = "";
@@ -396,7 +403,7 @@ function updateUI() {
   switch (currentStep) {
     case 0:
       accumulatedDate = "<span class=\"main_text_medium_bold\">Simulation date:</span>";
-      msg = "Select a Year";
+      msg = "Select a Year (up to 20 years from now)";
       break;
         case 1:
       msg = "Select a Month";
