@@ -163,15 +163,15 @@ async function generateWithGradio(lat, lon, temp, humidity, wind_speed, pressure
       pressure: pressure,
       minutes_of_day: minutes_of_day,
       day_of_year: day_of_year,
-      cfg_scale: 5.0,
+      cfg_scale: 2.9,
       steps: 110,
       preview_every: 0,
-      seed: "-1",
-      sampler_type: "dpmpp-2m-sde",
-      sigma_min: 0.3,
-      sigma_max: 50,
-      cfg_rescale: 0.3,
-      use_init: 0.3,
+      seed: -1,
+      sampler_type: "dpmpp-3m-sde",
+      sigma_min: 0.03,
+      sigma_max: 600,
+      cfg_rescale: 0.045,
+      use_init: -1,
     });
 
     // Iterate over async submission response
