@@ -30,39 +30,47 @@ userGeneratedData.waterDistance = {
   },
 };
 customLog("debug", userGeneratedData);
+
+const normalText = `
+    <h3 id="popup-heading">Welcome to Synthetic Ornithology</h3>
+    This platform uses predictive models to simulate how
+    <br>Australian ecosystems respond to future climate scenarios.
+    <br>For a selected scenario, our model will produce birdsong
+    <br>and wildlife soundscapes reflecting the projected conditions.
+    <br><br>Simply pan and zoom across the map to choose a location
+    <br>(it must be within Australia). Once at your desired location,
+    <br>right-click (Control + click on Mac)
+    <br>or long-press on touchscreen devices
+    <br>to generate a location-specific simulation.
+  `;
+
+const driftText = `
+  <h3 id="popup-heading">Welcome to Synthetic Ornithology</h3>
+    This platform uses predictive models to simulate how
+    <br>Australian ecosystems respond to future climate scenarios.
+    <br>For a selected scenario, our model will produce birdsong
+    <br>and wildlife soundscapes reflecting the projected conditions.
+    <br><br>Drift Mode is currently active, providing a continuously
+    <br>changing simulated soundscape. To choose your own scenario,
+    <br>interact with the map:
+
+    <br><br>Simply pan and zoom across the map to choose a location
+    <br>(it must be within Australia). Once at your desired location,
+    <br>right-click (Control + click on Mac)
+    <br>or long-press on touchscreen devices
+    <br>to generate a location-specific simulation.
+  `;
+
 var routingPrefix = "";
-// const map = L.map("map", {center: [-25.2744, 133.7751], zoom: 4,});
-const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const map = L.map("map", { zoomControl: false }).setView([-24.801233, 132.94551], 5);
-//lets diable all map interactions
-
-
-map.fitBounds([
-  [-10, 112],
-  [-44, 154],
-]);
-
-//const tiles = L.tileLayer("https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.jpg", { attribution });
-//const tiles = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { attribution });
-const tiles = L.tileLayer(tileUrl, { attribution });
-
-tileUrl;
-tiles.addTo(map);
 
 let suppressGlobalEvents = false;
-
-// ================= Drift Mode Configuration & State =================
-
-// ================= Drift Mode Configuration & State =================
 
 // Set this to true during development if you want the system to load in drift mode by default.
 const DRIFT_MODE_DEFAULT = true;
 // Key (e.g. "d") used to toggle modes.
-const DRIFT_MODE_KEY = "d";
 
 // Current mode: either "normal" or "drift".
-var currentMode = "drift";
+var currentMode = DRIFT_MODE_DEFAULT ? "drift" : "normal";
 
 // Custom log function to handle different log levels.
 customLog("debug", "Current mode on start:", currentMode);
@@ -93,50 +101,58 @@ let fadeIntervalId = null;
 // To keep track of markers on the map.
 let currentMarker = null;
 
-// ================= Utility Functions =================
+let inactivityTimeout = 5000;
 
-/**
- * Chooses a random file number (1 to totalFiles) that has not been played yet.
- * Resets the set when all files have been played.
- */
-function getRandomFileNumber() {
-  if (playedFiles.size >= driftConfig.totalFiles) {
-    playedFiles.clear();
-  }
-  let fileNumber;
-  do {
-    fileNumber = Math.floor(Math.random() * driftConfig.totalFiles) + 1;
-  } while (playedFiles.has(fileNumber));
-  playedFiles.add(fileNumber);
-  return fileNumber;
-}
+let hasTouch = false;
 
-/**
- * Formats the file number into a 4-digit string (e.g. 1 -> "0001").
- */
-function formatFileNumber(num) {
-  return String(num).padStart(4, "0");
-}
+// const map = L.map("map", {center: [-25.2744, 133.7751], zoom: 4,});
+const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+const map = L.map("map", { zoomControl: false }).setView([-24.801233, 132.94551], 5);
+//lets diable all map interactions
+
+map.fitBounds([
+  [-10, 112],
+  [-44, 154],
+]);
+
+//const tiles = L.tileLayer("https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.jpg", { attribution });
+//const tiles = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { attribution });
+const tiles = L.tileLayer(tileUrl, { attribution });
+tileUrl;
+tiles.addTo(map);
+
+document.addEventListener("DOMContentLoaded", async () => {
+  customLog("debug", "DOMContentLoaded event fired");
+  routingPrefix = await getRoutingPrefix();
+  customLog("debug", "Routing Prefix received:", routingPrefix);
+
+  // Call getRoutingPrefix after a delay of 3 seconds (3000 milliseconds)
+  // setTimeout(async () => {
+    try {
+      customLog("debug", "Routing Prefix received event list:", routingPrefix);
+      const style = document.createElement("style");
+      style.innerHTML = `
+                        @font-face {
+                          font-family: "Univers";
+                          src: url("${routingPrefix}/fonts/Univers/UniversLight.ttf") format("truetype");
+                        }
+                        `;
+      console.log("routing prefix", routingPrefix);
+      document.head.appendChild(style);
+
+      showPermissionOverlay();
+      // Use the routingPrefix as needed in your client-side code
+    } catch (error) {
+      customLog("error", "Failed to fetch Routing Prefix:", error);
+    }
+  // }, 100); // 3000 milliseconds = 3 seconds
+});
 
 function showPermissionOverlay() {
-  overlayActive = true; // flag the overlay is active
+  // overlayActive = true; // flag the overlay is active
   const overlay = document.createElement("div");
   overlay.id = "permissionOverlay";
-  Object.assign(overlay.style, {
-    position: "fixed",
-    top: "0",
-    left: "0",
-    width: "100%",
-    height: "100%",
-    backgroundColor: "rgba(0,0,0,0.8)",
-    color: "white",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "48px",
-    zIndex: "10000",
-    cursor: "pointer",
-  });
   overlay.textContent = "CLICK / TOUCH";
   document.body.appendChild(overlay);
 
@@ -147,40 +163,79 @@ function showPermissionOverlay() {
     setTimeout(() => {
       suppressGlobalEvents = false;
     }, 1000);
-  
+
     customLog("debug", "Permission overlay removed. Current mode:", currentMode);
     if (currentMode === "drift") {
-      setTimeout(() => {
+      //setTimeout(() => {
         startDriftMode();
         driftAudio[0].load();
         driftAudio[1].load();
-      }, 800);
-      detectTouchDevice();
+      // }, 800);
+      hasTouch = detectTouchDevice();
       customLog("debug", "Starting drift mode from permission overlay.");
     }
   };
+  if (hasTouch) {
+    overlay.addEventListener("touchstart", removeOverlay, { once: true });
+  } else {
+    overlay.addEventListener("click", removeOverlay, { once: true });
+  }
 
-  overlay.addEventListener("click", removeOverlay, { once: true });
-  overlay.addEventListener("touchstart", removeOverlay, { once: true });
 }
 
+["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
+  document.addEventListener(evt, (e) => {
+    // Ignore events if the permission overlay is active or if we're currently suppressing global events.
+    if (suppressGlobalEvents || (e.target && (e.target.id === "permissionOverlay" || e.target.closest("#permissionOverlay")))) {
+      return;
+    }
 
-// ================= Drift Mode Functions =================
+    if (currentMode === "drift") {
+      exitDriftMode();
+    } else {
+      resetInactivityTimeout();
+    }
+  });
+});
 
-/**
- * Loads the audio file and its corresponding JSON (to get geolocation and other data),
- * creates a marker with a popup showing time/date and weather,
- * sets the audio source, and starts playback.
- * Returns the created marker.
- */
-// Helper function to convert HH:MM:SS (24-hour) to 12-hour format with AM/PM.
-function convertTimeTo12Hour(timeStr) {
-  const [hourStr, minuteStr] = timeStr.split(":");
-  let hour = parseInt(hourStr, 10);
-  const ampm = hour >= 12 ? "PM" : "AM";
-  hour = hour % 12;
-  if (hour === 0) hour = 12;
-  return `${hour}:${minuteStr} ${ampm}`;
+function resetInactivityTimeout() {
+  if (currentMode !== "normal") return;
+  clearTimeout(inactivityTimeout);
+  inactivityTimeout = setTimeout(() => {
+    // Switch automatically to drift mode after 80 seconds of inactivity
+    currentMode = "drift";
+    document.body.classList.add("drift-mode");
+    startDriftMode();
+  }, 25000); // 80 seconds
+}
+
+function detectTouchDevice() {
+  const hasTouchSupport = "ontouchstart" in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints && navigator.msMaxTouchPoints > 0);
+
+  const isCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
+
+  if (hasTouchSupport || isCoarsePointer) {
+    document.body.classList.add("touch-device");
+    console.log("Touch device detected");
+    return true;
+  }
+  console.log("Touch device not detected");
+  return false;
+}
+
+async function getRoutingPrefix() {
+  const url = "/routingPrefix"; // Relative URL for your Node.js server endpoint
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+    });
+    const data = await response.json();
+    customLog("debug", "Routing Prefix inner function:", data.route);
+    return data.route;
+  } catch (error) {
+    customLog("error", "Failed to fetch Routing Prefix:", error);
+  }
 }
 
 // In loadAndPlayNext(), after fetching and parsing the JSON:
@@ -207,14 +262,6 @@ async function loadAndPlayNext(playerIndex) {
     const year = dateParts[4];
     const time12 = convertTimeTo12Hour(time24); // Use your existing helper
 
-    // Build the seven text items:
-    // 1. Location (the longest string)
-    // 2. Year
-    // 3. Date details (day, month, date, time)
-    // 4. Temperature (°C)
-    // 5. Humidity (%) capped at 100
-    // 6. Pressure (hPa) capped at 1084
-    // 7. Wind Speed (km/h)
     const wrappedLocation = wrapTextAtWhitespace("Location: " + jsonData.display_name, 90);
     const items = [
       wrappedLocation,
@@ -274,15 +321,6 @@ async function loadAndPlayNext(playerIndex) {
   return marker;
 }
 
-/**
- * Flies to the given latlng and then pans the map so that the point appears
- * at the desired container offset (horizontally centered and 90% down vertically).
- *
- * @param {L.LatLng} latlng - The target latitude/longitude.
- * @param {number} zoom - The zoom level.
- * @param {number} duration - The duration (in seconds) for the flyTo.
- * @returns {Promise} Resolves when both flyTo and panBy are complete.
- */
 function flyToWithOffset(latlng, zoom, flyDuration, panDuration) {
   return new Promise((resolve) => {
     // Start the flyTo animation.
@@ -303,11 +341,7 @@ function flyToWithOffset(latlng, zoom, flyDuration, panDuration) {
     });
   });
 }
-/**
- * Schedules the crossfade (and corresponding fly-to) between the currently playing audio and the next one.
- * The fly-to operation (with duration equal to driftConfig.crossfade) and the audio crossfade
- * start at the same time.
- */
+
 function scheduleNext() {
   // Calculate when to start the crossfade.
   const crossfadeStartTime = (driftConfig.fileDuration - driftConfig.crossfade) * 1000;
@@ -371,16 +405,17 @@ async function startDriftMode() {
   document.body.classList.add("drift-mode");
   console.log("Drift mode activated");
 
-  //if the results div is present, remove it
+  // If the results div is present, remove it
   const resultsDiv = document.getElementById("resultDiv");
   if (resultsDiv) {
     resultsDiv.remove();
+    console.log("Results div removed");
+  } else {
+    console.log("Results div not found");
   }
 
-  // Add a slight delay to ensure currentMode is set before showing the popup
   showInstructionPopup();
 
-  playedFiles.clear();
   currentPlayer = 0;
   // Load and start the first track, and store its marker.
   currentMarker = await loadAndPlayNext(currentPlayer);
@@ -414,202 +449,72 @@ function stopDriftMode() {
   }
 }
 
-// ================= Mode Toggle via Keyboard =================
-
-// document.addEventListener("keydown", (e) => {
-//   if (e.key.toLowerCase() === DRIFT_MODE_KEY) {
-//     if (currentMode === "drift") {
-//       // Switch back to normal mode.
-//       currentMode = "normal";
-//       stopDriftMode();
-//       customLog("debug", "Switched to normal mode");
-//       // (Optional) Re-enable your normal map event listeners here.
-//     } else {
-//       // Switch to drift mode.
-//       currentMode = "drift";
-//       startDriftMode();
-//       customLog("debug", "Switched to drift mode");
-
-//       // (Optional) Disable normal map event listeners if necessary.
-//     }
-//   }
-// });
-
-// document.addEventListener("DOMContentLoaded", () => {
-
-// });
-
-const normalText = `
-    <h3 id="popup-heading">Welcome to Synthetic Ornithology</h3>
-    This platform uses predictive models to simulate how
-    <br>Australian ecosystems respond to future climate scenarios.
-    <br>For a selected scenario, our model will produce birdsong
-    <br>and wildlife soundscapes reflecting the projected conditions.
-    <br><br>Simply pan and zoom across the map to choose a location
-    <br>(it must be within Australia). Once at your desired location,
-    <br>right-click (Control + click on Mac)
-    <br>or long-press on touchscreen devices
-    <br>to generate a location-specific simulation.
-  `;
-
-  const driftText = `
-  <h3 id="popup-heading">Welcome to Synthetic Ornithology</h3>
-    This platform uses predictive models to simulate how
-    <br>Australian ecosystems respond to future climate scenarios.
-    <br>For a selected scenario, our model will produce birdsong
-    <br>and wildlife soundscapes reflecting the projected conditions.
-    <br><br>Drift Mode is currently active, providing a continuously
-    <br>changing simulated soundscape. To choose your own scenario,
-    <br>interact with the map:
-
-    <br><br>Simply pan and zoom across the map to choose a location
-    <br>(it must be within Australia). Once at your desired location,
-    <br>right-click (Control + click on Mac)
-    <br>or long-press on touchscreen devices
-    <br>to generate a location-specific simulation.
-  `;
-
 let overlayActive = false;
 
 let firstLoad = true;
-let instructionTimeout = 5000;;
+let instructionTimeout = 5000;
+
+// function showInstructionPopup() {
+//   const popup = document.getElementById("instructionPopup");
+//   if (!popup || popup.classList.contains("visible") || document.getElementById("resultDiv") && currentMode == "drift") {
+//     popup.innerHTML = currentMode === "drift" ? driftText : normalText;
+//     return;
+//   }
+//   console.log("showInstructionPopup called. Current mode:", currentMode);
+
+//   popup.innerHTML = currentMode === "drift" ? driftText : normalText;
+//   popup.classList.add("visible");
+// }
 
 function showInstructionPopup() {
+  console.log("showInstructionPopup called. Current mode:", currentMode);
   const popup = document.getElementById("instructionPopup");
-  if (!popup || popup.classList.contains("visible") || document.getElementById("resultDiv") || mapChoicelatlng) {
-    popup.innerHTML = currentMode === "drift" ? driftText : normalText;
+  if (!popup) {
+    console.error("Instruction popup not found.");
     return;
   }
-  console.log("showInstructionPopup called. Current mode:", currentMode);
-
-  
-
+  // Always update the innerHTML based on mode.
   popup.innerHTML = currentMode === "drift" ? driftText : normalText;
+
+  // Always add the 'visible' class when calling showInstructionPopup.
   popup.classList.add("visible");
 }
 
 function hideInstructionPopup() {
-  if (currentMode === "drift") return;
+  if (currentMode === "drift") return; // In drift mode, keep instructions visible.
   const popup = document.getElementById("instructionPopup");
   if (popup) {
     popup.classList.remove("visible");
   }
 }
 
-function resetInstructionTimeout() {
-  if (firstLoad) return;
-  hideInstructionPopup();
-  clearTimeout(instructionTimeout);
-  instructionTimeout = setTimeout(() => {
-    showInstructionPopup();
-  }, 45000);
-}
+// function resetInstructionTimeout() {
+//   if (firstLoad) return;
+//   hideInstructionPopup();
+//   clearTimeout(instructionTimeout);
+//   instructionTimeout = setTimeout(() => {
+//     showInstructionPopup();
+//   }, 45000);
+// }
 
-setTimeout(() => {
-  hideInstructionPopup();
-  instructionTimeout = setTimeout(() => {
-    showInstructionPopup();
-  }, 45000);
-}, 15000);
+// setTimeout(() => {
+//   hideInstructionPopup();
+//   instructionTimeout = setTimeout(() => {
+//     showInstructionPopup();
+//   }, 45000);
+// }, 15000);
 
 // Polyfill for Element.closest() for older browsers
-if (!Element.prototype.closest) {
-  Element.prototype.closest = function (selector) {
-    let el = this;
-    while (el) {
-      if (el.matches(selector)) return el;
-      el = el.parentElement;
-    }
-    return null;
-  };
-}
-
-["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
-  document.addEventListener(evt, (e) => {
-    // Ignore events if the permission overlay is active or if we're currently suppressing global events.
-    if (suppressGlobalEvents ||
-        (e.target && (e.target.id === "permissionOverlay" || e.target.closest("#permissionOverlay")))) {
-      return;
-    }
-    
-    if (currentMode === "drift") {
-      exitDriftMode();
-    } else {
-      resetInactivityTimeout();
-    }
-  });
-});
-
-let inactivityTimeout;
-function resetInactivityTimeout() {
-  if (currentMode !== "normal") return;
-  clearTimeout(inactivityTimeout);
-  inactivityTimeout = setTimeout(() => {
-    // Switch automatically to drift mode after 80 seconds of inactivity
-    currentMode = "drift";
-    document.body.classList.add("drift-mode");
-    startDriftMode();
-  }, 120000); // 80 seconds
-}
-
-function detectTouchDevice() {
-  const hasTouchSupport =
-    ('ontouchstart' in window) ||
-    (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
-    (navigator.msMaxTouchPoints && navigator.msMaxTouchPoints > 0);
-
-  const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
-
-  if (hasTouchSupport || isCoarsePointer) {
-    document.body.classList.add('touch-device');
-    console.log('Touch device detected');
-    return true;
-  }
-  console.log('Touch device not detected');
-  return false;
-}
-
-async function getRoutingPrefix() {
-  const url = "/generate/routingPrefix"; // Relative URL for your Node.js server endpoint
-
-  try {
-    const response = await fetch(url, {
-      method: "GET",
-    });
-    const data = await response.json();
-    customLog("debug", "Routing Prefix inner function:", data.route);
-    return data.route;
-  } catch (error) {
-    customLog("error", "Failed to fetch Routing Prefix:", error);
-  }
-}
-document.addEventListener("DOMContentLoaded", () => {
-  customLog("debug", "DOMContentLoaded event fired");
-
-  // Call getRoutingPrefix after a delay of 3 seconds (3000 milliseconds)
-  setTimeout(async () => {
-    try {
-      routingPrefix = await getRoutingPrefix();
-      customLog("debug", "Routing Prefix received event list:", routingPrefix);
-      const style = document.createElement("style");
-      style.innerHTML = `
-                        @font-face {
-                          font-family: "Univers";
-                          src: url("${routingPrefix}/fonts/Univers/UniversLight.ttf") format("truetype");
-                        }
-                        `;
-      console.log("routing prefix", routingPrefix);
-      document.head.appendChild(style);
-
-      showPermissionOverlay();
-      // Use the routingPrefix as needed in your client-side code
-    } catch (error) {
-      customLog("error", "Failed to fetch Routing Prefix:", error);
-    }
-  }, 1000); // 3000 milliseconds = 3 seconds
-});
-
-
+// if (!Element.prototype.closest) {
+//   Element.prototype.closest = function (selector) {
+//     let el = this;
+//     while (el) {
+//       if (el.matches(selector)) return el;
+//       el = el.parentElement;
+//     }
+//     return null;
+//   };
+// }
 
 // Function to perform reverse geocoding
 async function reverseGeocode(lat, lon) {
@@ -711,7 +616,7 @@ map.on("touchstart", function (event) {
   if (currentMode !== "normal") return;
   touchTimeout = setTimeout(() => {
     handleMapClick(event.latlng);
-  }, 450);
+  }, 200);
 });
 map.on("touchend", function () {
   if (currentMode !== "normal") return;
@@ -739,7 +644,7 @@ function exitDriftMode() {
     showInstructionPopup();
     setTimeout(() => {
       hideInstructionPopup();
-    }, 5000);
+    }, 10000);
   }
 }
 
@@ -975,7 +880,7 @@ async function fetchDataAndDisplay() {
     // Prepare the result div when the button is pressed, before the response starts streaming
     const generatedContentDiv = document.createElement("div");
     generatedContentDiv.id = "resultDiv";
-    generatedContentDiv.innerHTML = '<p id="streamedText">Loading...</p><button id="closeBtn">Close</button>';
+    generatedContentDiv.innerHTML = '<button id="closeBtn" style="position: absolute; top: 10px; right: 10px;">&times;</button><p id="streamedText">Loading...</p>';
 
     document.body.appendChild(generatedContentDiv);
 
@@ -991,7 +896,7 @@ async function fetchDataAndDisplay() {
           map.removeLayer(layer);
         }
       });
-      resetInstructionTimeout();
+      //resetInstructionTimeout();
     });
 
     // Read the stream using a reader
@@ -1108,4 +1013,36 @@ function wrapTextAtWhitespace(text, maxLength) {
     breakpoint = maxLength;
   }
   return text.substring(0, breakpoint) + "\n" + text.substring(breakpoint + 1);
+}
+// Helper function to convert HH:MM:SS (24-hour) to 12-hour format with AM/PM.
+function convertTimeTo12Hour(timeStr) {
+  const [hourStr, minuteStr] = timeStr.split(":");
+  let hour = parseInt(hourStr, 10);
+  const ampm = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12;
+  if (hour === 0) hour = 12;
+  return `${hour}:${minuteStr} ${ampm}`;
+}
+
+/**
+ * Chooses a random file number (1 to totalFiles) that has not been played yet.
+ * Resets the set when all files have been played.
+ */
+function getRandomFileNumber() {
+  if (playedFiles.size >= driftConfig.totalFiles) {
+    playedFiles.clear();
+  }
+  let fileNumber;
+  do {
+    fileNumber = Math.floor(Math.random() * driftConfig.totalFiles) + 1;
+  } while (playedFiles.has(fileNumber));
+  playedFiles.add(fileNumber);
+  return fileNumber;
+}
+
+/**
+ * Formats the file number into a 4-digit string (e.g. 1 -> "0001").
+ */
+function formatFileNumber(num) {
+  return String(num).padStart(4, "0");
 }

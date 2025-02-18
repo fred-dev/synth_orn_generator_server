@@ -69,7 +69,7 @@ export function initCustomDatePicker({ containerId, userGeneratedData, onDateSel
 }
 
 async function getRoutingPrefix() {
-  const url = "/generate/routingPrefix"; // Relative URL for your Node.js server endpoint
+  const url = "/routingPrefix"; // Relative URL for your Node.js server endpoint
 
   try {
     const response = await fetch(url, {
