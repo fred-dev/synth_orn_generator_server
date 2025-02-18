@@ -363,7 +363,12 @@ async function startDriftMode() {
   currentMode = "drift";
   document.body.classList.add("drift-mode");
   console.log("Drift mode activated");
-  showInstructionPopup();
+
+  // Add a slight delay to ensure currentMode is set before showing the popup
+  setTimeout(() => {
+    showInstructionPopup();
+  }, 100);
+
   playedFiles.clear();
   currentPlayer = 0;
   // Load and start the first track, and store its marker.
