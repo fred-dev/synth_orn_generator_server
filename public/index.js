@@ -518,9 +518,11 @@ const debounce = (func, delay) => {
   };
 };
 
-["mousemove", "mousedown", "touchend", "click"].forEach((evt) => {
+["mousemove", "mousedown", "touchstart", "click"].forEach((evt) => {
   document.addEventListener(evt, debounce((e) => {
     // Ignore events that originate from the permission overlay.
+    console.log("Event:", evt);
+    console.log("Event target id:", e.target.id);
     if (e.target.id == "permissionOverlay" || e.target.closest("#permissionOverlay")) {
       console.log("Ignoring event from permission overlay");
       return;
