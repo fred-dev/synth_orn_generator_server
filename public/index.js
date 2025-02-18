@@ -505,6 +505,7 @@ setTimeout(() => {
 
     if (currentMode === "drift") {
       exitDriftMode();
+      console.log("Exiting drift mode");
     } else {
       resetInactivityTimeout(); // For normal mode inactivity handling.
     }
