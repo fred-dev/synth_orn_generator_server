@@ -117,6 +117,7 @@ function formatFileNumber(num) {
 }
 
 function showPermissionOverlay() {
+  overlayActive = true; // flag the overlay is active
   const overlay = document.createElement("div");
   overlay.id = "permissionOverlay";
   Object.assign(overlay.style, {
@@ -137,28 +138,26 @@ function showPermissionOverlay() {
   overlay.textContent = "CLICK / TOUCH";
   document.body.appendChild(overlay);
 
-  // Remove the overlay and start drift mode when clicked or touched.
   const removeOverlay = (e) => {
     e.stopPropagation();
     overlay.remove();
-    
-    customLog("debug", "Permission overlay removed. Current mode:", currentMode);
+    overlayActive = false; // clear the flag once the overlay is removed
+    console.log("Permission overlay removed. Current mode:", currentMode);
     if (currentMode === "drift") {
-      //lets wait a bit before starting the drift mode
       setTimeout(() => {
         startDriftMode();
         driftAudio[0].load();
         driftAudio[1].load();
       }, 800);
       detectTouchDevice();
-      customLog("debug", "Starting drift mode from permission overlay.");
+      console.log("Starting drift mode from permission overlay.");
     }
   };
 
-  // Use the 'once' option so the event fires only a single time.
   overlay.addEventListener("click", removeOverlay, { once: true });
   overlay.addEventListener("touchstart", removeOverlay, { once: true });
 }
+
 
 // ================= Drift Mode Functions =================
 
@@ -427,6 +426,7 @@ function stopDriftMode() {
 // document.addEventListener("DOMContentLoaded", () => {
 
 // });
+let overlayActive = false;
 
 let firstLoad = true;
 let instructionTimeout = 5000;;
@@ -508,42 +508,31 @@ if (!Element.prototype.closest) {
   };
 }
 
-const debounce = (func, delay) => {
-  let timeoutId;
-  return (...args) => {
-    if (timeoutId) clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => {
-      func(...args);
-    }, delay);
-  };
-};
-let ignoreEvents = false;
+// const debounce = (func, delay) => {
+//   let timeoutId;
+//   return (...args) => {
+//     if (timeoutId) clearTimeout(timeoutId);
+//     timeoutId = setTimeout(() => {
+//       func(...args);
+//     }, delay);
+//   };
+// };
+// let ignoreEvents = false;
 
-["mousemove", "mousedown", "touchstart", "click"].forEach((evt) => {
-  document.addEventListener(evt, debounce((e) => {
-    if (ignoreEvents) return;
-    if (firstLoad) {
-      console.log("Ignoring event from permission overlay");
-      firstLoad = false;
+["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
+  document.addEventListener(evt, (e) => {
+    // If the event is coming from the permission overlay or if the overlay is active, do nothing.
+    if (overlayActive || (e.target && (e.target.id === "permissionOverlay" || e.target.closest("#permissionOverlay")))) {
       return;
     }
-   
-
+    
     if (currentMode === "drift") {
       exitDriftMode();
-     
     } else {
       resetInactivityTimeout(); // For normal mode inactivity handling.
     }
-
-    // Ignore subsequent events for a short period.
-    ignoreEvents = true;
-    setTimeout(() => {
-      ignoreEvents = false;
-    }, 500); // Adjust the delay as needed
-  }, 400));
+  });
 });
-
 // ["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
 //   document.addEventListener(evt, resetInactivityTimeout);
 // });
