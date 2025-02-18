@@ -556,7 +556,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) {
       customLog("error", "Failed to fetch Routing Prefix:", error);
     }
-  }, 400); // 3000 milliseconds = 3 seconds
+  }, 500); // 3000 milliseconds = 3 seconds
 
   const style = document.createElement("style");
   style.innerHTML = `
