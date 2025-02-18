@@ -130,7 +130,7 @@ function showPermissionOverlay() {
     justifyContent: "center",
     fontSize: "48px",
     zIndex: "10000",
-    cursor: "pointer"
+    cursor: "pointer",
   });
   overlay.textContent = "CLICK / TOUCH";
   document.body.appendChild(overlay);
@@ -147,8 +147,7 @@ function showPermissionOverlay() {
         startDriftMode();
         driftAudio[0].load();
         driftAudio[1].load();
-      }
-      , 800);
+      }, 800);
       customLog("debug", "Starting drift mode from permission overlay.");
     }
   };
@@ -218,7 +217,6 @@ async function loadAndPlayNext(playerIndex) {
       "Pressure: " + Math.min(jsonData.main.pressure, 1084) + "hPa",
       "Wind Speed: " + jsonData.wind.speed + "km/h",
     ];
-    
 
     // Create the popup container
     const popupContainer = document.createElement("div");
@@ -414,7 +412,7 @@ function stopDriftMode() {
 //       currentMode = "drift";
 //       startDriftMode();
 //       customLog("debug", "Switched to drift mode");
-      
+
 //       // (Optional) Disable normal map event listeners if necessary.
 //     }
 //   }
@@ -468,7 +466,7 @@ function showInstructionPopup() {
 }
 
 function hideInstructionPopup() {
-  if(currentMode === "drift") return;
+  if (currentMode === "drift") return;
   const popup = document.getElementById("instructionPopup");
   if (popup) {
     popup.classList.remove("visible");
@@ -491,13 +489,13 @@ setTimeout(() => {
   }, 45000);
 }, 15000);
 
-["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach(evt => {
+["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
   document.addEventListener(evt, (e) => {
     // Ignore events that originate from the permission overlay.
     if (e.target && (e.target.id === "permissionOverlay" || e.target.closest("#permissionOverlay"))) {
       return;
     }
-    
+
     if (currentMode === "drift") {
       exitDriftMode();
     } else {
@@ -506,7 +504,7 @@ setTimeout(() => {
   });
 });
 
-["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach(evt => {
+["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
   document.addEventListener(evt, resetInactivityTimeout);
 });
 
@@ -558,11 +556,19 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) {
       customLog("error", "Failed to fetch Routing Prefix:", error);
     }
-  }, 500); // 3000 milliseconds = 3 seconds
+  }, 100); // 3000 milliseconds = 3 seconds
+
+  const style = document.createElement("style");
+  style.innerHTML = `
+@font-face {
+  font-family: "Univers";
+  src: url("${routingPrefix}/fonts/Univers/UniversLight.ttf") format("truetype");
+}
+`;
+  document.head.appendChild(style);
 });
 
 detectTouchDevice();
-
 
 // Function to perform reverse geocoding
 async function reverseGeocode(lat, lon) {
@@ -674,7 +680,7 @@ map.on("touchend", function () {
 function exitDriftMode() {
   if (currentMode === "drift") {
     // Optionally fade out audio (here we simply pause them)
-    driftAudio.forEach(audio => {
+    driftAudio.forEach((audio) => {
       audio.pause();
       audio.currentTime = 0;
     });
@@ -695,7 +701,6 @@ function exitDriftMode() {
     }, 5000);
   }
 }
-
 
 // Right-click event for creating a new marker
 async function handleMapClick(latlng) {
@@ -1061,5 +1066,5 @@ function wrapTextAtWhitespace(text, maxLength) {
     // If no whitespace is found, break at maxLength.
     breakpoint = maxLength;
   }
-  return text.substring(0, breakpoint) + "\n"  + text.substring(breakpoint + 1);
+  return text.substring(0, breakpoint) + "\n" + text.substring(breakpoint + 1);
 }
