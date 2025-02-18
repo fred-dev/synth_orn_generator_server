@@ -61,7 +61,7 @@ const DRIFT_MODE_KEY = "d";
 let currentMode = DRIFT_MODE_DEFAULT ? "drift" : "normal";
 
 // Custom log function to handle different log levels.
-console.log("Current mode on start:", currentMode);
+customLog("debug", "Current mode on start:", currentMode);
 
 // Drift mode configuration
 const driftConfig = {
@@ -140,7 +140,7 @@ function showPermissionOverlay() {
     e.stopPropagation();
     overlay.remove();
     firstLoad = false;
-    console.log("Permission overlay removed. Current mode:", currentMode);
+    customLog("debug", "Permission overlay removed. Current mode:", currentMode);
     if (currentMode === "drift") {
       //lets wait a bit before starting the drift mode
       setTimeout(() => {
@@ -149,7 +149,7 @@ function showPermissionOverlay() {
         driftAudio[1].load();
       }
       , 800);
-      console.log("Starting drift mode from permission overlay.");
+      customLog("debug", "Starting drift mode from permission overlay.");
     }
   };
 
@@ -900,22 +900,17 @@ async function loadAudio() {
     // For mobile autoplay support, you need autoplay, playsinline, and possibly muted
     audioPlayer.setAttribute("autoplay", "");
     audioPlayer.setAttribute("playsinline", "");
-    // audioPlayer.setAttribute("muted", "");
-    // Then unmute after a user gesture:
-    // audioPlayer.muted = false;
 
     audioPlayer.src = audioUrl;
     resultDiv.appendChild(audioPlayer);
 
     audioPlayer.load();
     resultDiv.scrollTop = resultDiv.scrollHeight;
-    // Some devices require user interaction even if autoplay is set
-    // audioPlayer.play().catch((err) => console.log(err));
   }
 }
 
 async function fetchDataAndDisplay() {
-  console.log("fetchDataAndDisplay start: " + JSON.stringify(userGeneratedData, null, 2));
+  customLog("debug", "fetchDataAndDisplay start: " + JSON.stringify(userGeneratedData, null, 2));
   try {
     // Send a POST request to the server
     const response = await fetch("/generate/generate-text", {
