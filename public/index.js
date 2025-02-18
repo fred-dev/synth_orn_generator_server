@@ -496,10 +496,22 @@ setTimeout(() => {
   }, 45000);
 }, 15000);
 
+// Polyfill for Element.closest() for older browsers
+if (!Element.prototype.closest) {
+  Element.prototype.closest = function (selector) {
+    let el = this;
+    while (el) {
+      if (el.matches(selector)) return el;
+      el = el.parentElement;
+    }
+    return null;
+  };
+}
+
 ["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
   document.addEventListener(evt, (e) => {
     // Ignore events that originate from the permission overlay.
-    if (e.target && (e.target.id === "permissionOverlay" || e.target.closest("#permissionOverlay"))) {
+    if (e.target && (e.target.id == "permissionOverlay" || e.target.closest("#permissionOverlay"))) {
       return;
     }
 
