@@ -508,12 +508,20 @@ if (!Element.prototype.closest) {
   };
 }
 
-["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
-  document.addEventListener(evt, (e) => {
-    console.log("Event:", evt);
-    console.log(e.target.id);
+const debounce = (func, delay) => {
+  let timeoutId;
+  return (...args) => {
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      func(...args);
+    }, delay);
+  };
+};
+
+["mousemove", "mousedown", "touchend", "click"].forEach((evt) => {
+  document.addEventListener(evt, debounce((e) => {
     // Ignore events that originate from the permission overlay.
-    if ((e.target.id == "permissionOverlay" || e.target.closest("#permissionOverlay"))) {
+    if (e.target.id == "permissionOverlay" || e.target.closest("#permissionOverlay")) {
       return;
     }
 
@@ -523,7 +531,7 @@ if (!Element.prototype.closest) {
     } else {
       resetInactivityTimeout(); // For normal mode inactivity handling.
     }
-  });
+  }, 200));
 });
 
 ["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
