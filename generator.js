@@ -72,6 +72,7 @@ app.get(routingPrefix + "/routingPrefix", (req, res) => {
   res.json({
     route: clientPathPrefix,
   });
+  console.log("routingPrefix: ", routingPrefix);
 });
 
 // or const { Dropbox } = require('dropbox'); if using CommonJS
