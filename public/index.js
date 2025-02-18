@@ -510,6 +510,8 @@ if (!Element.prototype.closest) {
 
 ["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
   document.addEventListener(evt, (e) => {
+    console.log("Event:", evt);
+    console.log(e);
     // Ignore events that originate from the permission overlay.
     if (e.target && (e.target.id == "permissionOverlay" || e.target.closest("#permissionOverlay"))) {
       return;
