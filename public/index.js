@@ -527,10 +527,11 @@ let ignoreEvents = false;
       firstLoad = false;
       return;
     }
+   
 
     if (currentMode === "drift") {
       exitDriftMode();
-      console.log("Exiting drift mode");
+     
     } else {
       resetInactivityTimeout(); // For normal mode inactivity handling.
     }
@@ -543,9 +544,9 @@ let ignoreEvents = false;
   }, 400));
 });
 
-["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
-  document.addEventListener(evt, resetInactivityTimeout);
-});
+// ["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
+//   document.addEventListener(evt, resetInactivityTimeout);
+// });
 
 let inactivityTimeout;
 function resetInactivityTimeout() {
