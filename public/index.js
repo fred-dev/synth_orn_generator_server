@@ -429,7 +429,7 @@ function stopDriftMode() {
 // });
 
 let firstLoad = true;
-let instructionTimeout;
+let instructionTimeout = 5000;;
 
 function showInstructionPopup() {
   const popup = document.getElementById("instructionPopup");
