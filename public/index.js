@@ -58,7 +58,7 @@ const DRIFT_MODE_DEFAULT = true;
 const DRIFT_MODE_KEY = "d";
 
 // Current mode: either "normal" or "drift".
-let currentMode = DRIFT_MODE_DEFAULT ? "drift" : "normal";
+let currentMode = "drift";
 
 // Custom log function to handle different log levels.
 customLog("debug", "Current mode on start:", currentMode);
