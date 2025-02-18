@@ -522,12 +522,19 @@ function resetInactivityTimeout() {
 }
 
 function detectTouchDevice() {
-  if ("ontouchstart" in window || (window.DocumentTouch && document instanceof DocumentTouch) || window.matchMedia("(pointer: coarse)").matches) {
-    document.body.classList.add("touch-device");
-    console.log("Touch device detected");
+  const hasTouchSupport =
+    ('ontouchstart' in window) ||
+    (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
+    (navigator.msMaxTouchPoints && navigator.msMaxTouchPoints > 0);
+
+  const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
+
+  if (hasTouchSupport || isCoarsePointer) {
+    document.body.classList.add('touch-device');
+    console.log('Touch device detected');
     return true;
   }
-  console.log( "Touch device not detected");
+  console.log('Touch device not detected');
   return false;
 }
 
