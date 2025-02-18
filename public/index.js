@@ -517,9 +517,12 @@ const debounce = (func, delay) => {
     }, delay);
   };
 };
+let ignoreEvents = false;
 
 ["mousemove", "mousedown", "touchstart", "click"].forEach((evt) => {
   document.addEventListener(evt, debounce((e) => {
+    if (ignoreEvents) return;
+
     // Ignore events that originate from the permission overlay.
     console.log("Event:", evt);
     console.log("Event target id:", e.target.id);
@@ -534,6 +537,12 @@ const debounce = (func, delay) => {
     } else {
       resetInactivityTimeout(); // For normal mode inactivity handling.
     }
+
+    // Ignore subsequent events for a short period.
+    ignoreEvents = true;
+    setTimeout(() => {
+      ignoreEvents = false;
+    }, 500); // Adjust the delay as needed
   }, 400));
 });
 
