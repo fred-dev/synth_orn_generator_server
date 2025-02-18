@@ -526,6 +526,7 @@ let ignoreEvents = false;
     // Ignore events that originate from the permission overlay.
     console.log("Event:", evt);
     console.log("Event target id:", e.target.id);
+    console.log("From click, currentMode: ", currentMode);
     if (e.target.id == "permissionOverlay" || e.target.closest("#permissionOverlay")) {
       console.log("Ignoring event from permission overlay");
       return;
