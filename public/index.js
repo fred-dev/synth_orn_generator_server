@@ -431,6 +431,7 @@ function showInstructionPopup() {
   if (!popup || popup.classList.contains("visible") || document.getElementById("resultDiv") || mapChoicelatlng) {
     return;
   }
+  console.log("showInstructionPopup called. Current mode:", currentMode);
 
   const normalText = `
     <h3 id="popup-heading">Welcome to Synthetic Ornithology</h3>
