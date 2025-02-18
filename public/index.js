@@ -180,8 +180,8 @@ function convertTimeTo12Hour(timeStr) {
 async function loadAndPlayNext(playerIndex) {
   const fileNumber = getRandomFileNumber();
   const fileName = formatFileNumber(fileNumber);
-  const audioUrl = `${driftConfig.folderPath}/drift_mp3s/${fileName}.mp3`;
-  const jsonUrl = `${driftConfig.folderPath}/drift_json/${fileName}.json`;
+  const audioUrl = `${routingPrefix}${driftConfig.folderPath}/drift_mp3s/${fileName}.mp3`;
+  const jsonUrl = `${routingPrefix}${driftConfig.folderPath}/drift_json/${fileName}.json`;
 
   let marker;
   try {
