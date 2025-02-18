@@ -102,6 +102,11 @@
 .weather-input-drag-handle {
   display: none;
 }
+/* if it is a touch device disable the input for the weather-number-input class*/
+.touch-device .weather-number-input {
+  pointer-events: none;
+
+}
 
 /* Hide the drag handle on touch devices */
 .touch-device .weather-input-drag-handle {
