@@ -148,6 +148,7 @@ function showPermissionOverlay() {
         driftAudio[0].load();
         driftAudio[1].load();
       }, 800);
+      detectTouchDevice();
       customLog("debug", "Starting drift mode from permission overlay.");
     }
   };
@@ -523,10 +524,10 @@ function resetInactivityTimeout() {
 function detectTouchDevice() {
   if ("ontouchstart" in window || (window.DocumentTouch && document instanceof DocumentTouch) || window.matchMedia("(pointer: coarse)").matches) {
     document.body.classList.add("touch-device");
-    customLog("debug", "Touch device detected");
+    console.log("Touch device detected");
     return true;
   }
-  customLog("debug", "Touch device not detected");
+  console.log( "Touch device not detected");
   return false;
 }
 
@@ -570,7 +571,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }, 1000); // 3000 milliseconds = 3 seconds
 });
 
-detectTouchDevice();
+
 
 // Function to perform reverse geocoding
 async function reverseGeocode(lat, lon) {
