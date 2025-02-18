@@ -432,19 +432,8 @@ function stopDriftMode() {
 // document.addEventListener("DOMContentLoaded", () => {
 
 // });
-let overlayActive = false;
 
-let firstLoad = true;
-let instructionTimeout = 5000;;
-
-function showInstructionPopup() {
-  const popup = document.getElementById("instructionPopup");
-  if (!popup || popup.classList.contains("visible") || document.getElementById("resultDiv") || mapChoicelatlng) {
-    return;
-  }
-  console.log("showInstructionPopup called. Current mode:", currentMode);
-
-  const normalText = `
+const normalText = `
     <h3 id="popup-heading">Welcome to Synthetic Ornithology</h3>
     This platform uses predictive models to simulate how
     <br>Australian ecosystems respond to future climate scenarios.
@@ -473,6 +462,21 @@ function showInstructionPopup() {
     <br>or long-press on touchscreen devices
     <br>to generate a location-specific simulation.
   `;
+
+let overlayActive = false;
+
+let firstLoad = true;
+let instructionTimeout = 5000;;
+
+function showInstructionPopup() {
+  const popup = document.getElementById("instructionPopup");
+  if (!popup || popup.classList.contains("visible") || document.getElementById("resultDiv") || mapChoicelatlng) {
+    popup.innerHTML = currentMode === "drift" ? driftText : normalText;
+    return;
+  }
+  console.log("showInstructionPopup called. Current mode:", currentMode);
+
+  
 
   popup.innerHTML = currentMode === "drift" ? driftText : normalText;
   popup.classList.add("visible");
