@@ -371,6 +371,12 @@ async function startDriftMode() {
   document.body.classList.add("drift-mode");
   console.log("Drift mode activated");
 
+  //if the results div is present, remove it
+  const resultsDiv = document.getElementById("resultDiv");
+  if (resultsDiv) {
+    resultsDiv.remove();
+  }
+
   // Add a slight delay to ensure currentMode is set before showing the popup
   showInstructionPopup();
 
@@ -518,17 +524,6 @@ if (!Element.prototype.closest) {
   };
 }
 
-// const debounce = (func, delay) => {
-//   let timeoutId;
-//   return (...args) => {
-//     if (timeoutId) clearTimeout(timeoutId);
-//     timeoutId = setTimeout(() => {
-//       func(...args);
-//     }, delay);
-//   };
-// };
-// let ignoreEvents = false;
-
 ["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
   document.addEventListener(evt, (e) => {
     // Ignore events if the permission overlay is active or if we're currently suppressing global events.
@@ -544,9 +539,6 @@ if (!Element.prototype.closest) {
     }
   });
 });
-// ["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
-//   document.addEventListener(evt, resetInactivityTimeout);
-// });
 
 let inactivityTimeout;
 function resetInactivityTimeout() {
@@ -557,7 +549,7 @@ function resetInactivityTimeout() {
     currentMode = "drift";
     document.body.classList.add("drift-mode");
     startDriftMode();
-  }, 80000); // 80 seconds
+  }, 120000); // 80 seconds
 }
 
 function detectTouchDevice() {
