@@ -419,7 +419,7 @@ function stopDriftMode() {
 // });
 
 // document.addEventListener("DOMContentLoaded", () => {
-  
+
 // });
 
 let firstLoad = true;
@@ -552,23 +552,22 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       routingPrefix = await getRoutingPrefix();
       customLog("debug", "Routing Prefix received event list:", routingPrefix);
+      const style = document.createElement("style");
+      style.innerHTML = `
+                        @font-face {
+                          font-family: "Univers";
+                          src: url("${routingPrefix}/fonts/Univers/UniversLight.ttf") format("truetype");
+                        }
+                        `;
+      console.log("routing prefix", routingPrefix);
+      document.head.appendChild(style);
+
+      showPermissionOverlay();
       // Use the routingPrefix as needed in your client-side code
     } catch (error) {
       customLog("error", "Failed to fetch Routing Prefix:", error);
     }
-  }, 10); // 3000 milliseconds = 3 seconds
-
-  const style = document.createElement("style");
-  style.innerHTML = `
-@font-face {
-  font-family: "Univers";
-  src: url("${routingPrefix}/fonts/Univers/UniversLight.ttf") format("truetype");
-}
-`;
-  console.log("routing prefix", routingPrefix);
-  document.head.appendChild(style);
-
-  showPermissionOverlay();
+  }, 1000); // 3000 milliseconds = 3 seconds
 });
 
 detectTouchDevice();
