@@ -36,14 +36,7 @@ const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">Op
 const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const map = L.map("map", { zoomControl: false }).setView([-24.801233, 132.94551], 5);
 //lets diable all map interactions
-map.dragging.disable();
-map.touchZoom.disable();
-map.doubleClickZoom.disable();
-map.scrollWheelZoom.disable();
-map.boxZoom.disable();
-map.keyboard.disable();
-if (map.tap) map.tap.disable();
-//map.dragging.disable();
+
 
 map.fitBounds([
   [-10, 112],
@@ -148,14 +141,7 @@ function showPermissionOverlay() {
   const removeOverlay = (e) => {
     e.stopPropagation();
     overlay.remove();
-    firstLoad = false;
-    map.dragging.enable();
-    map.touchZoom.enable();
-    map.doubleClickZoom.enable();
-    map.scrollWheelZoom.enable();
-    map.boxZoom.enable();
-    map.keyboard.enable();
-    if (map.tap) map.tap.enable();
+    
     customLog("debug", "Permission overlay removed. Current mode:", currentMode);
     if (currentMode === "drift") {
       //lets wait a bit before starting the drift mode
@@ -536,34 +522,27 @@ const debounce = (func, delay) => {
 let ignoreEvents = false;
 
 ["mousemove", "mousedown", "touchstart", "click"].forEach((evt) => {
-  document.addEventListener(
-    evt,
-    debounce((e) => {
-      if (ignoreEvents) return;
+  document.addEventListener(evt, debounce((e) => {
+    if (ignoreEvents) return;
+    if (firstLoad) {
+      console.log("Ignoring event from permission overlay");
+      firstLoad = false;
+      return;
+    }
 
-      // Ignore events that originate from the permission overlay.
-      console.log("Event:", evt);
-      console.log("Event target id:", e.target.id);
-      console.log("From click, currentMode: ", currentMode);
-      if (e.target.id == "permissionOverlay" || e.target.closest("#permissionOverlay")) {
-        console.log("Ignoring event from permission overlay");
-        return;
-      }
+    if (currentMode === "drift") {
+      exitDriftMode();
+      console.log("Exiting drift mode");
+    } else {
+      resetInactivityTimeout(); // For normal mode inactivity handling.
+    }
 
-      if (currentMode === "drift") {
-        exitDriftMode();
-        console.log("Exiting drift mode");
-      } else {
-        resetInactivityTimeout(); // For normal mode inactivity handling.
-      }
-
-      // Ignore subsequent events for a short period.
-      ignoreEvents = true;
-      setTimeout(() => {
-        ignoreEvents = false;
-      }, 500); // Adjust the delay as needed
-    }, 400)
-  );
+    // Ignore subsequent events for a short period.
+    ignoreEvents = true;
+    setTimeout(() => {
+      ignoreEvents = false;
+    }, 500); // Adjust the delay as needed
+  }, 400));
 });
 
 ["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
@@ -583,16 +562,19 @@ function resetInactivityTimeout() {
 }
 
 function detectTouchDevice() {
-  const hasTouchSupport = "ontouchstart" in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints && navigator.msMaxTouchPoints > 0);
+  const hasTouchSupport =
+    ('ontouchstart' in window) ||
+    (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
+    (navigator.msMaxTouchPoints && navigator.msMaxTouchPoints > 0);
 
-  const isCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
+  const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
 
   if (hasTouchSupport || isCoarsePointer) {
-    document.body.classList.add("touch-device");
-    console.log("Touch device detected");
+    document.body.classList.add('touch-device');
+    console.log('Touch device detected');
     return true;
   }
-  console.log("Touch device not detected");
+  console.log('Touch device not detected');
   return false;
 }
 
@@ -635,6 +617,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }, 1000); // 3000 milliseconds = 3 seconds
 });
+
+
 
 // Function to perform reverse geocoding
 async function reverseGeocode(lat, lon) {
