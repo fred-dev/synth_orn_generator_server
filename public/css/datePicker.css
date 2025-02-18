@@ -1,9 +1,18 @@
 @font-face {
-  font-family: "Libre Franklin";
-  src: url("/fonts/Libre_Franklin/LibreFranklin-VariableFont_wght.ttf") format("truetype");
+  font-family: "Univers";
+  src: url("/fonts/Univers/UniversRegular.ttf") format("truetype");
   /* For variable fonts, you can optionally specify the weight range */
   font-weight: 100 900;
   font-display: swap; /* Ensures text remains visible during load */
+}
+:root {
+  --heading-font: "Universe", sans-serif;
+  --body-font: "Helvetica", sans-serif; /* or any other font you prefer */
+  -webkit-touch-callout: none; /* Safari */
+  -webkit-user-select: none; /* Chrome */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none;
 }
 
 .hidden {
@@ -16,7 +25,7 @@
 .picker-container {
   width: 300px;
   margin: 20px 0;
-  font-family: "Libre Franklin";
+  font-family: "Univers";
 }
 .progress-bar {
   width: 300px;
@@ -73,10 +82,10 @@
 }
 
 #custom-picker {
-  font-family: "Libre Franklin";
+  font-family: "Univers";
 }
 .leaflet-popup-content-wrapper {
-  font-family: "Libre Franklin";
+  font-family: "Univers";
 }
 
 @media only screen and (max-width: 600px) {

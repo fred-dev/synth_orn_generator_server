@@ -41,20 +41,434 @@ map.fitBounds([
   [-44, 154],
 ]);
 
+//const tiles = L.tileLayer("https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.jpg", { attribution });
+//const tiles = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { attribution });
 const tiles = L.tileLayer(tileUrl, { attribution });
+
+tileUrl;
 tiles.addTo(map);
+
+// ================= Drift Mode Configuration & State =================
+
+// ================= Drift Mode Configuration & State =================
+
+// Set this to true during development if you want the system to load in drift mode by default.
+const DRIFT_MODE_DEFAULT = true;
+// Key (e.g. "d") used to toggle modes.
+const DRIFT_MODE_KEY = "d";
+
+// Current mode: either "normal" or "drift".
+let currentMode = DRIFT_MODE_DEFAULT ? "drift" : "normal";
+
+// Custom log function to handle different log levels.
+console.log("Current mode on start:", currentMode);
+
+// Drift mode configuration
+const driftConfig = {
+  crossfade: 4, // seconds (fly-to and crossfade will run for 4 seconds)
+  fileDuration: 22, // seconds (all files are 23 sec long, so crossfade starts at 18 sec)
+  totalFiles: 1000,
+  // This folder should be accessible via your web server (e.g. via a symlink) and contain files in subfolders:
+  // drift_mp3s: contains files named "0001.mp3", "0002.mp3", etc.
+  // drift_json: contains files named "0001.json", "0002.json", etc.
+  folderPath: "/drift",
+};
+
+// Global variables for drift mode state.
+let driftActive = false;
+let playedFiles = new Set();
+let currentPlayer = 0; // Index of the currently playing audio (0 or 1)
+const driftAudio = [new Audio(), new Audio()];
+driftAudio[0].volume = 1;
+driftAudio[1].volume = 0;
+
+// To keep track of scheduled timeouts/intervals.
+let crossfadeTimeoutId = null;
+let fadeIntervalId = null;
+
+// To keep track of markers on the map.
+let currentMarker = null;
+
+// ================= Utility Functions =================
+
+/**
+ * Chooses a random file number (1 to totalFiles) that has not been played yet.
+ * Resets the set when all files have been played.
+ */
+function getRandomFileNumber() {
+  if (playedFiles.size >= driftConfig.totalFiles) {
+    playedFiles.clear();
+  }
+  let fileNumber;
+  do {
+    fileNumber = Math.floor(Math.random() * driftConfig.totalFiles) + 1;
+  } while (playedFiles.has(fileNumber));
+  playedFiles.add(fileNumber);
+  return fileNumber;
+}
+
+/**
+ * Formats the file number into a 4-digit string (e.g. 1 -> "0001").
+ */
+function formatFileNumber(num) {
+  return String(num).padStart(4, "0");
+}
+
+function showPermissionOverlay() {
+  const overlay = document.createElement("div");
+  overlay.id = "permissionOverlay";
+  Object.assign(overlay.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(0,0,0,0.8)",
+    color: "white",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "48px",
+    zIndex: "10000",
+    cursor: "pointer"
+  });
+  overlay.textContent = "CLICK / TOUCH";
+  document.body.appendChild(overlay);
+
+  // Remove the overlay and start drift mode when clicked or touched.
+  const removeOverlay = (e) => {
+    e.stopPropagation();
+    overlay.remove();
+    firstLoad = false;
+    console.log("Permission overlay removed. Current mode:", currentMode);
+    if (currentMode === "drift") {
+      //lets wait a bit before starting the drift mode
+      setTimeout(() => {
+        startDriftMode();
+        driftAudio[0].load();
+        driftAudio[1].load();
+      }
+      , 800);
+      console.log("Starting drift mode from permission overlay.");
+    }
+  };
+
+  // Use the 'once' option so the event fires only a single time.
+  overlay.addEventListener("click", removeOverlay, { once: true });
+  overlay.addEventListener("touchstart", removeOverlay, { once: true });
+}
+
+// ================= Drift Mode Functions =================
+
+/**
+ * Loads the audio file and its corresponding JSON (to get geolocation and other data),
+ * creates a marker with a popup showing time/date and weather,
+ * sets the audio source, and starts playback.
+ * Returns the created marker.
+ */
+// Helper function to convert HH:MM:SS (24-hour) to 12-hour format with AM/PM.
+function convertTimeTo12Hour(timeStr) {
+  const [hourStr, minuteStr] = timeStr.split(":");
+  let hour = parseInt(hourStr, 10);
+  const ampm = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12;
+  if (hour === 0) hour = 12;
+  return `${hour}:${minuteStr} ${ampm}`;
+}
+
+// In loadAndPlayNext(), after fetching and parsing the JSON:
+async function loadAndPlayNext(playerIndex) {
+  const fileNumber = getRandomFileNumber();
+  const fileName = formatFileNumber(fileNumber);
+  const audioUrl = `${driftConfig.folderPath}/drift_mp3s/${fileName}.mp3`;
+  const jsonUrl = `${driftConfig.folderPath}/drift_json/${fileName}.json`;
+
+  let marker;
+  try {
+    const response = await fetch(jsonUrl);
+    if (!response.ok) throw new Error(`Failed to load ${jsonUrl}`);
+    const jsonData = await response.json();
+
+    // Assume jsonData.dateName is in the format: "HH:MM:SS DayName DD Month YYYY"
+    // Assume jsonData has been fetched and parsed.
+    // Parse the dateName (format: "HH:MM:SS DayName DD Month YYYY")
+    const dateParts = jsonData.dateName.split(" "); // e.g., ["08:00:00", "Monday", "11", "October", "2028"]
+    const time24 = dateParts[0];
+    const dayName = dateParts[1];
+    const dateNumber = dateParts[2];
+    const monthName = dateParts[3];
+    const year = dateParts[4];
+    const time12 = convertTimeTo12Hour(time24); // Use your existing helper
+
+    // Build the seven text items:
+    // 1. Location (the longest string)
+    // 2. Year
+    // 3. Date details (day, month, date, time)
+    // 4. Temperature (°C)
+    // 5. Humidity (%) capped at 100
+    // 6. Pressure (hPa) capped at 1084
+    // 7. Wind Speed (km/h)
+    const wrappedLocation = wrapTextAtWhitespace("Location: " + jsonData.display_name, 90);
+    const items = [
+      wrappedLocation,
+      "Year: " + year,
+      `Date: ${dayName} ${monthName} ${dateNumber} ${time12}`,
+      "Temperature: " + jsonData.main.temp + "°C",
+      "Humidity: " + Math.min(jsonData.main.humidity, 100) + "%",
+      "Pressure: " + Math.min(jsonData.main.pressure, 1084) + "hPa",
+      "Wind Speed: " + jsonData.wind.speed + "km/h",
+    ];
+    
+
+    // Create the popup container
+    const popupContainer = document.createElement("div");
+    popupContainer.style.backgroundColor = "black";
+    popupContainer.style.padding = "5px";
+    // Optionally, force each component to display on one line:
+    popupContainer.style.display = "flex";
+    popupContainer.style.flexDirection = "column";
+    popupContainer.style.gap = "2px";
+
+    // For each item, create a container with the appropriate classes.
+    items.forEach((itemText) => {
+      const compDiv = document.createElement("div");
+      compDiv.className = "flyoverComponent"; // style in your CSS to ensure proper spacing and sizing
+      // The text element:
+      const textSpan = document.createElement("div");
+      textSpan.className = "flyoverText"; // style this class (e.g., white text, font, etc.)
+      textSpan.textContent = itemText;
+      compDiv.appendChild(textSpan);
+      popupContainer.appendChild(compDiv);
+    });
+
+    // Bind this popup to your marker (assuming you already have a marker variable)
+    marker = L.marker([jsonData.coord.lat, jsonData.coord.lon], {
+      autoClose: false,
+      closeOnClick: false,
+    }).bindPopup(popupContainer);
+
+    // Add the marker to the map (and don't call openPopup() if you want it to open later)
+    marker.addTo(map);
+  } catch (error) {
+    console.error("Error loading JSON:", error);
+    marker = null;
+  }
+
+  // Set the new audio source.
+  driftAudio[playerIndex].src = audioUrl;
+  driftAudio[playerIndex].load();
+
+  try {
+    // Start playback (for the current track, this will be audible; for the next track, volume is 0).
+    await driftAudio[playerIndex].play();
+  } catch (error) {
+    console.error("Error playing audio:", error);
+  }
+
+  return marker;
+}
+
+/**
+ * Flies to the given latlng and then pans the map so that the point appears
+ * at the desired container offset (horizontally centered and 90% down vertically).
+ *
+ * @param {L.LatLng} latlng - The target latitude/longitude.
+ * @param {number} zoom - The zoom level.
+ * @param {number} duration - The duration (in seconds) for the flyTo.
+ * @returns {Promise} Resolves when both flyTo and panBy are complete.
+ */
+function flyToWithOffset(latlng, zoom, flyDuration, panDuration) {
+  return new Promise((resolve) => {
+    // Start the flyTo animation.
+    map.flyTo(latlng, zoom, { duration: flyDuration });
+    // Wait for the flyTo to finish.
+    map.once("moveend", () => {
+      const size = map.getSize();
+      // Desired container point: center horizontally, 90% down vertically.
+      const desiredPoint = L.point(size.x * 0.4, size.y * 0.05);
+      const markerPoint = map.latLngToContainerPoint(latlng);
+      const offset = desiredPoint.subtract(markerPoint);
+      // Pan the map by the calculated offset.
+      map.panBy(offset, { animate: true, duration: panDuration });
+      // Wait until the pan is complete.
+      map.once("moveend", () => {
+        resolve();
+      });
+    });
+  });
+}
+/**
+ * Schedules the crossfade (and corresponding fly-to) between the currently playing audio and the next one.
+ * The fly-to operation (with duration equal to driftConfig.crossfade) and the audio crossfade
+ * start at the same time.
+ */
+function scheduleNext() {
+  // Calculate when to start the crossfade.
+  const crossfadeStartTime = (driftConfig.fileDuration - driftConfig.crossfade) * 1000;
+  crossfadeTimeoutId = setTimeout(async () => {
+    const nextPlayer = (currentPlayer + 1) % 2;
+    // Load the next track and get its marker.
+    const newMarker = await loadAndPlayNext(nextPlayer);
+
+    // Close the popup of the current marker (if any) as soon as we start the transition.
+    if (currentMarker) {
+      currentMarker.closePopup();
+    }
+
+    // Start the map flyTo (with offset) and get a promise that resolves when complete.
+    let flyPromise = null;
+    if (newMarker) {
+      flyPromise = flyToWithOffset(newMarker.getLatLng(), 11, driftConfig.crossfade - 1.5, 1.5);
+    }
+
+    // Start the audio crossfade concurrently.
+    const fadeSteps = 20;
+    const stepTime = (driftConfig.crossfade * 1000) / fadeSteps;
+    let currentStep = 0;
+    fadeIntervalId = setInterval(() => {
+      currentStep++;
+      // Fade out the current audio.
+      driftAudio[currentPlayer].volume = Math.max(0, 1 - currentStep / fadeSteps);
+      // Fade in the next audio.
+      driftAudio[nextPlayer].volume = Math.min(1, currentStep / fadeSteps);
+      if (currentStep >= fadeSteps) {
+        clearInterval(fadeIntervalId);
+        // Pause and reset the previous audio.
+        driftAudio[currentPlayer].pause();
+        driftAudio[currentPlayer].currentTime = 0;
+        // Switch currentPlayer.
+        currentPlayer = nextPlayer;
+        // Schedule the next crossfade.
+        scheduleNext();
+      }
+    }, stepTime);
+
+    // Once the map movement is complete, remove the old marker and open the new marker's popup.
+    if (flyPromise) {
+      await flyPromise;
+      if (currentMarker) {
+        map.removeLayer(currentMarker);
+      }
+      currentMarker = newMarker;
+      newMarker.openPopup();
+    }
+  }, crossfadeStartTime);
+}
+
+/**
+ * Starts the drift mode loop.
+ */
+async function startDriftMode() {
+  if (driftActive) return; // Already running
+  driftActive = true;
+  currentMode = "drift";
+  document.body.classList.add("drift-mode");
+  showInstructionPopup();
+  customLog("debug", "Drift mode activated");
+  playedFiles.clear();
+  currentPlayer = 0;
+  // Load and start the first track, and store its marker.
+  currentMarker = await loadAndPlayNext(currentPlayer);
+  // Once the first marker is loaded, fly to it:
+  if (currentMarker) {
+    await flyToWithOffset(currentMarker.getLatLng(), 12, 1, 0.5);
+    currentMarker.openPopup();
+  }
+  // Then schedule subsequent transitions.
+  scheduleNext();
+}
+
+/**
+ * Stops the drift mode loop.
+ */
+function stopDriftMode() {
+  driftActive = false;
+  document.body.classList.remove("drift-mode");
+  customLog("debug", "Drift mode deactivated");
+  if (crossfadeTimeoutId) clearTimeout(crossfadeTimeoutId);
+  if (fadeIntervalId) clearInterval(fadeIntervalId);
+  // Stop both audio players.
+  driftAudio.forEach((audio) => {
+    audio.pause();
+    audio.currentTime = 0;
+  });
+  // Optionally, remove any markers.
+  if (currentMarker) {
+    map.removeLayer(currentMarker);
+    currentMarker = null;
+  }
+}
+
+// ================= Mode Toggle via Keyboard =================
+
+// document.addEventListener("keydown", (e) => {
+//   if (e.key.toLowerCase() === DRIFT_MODE_KEY) {
+//     if (currentMode === "drift") {
+//       // Switch back to normal mode.
+//       currentMode = "normal";
+//       stopDriftMode();
+//       customLog("debug", "Switched to normal mode");
+//       // (Optional) Re-enable your normal map event listeners here.
+//     } else {
+//       // Switch to drift mode.
+//       currentMode = "drift";
+//       startDriftMode();
+//       customLog("debug", "Switched to drift mode");
+      
+//       // (Optional) Disable normal map event listeners if necessary.
+//     }
+//   }
+// });
+
+document.addEventListener("DOMContentLoaded", () => {
+  showPermissionOverlay();
+});
 
 let firstLoad = true;
 let instructionTimeout;
 
 function showInstructionPopup() {
   const popup = document.getElementById("instructionPopup");
-  if (popup && !popup.classList.contains("visible") && !document.getElementById("resultDiv") && !mapChoicelatlng) {
-    popup.classList.add("visible");
+  if (!popup || popup.classList.contains("visible") || document.getElementById("resultDiv") || mapChoicelatlng) {
+    return;
   }
+
+  const normalText = `
+    <h3 id="popup-heading">Welcome to Synthetic Ornithology</h3>
+    This platform uses predictive models to simulate how
+    <br>Australian ecosystems respond to future climate scenarios.
+    <br>For a selected scenario, our model will produce birdsong
+    <br>and wildlife soundscapes reflecting the projected conditions.
+    <br><br>Simply pan and zoom across the map to choose a location
+    <br>(it must be within Australia). Once at your desired location,
+    <br>right-click (Control + click on Mac)
+    <br>or long-press on touchscreen devices
+    <br>to generate a location-specific simulation.
+  `;
+
+  const driftText = `
+  <h3 id="popup-heading">Welcome to Synthetic Ornithology</h3>
+    This platform uses predictive models to simulate how
+    <br>Australian ecosystems respond to future climate scenarios.
+    <br>For a selected scenario, our model will produce birdsong
+    <br>and wildlife soundscapes reflecting the projected conditions.
+    <br><br>Drift Mode is currently active, providing a continuously
+    <br>changing simulated soundscape. To choose your own scenario,
+    <br>interact with the map:
+
+    <br><br>Simply pan and zoom across the map to choose a location
+    <br>(it must be within Australia). Once at your desired location,
+    <br>right-click (Control + click on Mac)
+    <br>or long-press on touchscreen devices
+    <br>to generate a location-specific simulation.
+  `;
+
+  popup.innerHTML = currentMode === "drift" ? driftText : normalText;
+  popup.classList.add("visible");
 }
 
 function hideInstructionPopup() {
+  if(currentMode === "drift") return;
   const popup = document.getElementById("instructionPopup");
   if (popup) {
     popup.classList.remove("visible");
@@ -70,19 +484,43 @@ function resetInstructionTimeout() {
   }, 45000);
 }
 
-showInstructionPopup();
-
 setTimeout(() => {
   hideInstructionPopup();
-  firstLoad = false;
   instructionTimeout = setTimeout(() => {
     showInstructionPopup();
   }, 45000);
 }, 15000);
 
-["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
-  document.addEventListener(evt, resetInstructionTimeout);
+["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach(evt => {
+  document.addEventListener(evt, (e) => {
+    // Ignore events that originate from the permission overlay.
+    if (e.target && (e.target.id === "permissionOverlay" || e.target.closest("#permissionOverlay"))) {
+      return;
+    }
+    
+    if (currentMode === "drift") {
+      exitDriftMode();
+    } else {
+      resetInactivityTimeout(); // For normal mode inactivity handling.
+    }
+  });
 });
+
+["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach(evt => {
+  document.addEventListener(evt, resetInactivityTimeout);
+});
+
+let inactivityTimeout;
+function resetInactivityTimeout() {
+  if (currentMode !== "normal") return;
+  clearTimeout(inactivityTimeout);
+  inactivityTimeout = setTimeout(() => {
+    // Switch automatically to drift mode after 80 seconds of inactivity
+    currentMode = "drift";
+    document.body.classList.add("drift-mode");
+    startDriftMode();
+  }, 80000); // 80 seconds
+}
 
 function detectTouchDevice() {
   if ("ontouchstart" in window || (window.DocumentTouch && document instanceof DocumentTouch) || window.matchMedia("(pointer: coarse)").matches) {
@@ -125,7 +563,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 detectTouchDevice();
 
-showInstructionPopup();
 
 // Function to perform reverse geocoding
 async function reverseGeocode(lat, lon) {
@@ -216,23 +653,50 @@ function calculateClimateVariance(weatherData) {
     windSpeed: (weatherData.data[0].wind_speed * variance).toFixed(2),
   };
 }
-// Right-click event for creating a new marker
+
 map.on("contextmenu", async function (event) {
+  if (currentMode !== "normal") return;
   handleMapClick(event.latlng);
 });
 
-// Custom event listener for long press on mobile devices
 let touchTimeout;
-
 map.on("touchstart", function (event) {
+  if (currentMode !== "normal") return;
   touchTimeout = setTimeout(() => {
     handleMapClick(event.latlng);
-  }, 450); // 1 second
+  }, 450);
 });
-
 map.on("touchend", function () {
+  if (currentMode !== "normal") return;
   clearTimeout(touchTimeout);
 });
+
+function exitDriftMode() {
+  if (currentMode === "drift") {
+    // Optionally fade out audio (here we simply pause them)
+    driftAudio.forEach(audio => {
+      audio.pause();
+      audio.currentTime = 0;
+    });
+    // Close popups and remove drift markers
+    if (currentMarker) {
+      currentMarker.closePopup();
+      map.removeLayer(currentMarker);
+      currentMarker = null;
+    }
+    stopDriftMode();
+    // Switch mode and update body class
+    currentMode = "normal";
+    document.body.classList.remove("drift-mode");
+    // Show instructions for 5 seconds then hide them
+    showInstructionPopup();
+    setTimeout(() => {
+      hideInstructionPopup();
+    }, 5000);
+  }
+}
+
+
 // Right-click event for creating a new marker
 async function handleMapClick(latlng) {
   hideInstructionPopup();
@@ -591,4 +1055,16 @@ function customLog(logLevel, ...messages) {
       console.log(...messages);
     }
   }
+}
+function wrapTextAtWhitespace(text, maxLength) {
+  if (text.length <= maxLength) {
+    return text;
+  }
+  // Find the last whitespace before maxLength.
+  let breakpoint = text.lastIndexOf(" ", maxLength);
+  if (breakpoint === -1) {
+    // If no whitespace is found, break at maxLength.
+    breakpoint = maxLength;
+  }
+  return text.substring(0, breakpoint) + "\n"  + text.substring(breakpoint + 1);
 }

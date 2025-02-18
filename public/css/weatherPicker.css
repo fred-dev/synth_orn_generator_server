@@ -1,15 +1,19 @@
 @font-face {
-  font-family: "Libre Franklin";
-  src: url("/fonts/Libre_Franklin/LibreFranklin-VariableFont_wght.ttf") format("truetype");
+  font-family: "Univers";
+  src: url("/fonts/Univers/UniversRegular.ttf") format("truetype");
+  /* For variable fonts, you can optionally specify the weight range */
   font-weight: 100 900;
-  font-display: swap;
+  font-display: swap; /* Ensures text remains visible during load */
 }
-
 :root {
-  --heading-font: "Libre Franklin", sans-serif;
-  --body-font: "Helvetica", sans-serif;
+  --heading-font: "Universe", sans-serif;
+  --body-font: "Helvetica", sans-serif; /* or any other font you prefer */
+  -webkit-touch-callout: none; /* Safari */
+  -webkit-user-select: none; /* Chrome */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none;
 }
-
 /* Weather container */
 #weather-container-input {
   background-color: #f0f8ff;
@@ -60,7 +64,7 @@
   -moz-appearance: textfield;
   -webkit-appearance: none;
   appearance: none;
-  font-family: "Libre Franklin", sans-serif;
+  font-family: "Univers", sans-serif;
   width: 4.9em;
   border: 1px solid #ccc;
 }
@@ -73,7 +77,7 @@
   background: white;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  font-family: "Libre Franklin", sans-serif;
+  font-family: "Univers", sans-serif;
 }
 
 /* Inline icon and description area */
@@ -97,7 +101,7 @@
   font-weight: bold;
   margin: 0;
   padding: 0;
-  font-family: "Libre Franklin", sans-serif;
+  font-family: "Univers", sans-serif;
 }
 
 /* Drag handle (for non‑touch devices) */
