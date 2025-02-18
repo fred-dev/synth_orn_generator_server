@@ -522,6 +522,7 @@ const debounce = (func, delay) => {
   document.addEventListener(evt, debounce((e) => {
     // Ignore events that originate from the permission overlay.
     if (e.target.id == "permissionOverlay" || e.target.closest("#permissionOverlay")) {
+      console.log("Ignoring event from permission overlay");
       return;
     }
 
