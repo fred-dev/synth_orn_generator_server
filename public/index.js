@@ -367,9 +367,7 @@ async function startDriftMode() {
   console.log("Drift mode activated");
 
   // Add a slight delay to ensure currentMode is set before showing the popup
-  setTimeout(() => {
-    showInstructionPopup();
-  }, 100);
+  showInstructionPopup();
 
   playedFiles.clear();
   currentPlayer = 0;
