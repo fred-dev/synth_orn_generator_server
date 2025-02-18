@@ -531,7 +531,7 @@ const debounce = (func, delay) => {
     } else {
       resetInactivityTimeout(); // For normal mode inactivity handling.
     }
-  }, 200));
+  }, 400));
 });
 
 ["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
