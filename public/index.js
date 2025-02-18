@@ -603,7 +603,7 @@ function constructHistoricalDate() {
 }
 
 async function getWaterDistanceData(lat, lon) {
-  const url = "/generate/waterdistance"; // Relative URL for your Node.js server endpoint
+  const url = routingPrefix + "/waterdistance"; // Relative URL for your Node.js server endpoint
 
   try {
     const response = await fetch(url, {
@@ -817,7 +817,7 @@ async function handleMapClick(latlng) {
     customLog("debug", "fetchWeatherData start");
     let altered_date = constructHistoricalDate();
     try {
-      const response = await fetch(`/generate/weather?lat=${lat}&lon=${lon}&date=${altered_date}`);
+      const response = await fetch(`${routingPrefix}/weather?lat=${lat}&lon=${lon}&date=${altered_date}`);
       const data = await response.json();
       customLog("debug", "fetchWeatherData received response: " + JSON.stringify(data));
       return data;
@@ -847,7 +847,7 @@ async function handleMapClick(latlng) {
 
 async function callGenerateWithGradio(lat, lon, temp, humidity, wind_speed, pressure, minutes_of_day, day_of_year) {
   try {
-    const response = await fetch("/generate/generateAudio", {
+    const response = await fetch(routingPrefix + "/generateAudio", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -918,7 +918,7 @@ async function fetchDataAndDisplay() {
   customLog("debug", "fetchDataAndDisplay start: " + JSON.stringify(userGeneratedData, null, 2));
   try {
     // Send a POST request to the server
-    const response = await fetch("/generate/generate-text", {
+    const response = await fetch(routingPrefix + "/generate-text", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -982,7 +982,7 @@ async function fetchDataAndDisplay() {
 async function getisInAustralia(lat, lon) {
   //lets log the time to see how long it takes to get a response
   //console.time("isInAustralia");
-  const url = "/generate/isInAustralia"; // Relative URL for your Node.js server endpoint
+  const url = routingPrefix + "/isInAustralia"; // Relative URL for your Node.js server endpoint
 
   try {
     const response = await fetch(url, {
