@@ -50,6 +50,8 @@ const tiles = L.tileLayer(tileUrl, { attribution });
 tileUrl;
 tiles.addTo(map);
 
+let suppressGlobalEvents = false;
+
 // ================= Drift Mode Configuration & State =================
 
 // ================= Drift Mode Configuration & State =================
@@ -141,8 +143,12 @@ function showPermissionOverlay() {
   const removeOverlay = (e) => {
     e.stopPropagation();
     overlay.remove();
-    overlayActive = false; // clear the flag once the overlay is removed
-    console.log("Permission overlay removed. Current mode:", currentMode);
+    suppressGlobalEvents = true; // temporarily ignore global events
+    setTimeout(() => {
+      suppressGlobalEvents = false;
+    }, 1000);
+  
+    customLog("debug", "Permission overlay removed. Current mode:", currentMode);
     if (currentMode === "drift") {
       setTimeout(() => {
         startDriftMode();
@@ -150,7 +156,7 @@ function showPermissionOverlay() {
         driftAudio[1].load();
       }, 800);
       detectTouchDevice();
-      console.log("Starting drift mode from permission overlay.");
+      customLog("debug", "Starting drift mode from permission overlay.");
     }
   };
 
@@ -521,15 +527,16 @@ if (!Element.prototype.closest) {
 
 ["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
   document.addEventListener(evt, (e) => {
-    // If the event is coming from the permission overlay or if the overlay is active, do nothing.
-    if (overlayActive || (e.target && (e.target.id === "permissionOverlay" || e.target.closest("#permissionOverlay")))) {
+    // Ignore events if the permission overlay is active or if we're currently suppressing global events.
+    if (suppressGlobalEvents ||
+        (e.target && (e.target.id === "permissionOverlay" || e.target.closest("#permissionOverlay")))) {
       return;
     }
     
     if (currentMode === "drift") {
       exitDriftMode();
     } else {
-      resetInactivityTimeout(); // For normal mode inactivity handling.
+      resetInactivityTimeout();
     }
   });
 });
