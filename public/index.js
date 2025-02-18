@@ -442,7 +442,7 @@ function showInstructionPopup() {
     <br>(it must be within Australia). Once at your desired location,
     <br>right-click (Control + click on Mac)
     <br>or long-press on touchscreen devices
-    <br>to generate a location-specific simulation HELLO.
+    <br>to generate a location-specific simulation.
   `;
 
   const driftText = `
