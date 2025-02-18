@@ -556,7 +556,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) {
       customLog("error", "Failed to fetch Routing Prefix:", error);
     }
-  }, 500); // 3000 milliseconds = 3 seconds
+  }, 800); // 3000 milliseconds = 3 seconds
 
   const style = document.createElement("style");
   style.innerHTML = `
@@ -565,6 +565,7 @@ document.addEventListener("DOMContentLoaded", () => {
   src: url("${routingPrefix}/fonts/Univers/UniversLight.ttf") format("truetype");
 }
 `;
+  console.log("routing prefix", routingPrefix);
   document.head.appendChild(style);
 });
 
