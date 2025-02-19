@@ -101,7 +101,7 @@ let fadeIntervalId = null;
 // To keep track of markers on the map.
 let currentMarker = null;
 
-let inactivityTimeout = 5000;
+let inactivityTimeout = 0;
 
 let hasTouch = false;
 
