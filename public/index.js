@@ -206,7 +206,7 @@ function resetInactivityTimeout() {
     currentMode = "drift";
     document.body.classList.add("drift-mode");
     startDriftMode();
-  }, 25000); // 80 seconds
+  }, 180000); // 80 seconds
 }
 
 function detectTouchDevice() {
