@@ -473,7 +473,8 @@ function detectTouchDevice() {
 }
 async function loadConfig() {
   try {
-    const response = await fetch(`${routingPrefix}config.json`);
+
+    const response = await fetch(`${routingPrefix}/config.json`);
     if (!response.ok) {
       throw new Error(`Failed to load config: ${response.status}`);
     }
