@@ -82,20 +82,20 @@ async function getRoutingPrefix() {
     customLog("error", "Failed to fetch Routing Prefix:", error);
   }
 }
-document.addEventListener("DOMContentLoaded", () => {
-  customLog("debug", "DOMContentLoaded event fired");
+// document.addEventListener("DOMContentLoaded", () => {
+//   customLog("debug", "DOMContentLoaded event fired");
 
-  // Call getRoutingPrefix after a delay of 3 seconds (3000 milliseconds)
-  setTimeout(async () => {
-    try {
-      routingPrefix = await getRoutingPrefix();
-      customLog("debug", "Routing Prefix received event list:", routingPrefix);
-      // Use the routingPrefix as needed in your client-side code
-    } catch (error) {
-      customLog("error", "Failed to fetch Routing Prefix:", error);
-    }
-  }, 500); // 3000 milliseconds = 3 seconds
-});
+//   // Call getRoutingPrefix after a delay of 3 seconds (3000 milliseconds)
+//   setTimeout(async () => {
+//     try {
+//       routingPrefix = await getRoutingPrefix();
+//       customLog("debug", "Routing Prefix received event list:", routingPrefix);
+//       // Use the routingPrefix as needed in your client-side code
+//     } catch (error) {
+//       customLog("error", "Failed to fetch Routing Prefix:", error);
+//     }
+//   }, 500); // 3000 milliseconds = 3 seconds
+// });
 
 function setupPickerUIInBubble() {
   // Find or create the container element

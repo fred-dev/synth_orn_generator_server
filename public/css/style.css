@@ -113,6 +113,7 @@ body {
   margin-top: 3em;
   margin-left: 2em;
   background: rgba(255, 255, 255, 0.9);
+  max-width: 25%;
   border-radius: 12px;
   padding: 20px 20px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
@@ -195,22 +196,47 @@ body {
   font-size: 24px;
 }
 
+.flyoverMasterContainer {
+  /* We’ll treat this as a table */
+  display: table;
+  background-color: #000000;
+  padding: 5px;
+  color: #ffffff;
+  box-sizing: border-box; /* ensures padding is included in the width */
+}
+
 .flyoverComponent {
-  /* Adjust margins/padding as needed */
-  padding: 4px 0;
+  /* Each item is a table row */
+  display: table-row;
+  /* max-width: 50vw; */
+}
+
+.flyoverTitle, .flyoverText {
+  /* Each label/value is a table cell */
+  display: table-cell;
+  padding: 4px 8px;
+  font-size: 22px;
+  font-weight: 100;
+  text-align: left;
+  line-height: 1.1;
+}
+
+/* Right-align the labels so the colons line up neatly */
+.flyoverTitle {
+  text-align: right;
+  font-weight: bold; /* If you want them bold */
+  width: 1px;        /* Force it to shrink to the longest label's width */
+  white-space: nowrap;
 }
 
 .flyoverText {
-  font-family: var(--heading-font);
-  font-size: 22px;
-  font-weight: 100;
-  color: #ffffff;
   text-align: left;
-  line-height: 1.1;
-  white-space: nowrap; /* Ensures the text stays on a single line */
+  word-wrap: normal;
+  font-weight: lighter;
+  /* no special width; it just expands to fill space */
 }
 .drift-mode .leaflet-popup-content {
-  width: auto !important;
+  /* width: 50vw !important; */
   background-color: #000000 !important;
 }
 
@@ -218,7 +244,7 @@ body {
   background-color: #000000 !important;
 }
 
-.drift-mode .leaflet-popup-tip{
+.drift-mode .leaflet-popup-tip {
   background-color: #000000 !important;
 }
 /* Styles when NOT in drift mode */

@@ -32,33 +32,34 @@ userGeneratedData.waterDistance = {
 customLog("debug", userGeneratedData);
 
 const normalText = `
-    <h3 id="popup-heading">Welcome to Synthetic Ornithology</h3>
+    <h3 id="popup-heading">Welcome: </h3>
     This platform uses predictive models to simulate how
-    <br>Australian ecosystems respond to future climate scenarios.
-    <br>For a selected scenario, our model will produce birdsong
-    <br>and wildlife soundscapes reflecting the projected conditions.
-    <br><br>Simply pan and zoom across the map to choose a location
-    <br>(it must be within Australia). Once at your desired location,
-    <br>right-click (Control + click on Mac)
-    <br>or long-press on touchscreen devices
-    <br>to generate a location-specific simulation.
+    Australian ecosystems will respond to future climate scenarios.
+    For a selected scenario, our model will produce birdsong
+    and wildlife soundscapes reflecting the projected conditions.
+    <p>Simply pan and zoom across the map to choose a location
+    (it must be within Australia). Once at your desired location,
+    right-click (Control + click on Mac)
+    or long-press on touchscreen devices
+    to generate a location-specific simulation.
   `;
 
 const driftText = `
-  <h3 id="popup-heading">Welcome to Synthetic Ornithology</h3>
+  <h3 id="popup-heading">Welcome: </h3>
     This platform uses predictive models to simulate how
-    <br>Australian ecosystems respond to future climate scenarios.
-    <br>For a selected scenario, our model will produce birdsong
-    <br>and wildlife soundscapes reflecting the projected conditions.
-    <br><br>Drift Mode is currently active, providing a continuously
-    <br>changing simulated soundscape. To choose your own scenario,
-    <br>interact with the map:
+    Australian ecosystems will respond to future climate scenarios.
+    For a selected scenario, our model will produce birdsong
+    and wildlife soundscapes reflecting the projected conditions.
+    
+    <p>Drift Mode is currently active, providing a continuously
+    changing simulated soundscape. To choose your own scenario,
+    interact with the map:
 
-    <br><br>Simply pan and zoom across the map to choose a location
-    <br>(it must be within Australia). Once at your desired location,
-    <br>right-click (Control + click on Mac)
-    <br>or long-press on touchscreen devices
-    <br>to generate a location-specific simulation.
+    <p>Simply pan and zoom across the map to choose a location
+    (it must be within Australia). Once at your desired location,
+    right-click (Control + click on Mac)
+    or long-press on touchscreen devices
+    to generate a location-specific simulation.
   `;
 
 var routingPrefix = "";
@@ -77,7 +78,7 @@ customLog("debug", "Current mode on start:", currentMode);
 
 // Drift mode configuration
 const driftConfig = {
-  crossfade: 4, // seconds (fly-to and crossfade will run for 4 seconds)
+  crossfade: 5, // seconds (fly-to and crossfade will run for 4 seconds)
   fileDuration: 22, // seconds (all files are 23 sec long, so crossfade starts at 18 sec)
   totalFiles: 1000,
   // This folder should be accessible via your web server (e.g. via a symlink) and contain files in subfolders:
@@ -124,28 +125,28 @@ tiles.addTo(map);
 
 document.addEventListener("DOMContentLoaded", async () => {
   customLog("debug", "DOMContentLoaded event fired");
-  routingPrefix = await getRoutingPrefix();
-  customLog("debug", "Routing Prefix received:", routingPrefix);
+  // routingPrefix = await getRoutingPrefix();
+  // customLog("debug", "Routing Prefix received:", routingPrefix);
 
   // Call getRoutingPrefix after a delay of 3 seconds (3000 milliseconds)
   // setTimeout(async () => {
-    try {
-      customLog("debug", "Routing Prefix received event list:", routingPrefix);
-      const style = document.createElement("style");
-      style.innerHTML = `
+  try {
+    customLog("debug", "Routing Prefix received event list:", routingPrefix);
+    const style = document.createElement("style");
+    style.innerHTML = `
                         @font-face {
                           font-family: "Univers";
                           src: url("${routingPrefix}/fonts/Univers/UniversLight.ttf") format("truetype");
                         }
                         `;
-      console.log("routing prefix", routingPrefix);
-      document.head.appendChild(style);
+    console.log("routing prefix", routingPrefix);
+    document.head.appendChild(style);
 
-      showPermissionOverlay();
-      // Use the routingPrefix as needed in your client-side code
-    } catch (error) {
-      customLog("error", "Failed to fetch Routing Prefix:", error);
-    }
+    showPermissionOverlay();
+    // Use the routingPrefix as needed in your client-side code
+  } catch (error) {
+    customLog("error", "Failed to fetch Routing Prefix:", error);
+  }
   // }, 100); // 3000 milliseconds = 3 seconds
 });
 
@@ -167,9 +168,9 @@ function showPermissionOverlay() {
     customLog("debug", "Permission overlay removed. Current mode:", currentMode);
     if (currentMode === "drift") {
       //setTimeout(() => {
-        startDriftMode();
-        driftAudio[0].load();
-        driftAudio[1].load();
+      startDriftMode();
+      driftAudio[0].load();
+      driftAudio[1].load();
       // }, 800);
       hasTouch = detectTouchDevice();
       customLog("debug", "Starting drift mode from permission overlay.");
@@ -180,7 +181,6 @@ function showPermissionOverlay() {
   } else {
     overlay.addEventListener("click", removeOverlay, { once: true });
   }
-
 }
 
 ["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
@@ -256,49 +256,54 @@ async function loadAndPlayNext(playerIndex) {
     // Parse the dateName (format: "HH:MM:SS DayName DD Month YYYY")
     const dateParts = jsonData.dateName.split(" "); // e.g., ["08:00:00", "Monday", "11", "October", "2028"]
     const time24 = dateParts[0];
-    const dayName = dateParts[1];
+    const dayName = dateParts[1]; 
     const dateNumber = dateParts[2];
     const monthName = dateParts[3];
     const year = dateParts[4];
     const time12 = convertTimeTo12Hour(time24); // Use your existing helper
+    if(year == ""){
+      console.log("Year is empty: ", jsonData.dateName);
+    }
 
-    const wrappedLocation = wrapTextAtWhitespace("Location: " + jsonData.display_name, 90);
+    const shortDisplayName = wrapTextAtWhitespace(jsonData.display_name, 70); // Use your existing helper
     const items = [
-      wrappedLocation,
-      "Year: " + year,
-      `Date: ${dayName} ${monthName} ${dateNumber} ${time12}`,
-      "Temperature: " + jsonData.main.temp + "°C",
-      "Humidity: " + Math.min(jsonData.main.humidity, 100) + "%",
-      "Pressure: " + Math.min(jsonData.main.pressure, 1084) + "hPa",
-      "Wind Speed: " + jsonData.wind.speed + "km/h",
+      { title: "Location: ", text: shortDisplayName },
+      { title: "Year: ", text: year },
+      { title: "Date: ", text: `${dayName} ${monthName} ${dateNumber} ${time12}` },
+      { title: "Temperature: ", text: jsonData.main.temp + "°C" },
+      { title: "Humidity: ", text: Math.min(jsonData.main.humidity, 100) + "%" },
+      { title: "Pressure: ", text: Math.min(jsonData.main.pressure, 1084) + "hPa" },
+      { title: "Wind Speed: ", text: jsonData.wind.speed + "km/h" },
     ];
 
     // Create the popup container
-    const popupContainer = document.createElement("div");
-    popupContainer.style.backgroundColor = "black";
-    popupContainer.style.padding = "5px";
-    // Optionally, force each component to display on one line:
-    popupContainer.style.display = "flex";
-    popupContainer.style.flexDirection = "column";
-    popupContainer.style.gap = "2px";
+    const flyoverMasterContainer = document.createElement("div");
+    flyoverMasterContainer.className = "flyoverMasterContainer";
 
     // For each item, create a container with the appropriate classes.
-    items.forEach((itemText) => {
+    items.forEach((item) => {
       const compDiv = document.createElement("div");
-      compDiv.className = "flyoverComponent"; // style in your CSS to ensure proper spacing and sizing
-      // The text element:
-      const textSpan = document.createElement("div");
-      textSpan.className = "flyoverText"; // style this class (e.g., white text, font, etc.)
-      textSpan.textContent = itemText;
-      compDiv.appendChild(textSpan);
-      popupContainer.appendChild(compDiv);
-    });
+      compDiv.className = "flyoverComponent";
 
+      const componentTitle = document.createElement("div");
+      componentTitle.className = "flyoverTitle";
+      componentTitle.textContent = item.title;
+
+      const componentText = document.createElement("div");
+      componentText.className = "flyoverText";
+      componentText.innerHTML = item.text;
+
+      compDiv.appendChild(componentTitle);
+      compDiv.appendChild(componentText);
+      flyoverMasterContainer.appendChild(compDiv);
+    });
+    //lets get the window width and height
+    const windowWidth = window.innerWidth;
     // Bind this popup to your marker (assuming you already have a marker variable)
     marker = L.marker([jsonData.coord.lat, jsonData.coord.lon], {
       autoClose: false,
       closeOnClick: false,
-    }).bindPopup(popupContainer);
+    }).bindPopup(flyoverMasterContainer, {minWidth: 0, maxWidth: 1920});
 
     // Add the marker to the map (and don't call openPopup() if you want it to open later)
     marker.addTo(map);
@@ -317,8 +322,26 @@ async function loadAndPlayNext(playerIndex) {
   } catch (error) {
     console.error("Error playing audio:", error);
   }
+  // lets print out the marker popup to the console so I can see all its css rules
+  //console.log("Marker (circular-safe JSON):", safeStringify(marker));
 
   return marker;
+}
+function safeStringify(obj) {
+  const seen = new WeakSet();
+  return JSON.stringify(
+    obj,
+    (key, value) => {
+      if (typeof value === "object" && value !== null) {
+        if (seen.has(value)) {
+          return "[Circular]";
+        }
+        seen.add(value);
+      }
+      return value;
+    },
+    2
+  ); // "2" is just to format nicely with indentation
 }
 
 function flyToWithOffset(latlng, zoom, flyDuration, panDuration) {
@@ -752,6 +775,11 @@ async function handleMapClick(latlng) {
 
   // Set up cleanup for when the popup is closed.
   marker.on("popupclose", async function (event) {
+    //clear all the elements from the popup
+    const containerElement = document.getElementById("popup_bubble");
+    while (containerElement.firstChild) {
+      containerElement.removeChild(containerElement.firstChild);
+    }
     map.removeLayer(marker);
     userGeneratedData.locationName = "";
     userGeneratedData.lat = 0;
@@ -1006,13 +1034,20 @@ function wrapTextAtWhitespace(text, maxLength) {
   if (text.length <= maxLength) {
     return text;
   }
-  // Find the last whitespace before maxLength.
-  let breakpoint = text.lastIndexOf(" ", maxLength);
-  if (breakpoint === -1) {
-    // If no whitespace is found, break at maxLength.
-    breakpoint = maxLength;
+  let result = "";
+  let remainingText = text;
+
+  while (remainingText.length > maxLength) {
+    let breakpoint = remainingText.lastIndexOf(",", maxLength);
+    if (breakpoint === -1) {
+      breakpoint = maxLength;
+    }
+    result += remainingText.substring(0, breakpoint) + "<br>";
+    remainingText = remainingText.substring(breakpoint + 1);
   }
-  return text.substring(0, breakpoint) + "\n" + text.substring(breakpoint + 1);
+
+  result += remainingText;
+  return result;
 }
 // Helper function to convert HH:MM:SS (24-hour) to 12-hour format with AM/PM.
 function convertTimeTo12Hour(timeStr) {
