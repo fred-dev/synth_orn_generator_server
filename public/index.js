@@ -61,7 +61,18 @@ const driftText = `
     or long-press on touchscreen devices
     to generate a location-specific simulation.
   `;
-
+const generativeText = `
+  <h3 id="popup-heading">Welcome: </h3>
+  This platform uses predictive models to simulate how
+  Australian ecosystems will respond to future climate scenarios.
+  For a selected scenario, our model will produce birdsong
+  and wildlife soundscapes reflecting the projected conditions.
+  <p>Simply pan and zoom across the map to choose a location
+  (it must be within Australia). Once at your desired location,
+  right-click (Control + click on Mac)
+  or long-press on touchscreen devices
+  to generate a location-specific simulation.
+`;
 var routingPrefix = "";
 
 let suppressGlobalEvents = false;
@@ -71,15 +82,24 @@ const DRIFT_MODE_DEFAULT = true;
 // Key (e.g. "d") used to toggle modes.
 
 // Current mode: either "normal" or "drift".
-var currentMode = DRIFT_MODE_DEFAULT ? "drift" : "normal";
+// 1) Enumerate modes
+const MODES = {
+  NORMAL: "normal",
+  DRIFT: "drift",
+  SILENT: "silent",
+  GENERATIVE: "generative",
+};
+let startMode = "";
+// 2) The current mode, default to something on load:
+let currentMode = MODES.GENERATIVE; // or MODES.DRIFT if you prefer
 
 // Custom log function to handle different log levels.
 customLog("debug", "Current mode on start:", currentMode);
 
 // Drift mode configuration
 const driftConfig = {
-  crossfade: 5, // seconds (fly-to and crossfade will run for 4 seconds)
-  fileDuration: 22, // seconds (all files are 23 sec long, so crossfade starts at 18 sec)
+  crossfade: 4, // seconds (fly-to and crossfade will run for 4 seconds)
+  fileDuration: 23, // seconds (all files are 23 sec long, so crossfade starts at 18 sec)
   totalFiles: 1000,
   // This folder should be accessible via your web server (e.g. via a symlink) and contain files in subfolders:
   // drift_mp3s: contains files named "0001.mp3", "0002.mp3", etc.
@@ -103,8 +123,14 @@ let fadeIntervalId = null;
 let currentMarker = null;
 
 let inactivityTimeout = 0;
+let generativeTimeout = 0;
 
 let hasTouch = false;
+
+let silentStartHour = 22;
+let silentEndHour = 7;
+let silentStartMinute = 0;
+let silentEndMinute = 0;
 
 // const map = L.map("map", {center: [-25.2744, 133.7751], zoom: 4,});
 const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
@@ -123,13 +149,177 @@ const tiles = L.tileLayer(tileUrl, { attribution });
 tileUrl;
 tiles.addTo(map);
 
+const modeHandlers = {
+  [MODES.NORMAL]: {
+    enter: () => {
+      customLog("debug", "Entering NORMAL mode");
+      document.body.classList.remove("drift-mode");
+
+      // Show normal instructions
+      showInstructionPopup("normal");
+
+      // Start inactivity timer that leads to DRIFT if no user action
+      resetInactivityTimeout();
+    },
+    exit: () => {
+      customLog("debug", "Exiting NORMAL mode");
+      // Hide normal instructions if needed
+      hideInstructionPopup();
+      // Clear inactivity so we don’t do partial timers
+      clearInactivityTimeout();
+      // (A) Close resultDiv if it’s open, so that switching to DRIFT doesn’t leave it.
+      const resultsDiv = document.getElementById("resultDiv");
+      if (resultsDiv) {
+        resultsDiv.remove();
+        customLog("debug", "Closed resultDiv upon leaving NORMAL mode");
+      }
+    },
+  },
+
+  [MODES.DRIFT]: {
+    enter: () => {
+      customLog("debug", "Entering DRIFT mode");
+      document.body.classList.add("drift-mode");
+      startDriftMode(); // your existing function that triggers infinite crossfade, etc.
+    },
+    exit: () => {
+      customLog("debug", "Exiting DRIFT mode");
+      document.body.classList.remove("drift-mode");
+      stopDriftMode(); // pause audio, remove drift markers
+    },
+  },
+
+  [MODES.SILENT]: {
+    enter: () => {
+      customLog("debug", "Entering SILENT mode");
+      showSilentModeOverlay(); // show a UI overlay telling users we’re in sleep mode
+      // Stop or pause all audio
+      pauseAllAudio(); // or driftAudio.forEach(a => { a.pause(); a.currentTime = 0; });
+      // Possibly remove markers or keep them
+    },
+    exit: () => {
+      customLog("debug", "Exiting SILENT mode");
+      hideSilentModeOverlay();
+    },
+  },
+
+  [MODES.GENERATIVE]: {
+    enter: () => {
+      customLog("debug", "Entering GENERATIVE mode");
+      document.body.classList.remove("drift-mode");
+
+      // Show “generative” instructions if you want
+      showInstructionPopup("generative");
+      resetGenerativeTimeout();
+
+      // Important: do NOT set inactivity timers if you want it never to auto-switch
+      // Possibly call some "startGenerativeProcess()" if you had specific code
+      // But if generative mode is literally the same as normal minus inactivity,
+      // you don't need the rest of normal’s logic. Just do your standard UI usage.
+    },
+    exit: () => {
+      customLog("debug", "Exiting GENERATIVE mode");
+      hideInstructionPopup();
+      clearGenerativeTimeout();
+
+      // If you had a startGenerativeProcess(), call endGenerativeProcess() here
+    },
+  },
+};
+
+function pauseAllAudio() {
+  driftAudio.forEach((audio) => {
+    audio.pause();
+    audio.currentTime = 0;
+  });
+}
+
+function switchMode(newMode) {
+  customLog("debug", "Switching to mode:", newMode);
+
+  const containerElement = document.getElementById("popup_bubble");
+  if (containerElement) {
+    while (containerElement.firstChild) {
+      containerElement.removeChild(containerElement.firstChild);
+    }
+  }
+  const generatedContentDiv = document.getElementById("resultsDiv");
+  if (generatedContentDiv) {
+    generatedContentDiv.remove();
+  }
+  map.eachLayer(function (layer) {
+    if (layer instanceof L.Marker) {
+      map.removeLayer(layer);
+    }
+  });
+
+  if (newMode === currentMode) return; // No change needed
+
+  // 1) exit the old mode
+  modeHandlers[currentMode].exit();
+
+  // 2) update
+  currentMode = newMode;
+
+  // 3) enter the new mode
+  modeHandlers[newMode].enter();
+}
+
+function showSilentModeOverlay() {
+  // The time we actually switched to silent:
+  const now = new Date();
+  const wentSilentHour = now.getHours();
+  const wentSilentMinute = now.getMinutes();
+
+  // Convert them to display strings (24-hour format for example)
+  const wentSilentDisplay = formatTime24(wentSilentHour, wentSilentMinute);
+  const resumeDisplay = formatTime24(silentEndHour, silentEndMinute);
+
+  const silentModeOverlay = document.createElement("div");
+  silentModeOverlay.id = "silentModeOverlay";
+
+  // You can style each <h2> on a separate line.
+  // You can remove <br> tags if <h2> is block-level (they’ll appear on separate lines by default).
+  silentModeOverlay.innerHTML = `
+    <h2>Silent Mode</h2>
+    <h2>Installation is sleeping</h2>
+    <h2>Went silent at ${wentSilentDisplay}</h2>
+    <h2>Will resume at ${resumeDisplay}</h2>
+  `;
+
+  document.body.appendChild(silentModeOverlay);
+}
+function formatTime24(hour, minute) {
+  // Pad hours/minutes to two digits, e.g. "07:05"
+  const hh = String(hour).padStart(2, "0");
+  const mm = String(minute).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+function hideSilentModeOverlay() {
+  const overlay = document.getElementById("silentModeOverlay");
+  if (overlay) overlay.remove();
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   customLog("debug", "DOMContentLoaded event fired");
-  // routingPrefix = await getRoutingPrefix();
-  // customLog("debug", "Routing Prefix received:", routingPrefix);
+  //lets load the JSON file to get the settings
+  const config = await loadConfig();
+  if (config) {
+    // If it has a "startMode" property, set currentMode
+    startMode = config.startMode;
+    currentMode = MODES[config.startMode?.toUpperCase()] || MODES.NORMAL;
 
-  // Call getRoutingPrefix after a delay of 3 seconds (3000 milliseconds)
-  // setTimeout(async () => {
+    // If it has silentMode times, store them for your setInterval check
+    silentStartHour = config.silentModeStartHour ?? 22;
+    silentStartMinute = config.silentModeStartMinute ?? 0;
+    silentEndHour = config.silentModeEndHour ?? 7;
+    silentEndMinute = config.silentModeEndMinute ?? 0;
+
+    customLog("debug", "Loaded config:", config, " => currentMode:", currentMode);
+  } else {
+    console.warn("No config loaded; using defaults");
+  }
+
   try {
     customLog("debug", "Routing Prefix received event list:", routingPrefix);
     const style = document.createElement("style");
@@ -139,7 +329,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                           src: url("${routingPrefix}/fonts/Univers/UniversLight.ttf") format("truetype");
                         }
                         `;
-    console.log("routing prefix", routingPrefix);
+    customLog("debug", "routing prefix", routingPrefix);
     document.head.appendChild(style);
 
     showPermissionOverlay();
@@ -150,6 +340,33 @@ document.addEventListener("DOMContentLoaded", async () => {
   // }, 100); // 3000 milliseconds = 3 seconds
 });
 
+setInterval(() => {
+  const now = new Date();
+  const nowTotal = minutesSinceMidnight(now.getHours(), now.getMinutes());
+
+  const silentStartTotal = minutesSinceMidnight(silentStartHour, silentStartMinute);
+  const silentEndTotal   = minutesSinceMidnight(silentEndHour,   silentEndMinute);
+
+  let isSilentTime;
+  if (silentStartTotal < silentEndTotal) {
+    // same-day range (e.g., 08:00 → 14:00)
+    isSilentTime = (nowTotal >= silentStartTotal && nowTotal < silentEndTotal);
+  } else {
+    // crossing midnight (e.g., 22:30 → 07:15)
+    isSilentTime = (nowTotal >= silentStartTotal || nowTotal < silentEndTotal);
+  }
+
+  if (isSilentTime && currentMode !== MODES.SILENT) {
+    switchMode(MODES.SILENT);
+  } else if (!isSilentTime && currentMode === MODES.SILENT) {
+    // return to your preferred mode
+    switchMode(MODES.NORMAL);
+  }
+}, 60_000);
+
+function minutesSinceMidnight(hour, minute) {
+  return hour * 60 + minute;
+}
 function showPermissionOverlay() {
   // overlayActive = true; // flag the overlay is active
   const overlay = document.createElement("div");
@@ -166,9 +383,12 @@ function showPermissionOverlay() {
     }, 1000);
 
     customLog("debug", "Permission overlay removed. Current mode:", currentMode);
-    if (currentMode === "drift") {
+    //switchMode(currentMode);
+    modeHandlers[currentMode].enter();
+    customLog("debug", "SwitchMode call is done:", currentMode);
+    if (currentMode === MODES.DRIFT) {
       //setTimeout(() => {
-      startDriftMode();
+      //startDriftMode();
       driftAudio[0].load();
       driftAudio[1].load();
       // }, 800);
@@ -190,23 +410,52 @@ function showPermissionOverlay() {
       return;
     }
 
-    if (currentMode === "drift") {
-      exitDriftMode();
-    } else {
+    if (currentMode === MODES.DRIFT) {
+      switchMode(MODES.NORMAL);
+    } else if (currentMode === MODES.NORMAL) {
       resetInactivityTimeout();
+    } else if (currentMode === MODES.GENERATIVE) {
+      resetGenerativeTimeout();
     }
   });
 });
 
 function resetInactivityTimeout() {
-  if (currentMode !== "normal") return;
   clearTimeout(inactivityTimeout);
+  // Always check if we are STILL in normal mode
+  // If in normal mode after X ms, switch to drift.
   inactivityTimeout = setTimeout(() => {
-    // Switch automatically to drift mode after 80 seconds of inactivity
-    currentMode = "drift";
-    document.body.classList.add("drift-mode");
-    startDriftMode();
-  }, 180000); // 80 seconds
+    if (currentMode === MODES.NORMAL) {
+      switchMode(MODES.DRIFT);
+    }
+  }, 180000); // 3 minutes
+}
+
+function clearInactivityTimeout() {
+  clearTimeout(inactivityTimeout);
+  inactivityTimeout = null;
+}
+
+function resetGenerativeTimeout() {
+  clearTimeout(generativeTimeout);
+  // After 3 minutes, close resultDiv (if open) & re-show instructions for generative
+  generativeTimeout = setTimeout(() => {
+    if (currentMode === MODES.GENERATIVE) {
+      // Close resultDiv
+      const resultsDiv = document.getElementById("resultDiv");
+      if (resultsDiv) {
+        resultsDiv.remove();
+        customLog("debug", "Closed resultDiv on generative inactivity");
+      }
+      // Re-show generative instructions
+      showInstructionPopup("generative");
+    }
+  }, 180000);
+}
+
+function clearGenerativeTimeout() {
+  clearTimeout(generativeTimeout);
+  generativeTimeout = null;
 }
 
 function detectTouchDevice() {
@@ -222,7 +471,19 @@ function detectTouchDevice() {
   console.log("Touch device not detected");
   return false;
 }
-
+async function loadConfig() {
+  try {
+    const response = await fetch(`${routingPrefix}config.json`);
+    if (!response.ok) {
+      throw new Error(`Failed to load config: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error loading config:", error);
+    return null;
+  }
+}
 async function getRoutingPrefix() {
   const url = "/generate/routingPrefix"; // Relative URL for your Node.js server endpoint
 
@@ -256,12 +517,12 @@ async function loadAndPlayNext(playerIndex) {
     // Parse the dateName (format: "HH:MM:SS DayName DD Month YYYY")
     const dateParts = jsonData.dateName.split(" "); // e.g., ["08:00:00", "Monday", "11", "October", "2028"]
     const time24 = dateParts[0];
-    const dayName = dateParts[1]; 
+    const dayName = dateParts[1];
     const dateNumber = dateParts[2];
     const monthName = dateParts[3];
     const year = dateParts[4];
     const time12 = convertTimeTo12Hour(time24); // Use your existing helper
-    if(year == ""){
+    if (year == "") {
       console.log("Year is empty: ", jsonData.dateName);
     }
 
@@ -303,7 +564,7 @@ async function loadAndPlayNext(playerIndex) {
     marker = L.marker([jsonData.coord.lat, jsonData.coord.lon], {
       autoClose: false,
       closeOnClick: false,
-    }).bindPopup(flyoverMasterContainer, {minWidth: 0, maxWidth: 1920});
+    }).bindPopup(flyoverMasterContainer, { minWidth: 0, maxWidth: 1920 });
 
     // Add the marker to the map (and don't call openPopup() if you want it to open later)
     marker.addTo(map);
@@ -323,25 +584,9 @@ async function loadAndPlayNext(playerIndex) {
     console.error("Error playing audio:", error);
   }
   // lets print out the marker popup to the console so I can see all its css rules
-  //console.log("Marker (circular-safe JSON):", safeStringify(marker));
+
 
   return marker;
-}
-function safeStringify(obj) {
-  const seen = new WeakSet();
-  return JSON.stringify(
-    obj,
-    (key, value) => {
-      if (typeof value === "object" && value !== null) {
-        if (seen.has(value)) {
-          return "[Circular]";
-        }
-        seen.add(value);
-      }
-      return value;
-    },
-    2
-  ); // "2" is just to format nicely with indentation
 }
 
 function flyToWithOffset(latlng, zoom, flyDuration, panDuration) {
@@ -422,11 +667,7 @@ function scheduleNext() {
  * Starts the drift mode loop.
  */
 async function startDriftMode() {
-  if (driftActive) return; // Already running
   driftActive = true;
-  currentMode = "drift";
-  document.body.classList.add("drift-mode");
-  console.log("Drift mode activated");
 
   // If the results div is present, remove it
   const resultsDiv = document.getElementById("resultDiv");
@@ -472,22 +713,6 @@ function stopDriftMode() {
   }
 }
 
-let overlayActive = false;
-
-let firstLoad = true;
-let instructionTimeout = 5000;
-
-// function showInstructionPopup() {
-//   const popup = document.getElementById("instructionPopup");
-//   if (!popup || popup.classList.contains("visible") || document.getElementById("resultDiv") && currentMode == "drift") {
-//     popup.innerHTML = currentMode === "drift" ? driftText : normalText;
-//     return;
-//   }
-//   console.log("showInstructionPopup called. Current mode:", currentMode);
-
-//   popup.innerHTML = currentMode === "drift" ? driftText : normalText;
-//   popup.classList.add("visible");
-// }
 
 function showInstructionPopup() {
   console.log("showInstructionPopup called. Current mode:", currentMode);
@@ -497,7 +722,13 @@ function showInstructionPopup() {
     return;
   }
   // Always update the innerHTML based on mode.
-  popup.innerHTML = currentMode === "drift" ? driftText : normalText;
+  if (currentMode === MODES.DRIFT) {
+    popup.innerHTML = driftText;
+  } else if (currentMode === MODES.GENERATIVE) {
+    popup.innerHTML = generativeText;
+  } else {
+    popup.innerHTML = normalText;
+  }
 
   // Always add the 'visible' class when calling showInstructionPopup.
   popup.classList.add("visible");
@@ -511,33 +742,6 @@ function hideInstructionPopup() {
   }
 }
 
-// function resetInstructionTimeout() {
-//   if (firstLoad) return;
-//   hideInstructionPopup();
-//   clearTimeout(instructionTimeout);
-//   instructionTimeout = setTimeout(() => {
-//     showInstructionPopup();
-//   }, 45000);
-// }
-
-// setTimeout(() => {
-//   hideInstructionPopup();
-//   instructionTimeout = setTimeout(() => {
-//     showInstructionPopup();
-//   }, 45000);
-// }, 15000);
-
-// Polyfill for Element.closest() for older browsers
-// if (!Element.prototype.closest) {
-//   Element.prototype.closest = function (selector) {
-//     let el = this;
-//     while (el) {
-//       if (el.matches(selector)) return el;
-//       el = el.parentElement;
-//     }
-//     return null;
-//   };
-// }
 
 // Function to perform reverse geocoding
 async function reverseGeocode(lat, lon) {
@@ -630,46 +834,22 @@ function calculateClimateVariance(weatherData) {
 }
 
 map.on("contextmenu", async function (event) {
-  if (currentMode !== "normal") return;
+  if (currentMode !== "normal" && currentMode !== "generative") return;
   handleMapClick(event.latlng);
 });
 
 let touchTimeout;
 map.on("touchstart", function (event) {
-  if (currentMode !== "normal") return;
+  if (currentMode !== "normal" && currentMode !== "generative") return;
   touchTimeout = setTimeout(() => {
     handleMapClick(event.latlng);
   }, 200);
 });
 map.on("touchend", function () {
-  if (currentMode !== "normal") return;
+  if (currentMode !== "normal" && currentMode !== "generative") return;
   clearTimeout(touchTimeout);
 });
 
-function exitDriftMode() {
-  if (currentMode === "drift") {
-    // Optionally fade out audio (here we simply pause them)
-    driftAudio.forEach((audio) => {
-      audio.pause();
-      audio.currentTime = 0;
-    });
-    // Close popups and remove drift markers
-    if (currentMarker) {
-      currentMarker.closePopup();
-      map.removeLayer(currentMarker);
-      currentMarker = null;
-    }
-    stopDriftMode();
-    // Switch mode and update body class
-    currentMode = "normal";
-    document.body.classList.remove("drift-mode");
-    // Show instructions for 5 seconds then hide them
-    showInstructionPopup();
-    setTimeout(() => {
-      hideInstructionPopup();
-    }, 10000);
-  }
-}
 
 // Right-click event for creating a new marker
 async function handleMapClick(latlng) {
@@ -852,6 +1032,13 @@ async function callGenerateWithGradio(lat, lon, temp, humidity, wind_speed, pres
 }
 
 async function loadAudio() {
+  const resultDiv = document.getElementById("resultDiv");
+
+  const spinnerContainer = document.createElement("div");
+  spinnerContainer.id = "audioSpinnerContainer";
+  spinnerContainer.innerHTML = `<div class="loaderAudio"></div>`;
+  resultDiv.appendChild(spinnerContainer);
+
   const audioUrl = await callGenerateWithGradio(
     userGeneratedData.lat,
     userGeneratedData.lon,
@@ -879,6 +1066,17 @@ async function loadAudio() {
     // For mobile autoplay support, you need autoplay, playsinline, and possibly muted
     audioPlayer.setAttribute("autoplay", "");
     audioPlayer.setAttribute("playsinline", "");
+
+    audioPlayer.addEventListener("canplaythrough", () => {
+      spinnerContainer.remove();  // remove spinner
+    }, { once: true });
+  
+    audioPlayer.addEventListener("error", (err) => {
+      spinnerContainer.remove();  // remove spinner on error
+      console.error("Audio load error:", err);
+    }, { once: true });
+  
+
 
     audioPlayer.src = audioUrl;
     resultDiv.appendChild(audioPlayer);

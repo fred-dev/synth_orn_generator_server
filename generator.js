@@ -60,10 +60,10 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use((req, res, next) => {
-  logger.debug("Second app request path:", JSON.stringify(req.path));
-  next();
-});
+// app.use((req, res, next) => {
+//   logger.debug("Second app request path:", JSON.stringify(req.path));
+//   next();
+// });
 
 app.use(express.static("public"));
 

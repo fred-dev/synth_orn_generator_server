@@ -1,0 +1,8 @@
+{
+    "startMode": "drift",
+    "silentModeStartHour": 14,
+    "silentModeStartMinute": 4,
+    "silentModeEndHour": 14,
+    "silentModeEndMinute": 6
+
+  }
