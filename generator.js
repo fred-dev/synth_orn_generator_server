@@ -35,9 +35,7 @@ const pythonPath = process.env.PYTHON_PATH;
 const tempDebugVerbose = process.env.DEBUG_VERBOSE;
 const rootMediaPath = process.env.ROOT_MEDIA_PATH;
 const clientPathPrefix = process.env.CLIENT_PATH_PREFIX;
-var uploadFilePrefix = "";
-var audioUrlToSave = "";
-var userInputToSave = "";
+const installation_session = process.env.INSTALLATION_SESSION;
 
 if (tempDebugVerbose == "true") {
   logger.level = "debug";
@@ -53,12 +51,12 @@ logger.debug("Distance to water shape file" + shapeFilePathWater);
 
 app.use(express.json());
 
-// Middleware to check the application mode and modify request handling
-app.use((req, res, next) => {
-  const appMode = process.env.APP_MODE || "testing"; // Default to testing mode if not specified
-  req.appMode = appMode;
-  next();
-});
+// // Middleware to check the application mode and modify request handling
+// app.use((req, res, next) => {
+//   const appMode = process.env.APP_MODE || "testing"; // Default to testing mode if not specified
+//   req.appMode = appMode;
+//   next();
+// });
 
 // app.use((req, res, next) => {
 //   logger.debug("Second app request path:", JSON.stringify(req.path));
@@ -123,8 +121,8 @@ async function completeDate(audioUrl) {
     fs.writeFileSync(`tempFiles/${uploadFilePrefix}.json`, JSON.stringify(jsonToSave, null, 2));
 
     // 5) Upload them both to Dropbox
-    await uploadFileToDropbox(`tempFiles/${uploadFilePrefix}.wav`, "/generated", `${uploadFilePrefix}.wav`);
-    await uploadFileToDropbox(`tempFiles/${uploadFilePrefix}.json`, "/generated", `${uploadFilePrefix}.json`);
+    await uploadFileToDropbox(`tempFiles/${uploadFilePrefix}.wav`, `${installation_session}`, `${uploadFilePrefix}.wav`);
+    await uploadFileToDropbox(`tempFiles/${uploadFilePrefix}.json`, `${installation_session}`, `${uploadFilePrefix}.json`);
 
     console.log("completeDate done successfully");
   } catch (error) {
