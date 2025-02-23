@@ -432,15 +432,3 @@ app.post(routingPrefix + "/hug_space_control", (req, res) => {
     }
   });
 });
-
-app.get('*', (req, res) => {
-  if (req.path.endsWith('/routingPrefix')) {
-    // do your thing
-    // e.g. everything up to /routingPrefix is the prefix
-    console.log('routingPrefix param:', clientPathPrefix);
-    res.json({ route: clientPathPrefix });
-  } else {
-    // maybe pass to next() or 404
-    res.status(404).send('Not found');
-  }
-});

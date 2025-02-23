@@ -46,7 +46,7 @@ let pickerInstructions = null;
 let customPicker = null;
 let customPickerContainer = null;
 let moduleUserData = {};
-var routingPrefix = "";
+let routingPrefix = "/generate";
 
 export function initCustomDatePicker({ containerId, userGeneratedData, onDateSelectionComplete, onWeatherSelectionComplete }) {
   dateSelectionCalback = onDateSelectionComplete;
@@ -68,32 +68,6 @@ export function initCustomDatePicker({ containerId, userGeneratedData, onDateSel
   customLog("debug", "Snapshot of userData:initCustomDatePicker:", JSON.parse(JSON.stringify(moduleUserData)));
 }
 
-async function getRoutingPrefix() {
-  const url = "/routingPrefix"; // Relative URL for your Node.js server endpoint
-
-  try {
-    const response = await fetch(url, {
-      method: "GET",
-    });
-    const data = await response.json();
-    customLog("debug", "Routing Prefix inner function:", data.route);
-    return data.route;
-  } catch (error) {
-    customLog("error", "Failed to fetch Routing Prefix:", error);
-  }
-}
-document.addEventListener("DOMContentLoaded", async () => {
-  customLog("debug", "DOMContentLoaded event fired");
-
-  // Call getRoutingPrefix after a delay of 3 seconds (3000 milliseconds)
-    try {
-      routingPrefix = await getRoutingPrefix();
-      customLog("debug", "Routing Prefix received from custom date picker: ", routingPrefix);
-      // Use the routingPrefix as needed in your client-side code
-    } catch (error) {
-      customLog("error", "Failed to fetch Routing Prefix received from custom date picker: ", error);
-    }
-});
 
 function setupPickerUIInBubble() {
   // Find or create the container element

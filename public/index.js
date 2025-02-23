@@ -70,7 +70,7 @@ const generativeText = `
     long-press on the location
     to generate a location-specific simulation.
 `;
-var routingPrefix = "";
+let routingPrefix = "/generate";
 
 let suppressGlobalEvents = false;
 
@@ -322,8 +322,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.warn("No config loaded; using defaults");
   }
 
-  routingPrefix = await getRoutingPrefix();
-  customLog("debug", "Routing Prefix received:", routingPrefix);
   huggingFaceServerStatus = await controlHuggingFaceServer("status");
   customLog("debug", "Hugging Face server status:", huggingFaceServerStatus);
   try {
@@ -488,20 +486,6 @@ async function loadConfig() {
   } catch (error) {
     console.error("Error loading config:", error);
     return null;
-  }
-}
-async function getRoutingPrefix() {
-  const url = "/routingPrefix"; // Relative URL for your Node.js server endpoint
-
-  try {
-    const response = await fetch(url, {
-      method: "GET",
-    });
-    const data = await response.json();
-    customLog("debug", "Routing Prefix inner function:", data.route);
-    return data.route;
-  } catch (error) {
-    customLog("error", "Failed to fetch Routing Prefix:", error);
   }
 }
 
