@@ -1,351 +1,721 @@
-
-:root {
-  --heading-font: "Univers";
-  --body-font: "Univers"; /* or any other font you prefer */
-  -webkit-touch-callout: none; /* Safari */
-  -webkit-user-select: none; /* Chrome */
-  -moz-user-select: none; /* Firefox */
-  -ms-user-select: none; /* Internet Explorer/Edge */
-  user-select: none;
-}
-.hidden {
-  display: none;
-}
-body {
-  font-family: "Univers";
-}
-
-#permissionOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 48px;
-  z-index: 10000;
-  cursor: pointer;
-}
-#silentModeOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
-  z-index: 10000;
-  cursor: pointer;
-
-  /* FLEX LAYOUT */
-  display: flex;
-  flex-direction: column;  /* stack children vertically */
-  align-items: center;     /* center horizontally */
-  justify-content: center; /* center vertically */
-
-  text-align: center;      /* center text inside each line */
-  font-size: 48px;         /* big text if you want */
-  margin: 0;               /* remove margin to cover entire screen */
-  line-height: 1.2;        /* adjust line spacing */
-}
-
-
-#check_location_bubble {
-  padding-top: 18px;
-}
-.main_text_large {
-  font-family: var(--heading-font);
-  font-size: 22px;
-  font-weight: 100;
-  color: #000000;
-  text-align: left;
-  line-height: 1.5;
-  width: fit-content;
-}
-.main_text_large_bold {
-  font-family: var(--heading-font);
-  font-size: 22px;
-  font-weight: bold;
-  color: #000000;
-  text-align: left;
-  line-height: 1.5;
-  width: fit-content;
-}
-.main_text_medium_bold {
-  font-family: var(--heading-font);
-  font-size: 18px;
-  font-weight: bolder;
-  color: #000000;
-  text-align: left;
-  line-height: 1.4;
-  width: fit-content;
-}
-.main_text_medium {
-  font-family: var(--heading-font);
-  font-size: 18px;
-  font-weight: 200;
-  color: #3b3a3a;
-  text-align: left;
-  line-height: 1;
-  width: fit-content;
-}
-.main_text_small {
-  font-family: var(--heading-font);
-  font-size: 16px;
-  font-weight: 100;
-  color: #2d2c2c;
-  text-align: left;
-  line-height: 1;
-  width: fit-content;
-}
-.main_text_small_bold {
-  font-family: var(--heading-font);
-  font-size: 16px;
-  font-weight: bolder;
-  color: #2d2c2c;
-  text-align: left;
-  line-height: 1;
-  width: fit-content;
-}
-.main_text_smaller {
-  font-family: var(--heading-font);
-  font-size: 12px;
-  font-weight: 100;
-  color: #2d2c2c;
-  text-align: left;
-  line-height: 1;
-  width: fit-content;
-}
-.main_text_smaller_bold {
-  font-family: var(--heading-font);
-  font-size: 12px;
-  font-weight: bolder;
-  color: #2d2c2c;
-  text-align: left;
-  line-height: 1;
-  width: fit-content;
-}
-/* Instruction popup styling */
-#instructionPopup {
-  position: relative;
-  margin-top: 3em;
-  margin-left: 2em;
-  background: rgba(255, 255, 255, 0.9);
-  max-width: 25%;
-  border-radius: 12px;
-  padding: 20px 20px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  z-index: 10000;
-  opacity: 0;
-  pointer-events: none; /* Initially not interactive */
-  transition: opacity 0.5s ease-in-out;
-  /* Custom text styles */
-}
-#popup-heading {
-  margin: 0em !important;
-}
-#popup_bubble {
-  width: auto;
-}
-
-#audioPlayer {
-  margin-top: 2em;
-}
-
-#map {
-  position: fixed; /* or absolute */
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0; /* put the map behind other elements */
-}
-
-.loader {
-  border: 16px solid #f3f3f3; /* Light grey */
-  border-top: 16px solid #3498db; /* Blue */
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  animation: spin 2s linear infinite;
-  margin: 0 auto; /* Center horizontally */
-}
-.loaderAudio {
-  border: 12px solid #f3f3f3; /* Light grey */
-  border-top: 12px solid #000000; /* Blue */
-  border-radius: 50%;
-  width: 16px;
-  height: 16px;
-  animation: spin 2s linear infinite;
-  margin: 0 auto; /* Center horizontally */
-}
-#audioSpinnerContainer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-#main_title {
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: inline-block;
-  width: auto;
-  height: auto;
-}
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
+/* ==========================================================================
+   GLOBAL / BASE STYLES
+   ========================================================================== */
+   :root {
+    --heading-font: "Univers";
+    --body-font: "Univers"; /* or any other font you prefer */
+    -webkit-touch-callout: none; /* Safari */
+    -webkit-user-select: none; /* Chrome */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none;
+    --bird-loader-master-size: 120px;
+    --bird-loader-bg: transparent;
+    --bird-loader-bird-filter: none;
   }
-  100% {
-    transform: rotate(360deg);
+  
+  .hidden {
+    display: none;
   }
-}
-
-/* When visible, make it fully opaque and allow pointer events */
-#instructionPopup.visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-#resultDiv {
-  background-color: black;
-  color: white;
-  position: absolute;
-  font-family: "Univers";
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  padding: 40px;
-  border-radius: 10px;
-  z-index: 1000;
-  width: 60%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center; /* Vertically center content */
-  align-items: flex-start; /* Start text from left side */
-  text-align: left; /* Align text to the left within the flex item */
-  font-size: 24px;
-}
-
-.flyoverMasterContainer {
-  /* We’ll treat this as a table */
-  display: table;
-  background-color: #000000;
-  padding: 5px;
-  color: #ffffff;
-  box-sizing: border-box; /* ensures padding is included in the width */
-}
-
-.flyoverComponent {
-  /* Each item is a table row */
-  display: table-row;
-  background-color: #000000 !important;
-  /* max-width: 50vw; */
-}
-
-.flyoverTitle, .flyoverText {
-  /* Each label/value is a table cell */
-  display: table-cell;
-  padding: 4px 8px;
-  font-size: 22px;
-  font-weight: 100;
-  text-align: left;
-  line-height: 1.1;
-}
-
-/* Right-align the labels so the colons line up neatly */
-.flyoverTitle {
-  text-align: right;
-  font-weight: bold; /* If you want them bold */
-  width: 1px;        /* Force it to shrink to the longest label's width */
-  white-space: nowrap;
-}
-
-.flyoverText {
-  text-align: left;
-  word-wrap: normal;
-  font-weight: lighter;
-  /* no special width; it just expands to fill space */
-}
-.drift-mode .leaflet-popup-content {
-  /* width: 50vw !important; */
-  background-color: #000000 !important;
-}
-
-.drift-mode .leaflet-popup-content-wrapper {
-  background-color: #000000 !important;
-}
-
-.drift-mode .leaflet-popup-tip {
-  background-color: #000000 !important;
-}
-/* Styles when NOT in drift mode */
-body:not(.drift-mode) .leaflet-popup-content {
-  width: 327 !important;
-  background-color: /* your default color */ #ffffff !important;
-}
-
-body:not(.drift-mode) .leaflet-popup-content-wrapper {
-  background-color: /* your default color */ #ffffff !important;
-}
-body:not(.drift-mode) .leaflet-popup-content-wrapper {
-  background-color: /* your default color */ #ffffff !important;
-}
-@media only screen and (max-width: 600px) {
-  /* Instruction popup styling */
-  #instructionPopup {
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  
+  body {
+    font-family: "Univers";
+  }
+  
+  /* ==========================================================================
+     OVERLAYS
+     ========================================================================== */
+  /* #permissionOverlay */
+  #permissionOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
     z-index: 10000;
-    opacity: 0;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 2em;
-    display: block; /* Changed from flex to block */
-    pointer-events: none; /* Initially not interactive */
-    transition: opacity 0.5s ease-in-out;
-    /* Custom text styles */
+    cursor: pointer;
+  }
+  
+  /* #silentModeOverlay */
+  #silentModeOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    z-index: 10000;
+    cursor: pointer;
+  
+    /* FLEX LAYOUT */
+    display: flex;
+    flex-direction: column; /* stack children vertically */
+    align-items: center; /* center horizontally */
+    justify-content: center; /* center vertically */
+  
+    text-align: center; /* center text inside each line */
+    font-size: 48px; /* big text if you want */
+    margin: 0; /* remove margin to cover entire screen */
+    line-height: 1.2; /* adjust line spacing */
+  }
+  
+  /* #check_location_bubble */
+  #check_location_bubble {
+    padding-top: 18px;
+  }
+  
+  /* ==========================================================================
+     TYPOGRAPHY
+     ========================================================================== */
+  .main_text_large {
     font-family: var(--heading-font);
-    font-size: 14px;
+    font-size: 22px;
     font-weight: 100;
     color: #000000;
     text-align: left;
+    line-height: 1.5;
+    width: fit-content;
   }
-  #popup-heading {
-    margin: 0.3em 0 !important; /* Ensure margin is applied to top and bottom */
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    .main_text_large {
+      font-size: 14px;
+    }
   }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .main_text_large {
+      font-size: 10px;
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    .main_text_large {
+      font-size: 9px;
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    .main_text_large {
+      font-size: 8px;
+    }
+  }
+  
+  .main_text_large_bold {
+    font-family: var(--heading-font);
+    font-size: 22px;
+    font-weight: bold;
+    color: #000000;
+    text-align: left;
+    line-height: 1.5;
+    width: fit-content;
+  }
+  
+  .main_text_medium_bold {
+    font-family: var(--heading-font);
+    font-size: 18px;
+    font-weight: bolder;
+    color: #000000;
+    text-align: left;
+    line-height: 1.4;
+    width: fit-content;
+  }
+  
+  .main_text_medium {
+    font-family: var(--heading-font);
+    font-size: 18px;
+    font-weight: 200;
+    color: #3b3a3a;
+    text-align: left;
+    line-height: 1;
+    width: fit-content;
+  }
+  
+  .main_text_small {
+    font-family: var(--heading-font);
+    font-size: 16px;
+    font-weight: 100;
+    color: #2d2c2c;
+    text-align: left;
+    line-height: 1;
+    width: fit-content;
+  }
+  
+  .main_text_small_bold {
+    font-family: var(--heading-font);
+    font-size: 16px;
+    font-weight: bolder;
+    color: #2d2c2c;
+    text-align: left;
+    line-height: 1;
+    width: fit-content;
+  }
+  
+  .main_text_smaller {
+    font-family: var(--heading-font);
+    font-size: 12px;
+    font-weight: 100;
+    color: #2d2c2c;
+    text-align: left;
+    line-height: 1;
+    width: fit-content;
+  }
+  
+  .main_text_smaller_bold {
+    font-family: var(--heading-font);
+    font-size: 12px;
+    font-weight: bolder;
+    color: #2d2c2c;
+    text-align: left;
+    line-height: 1;
+    width: fit-content;
+  }
+  
+  /* ==========================================================================
+     INSTRUCTION POPUP & RELATED
+     ========================================================================== */
+  /* #instructionPopup */
+  #instructionPopup {
+    position: relative;
+    margin-top: 3em;
+    margin-left: 2em;
+    background: rgba(255, 255, 255, 0.9);
+    max-width: 25%;
+    border-radius: 12px;
+    padding: 20px 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    opacity: 0;
+    pointer-events: none; /* Initially not interactive */
+    transition: opacity 0.5s ease-in-out;
+    /* Custom text styles */
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    #instructionPopup {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      z-index: 10000;
+      opacity: 0;
+      padding: 10px 20px;
 
+      margin-top: 2em; /* final value overrides 3em */
+      margin-left: 2em;
+      display: block; /* Changed from flex to block */
+      pointer-events: none;
+      transition: opacity 0.5s ease-in-out;
+      font-family: var(--heading-font);
+      font-size: 15px;
+      font-weight: 100;
+      color: #000000;
+      text-align: left;
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    #instructionPopup {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      z-index: 10000;
+      opacity: 0;
+      margin-top: 2em; /* final value overrides 3em */
+      margin-left: 2em;
+      display: block;
+      pointer-events: none;
+      transition: opacity 0.5s ease-in-out;
+      font-family: var(--heading-font);
+      font-size: 14px;
+      font-weight: 100;
+      color: #000000;
+      text-align: left;
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    #instructionPopup {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      z-index: 10000;
+      opacity: 0;
+      margin-top: 1em; /* final value overrides earlier margin-top */
+      margin-left: 1em;
+      padding-top: 0.3em;
+      display: block;
+      pointer-events: none;
+      transition: opacity 0.5s ease-in-out;
+      font-family: var(--heading-font);
+      font-size: 10px;
+      font-weight: 100;
+      color: #000000;
+      text-align: left;
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    #instructionPopup {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      z-index: 10000;
+      opacity: 0;
+      margin-left: auto;
+      margin-right: auto;
+      max-width: 95%;
+      margin-top: 2.5em;
+      padding-top: 0.3em;
+      display: block;
+      pointer-events: none;
+      transition: opacity 0.5s ease-in-out;
+      font-family: var(--heading-font);
+      font-size: 12px;
+      font-weight: 100;
+      color: #000000;
+      text-align: left;
+    }
+  }
+  
+  /* #instructionPopup.visible */
+  #instructionPopup.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  
+  /* #popup-heading */
+  #popup-heading {
+    margin: 0em !important;
+    font-weight: bold;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    #popup-heading {
+      margin: 0.3em 0 !important;
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    #popup-heading {
+      margin: 0.3em 0 !important;
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    #popup-heading {
+      margin: 0.3em 0 !important;
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    #popup-heading {
+      margin: 0.3em 0 !important;
+    }
+  }
+  
+  /* #popup_bubble */
+  #popup_bubble {
+    width: auto;
+  }
+  
+  /* ==========================================================================
+     AUDIO / MAP / LOADERS / TITLE
+     ========================================================================== */
+  /* #audioPlayer */
+  #audioPlayer {
+    margin-top: 2em;
+  }
+  
+  /* #map */
+  #map {
+    position: fixed; /* or absolute */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0; /* put the map behind other elements */
+  }
+  
+  /* .loader */
+  .loader {
+    border: 16px solid #f3f3f3; /* Light grey */
+    border-top: 16px solid #3498db; /* Blue */
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 2s linear infinite;
+    margin: 0 auto; /* Center horizontally */
+  }
+  
+  /* .loaderAudio */
+  .loaderAudio {
+    border: 12px solid #f3f3f3; /* Light grey */
+    border-top: 12px solid #000000; /* Blue */
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    animation: spin 2s linear infinite;
+    margin: 0 auto; /* Center horizontally */
+  }
+  
+  /* #audioSpinnerContainer */
+  #audioSpinnerContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  /* #main_title */
+  #main_title {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: inline-block;
+    width: auto;
+    height: auto;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    #main_title {
+      top: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: inline-block;
+      line-height: 0.3em;
+      width: auto;
+      height: auto;
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    #main_title {
+      top: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: inline-block;
+      line-height: 0.5em;
+      width: auto;
+      height: auto;
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    #main_title {
+      top: 0px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: inline-block;
+      line-height: 0.4em;
+      width: auto;
+      height: auto;
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    #main_title {
+      top: 1px;
+      line-height: 0.3em;
+
+    }
+  }
+  
+  /* Keyframes */
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  
+  /* ==========================================================================
+     RESULT DIV
+     ========================================================================== */
   #resultDiv {
     background-color: black;
     color: white;
     position: absolute;
     font-family: "Univers";
+    top: 50%;
+    left: 50%;
     transform: translate(-50%, -50%);
-    padding: 8px;
+    padding: 20px;
     border-radius: 10px;
     z-index: 1000;
-    width: 95%;
-    font-size: 16px;
-    height: auto;
-    max-height: 85%;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    width: 60%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Vertically center content */
+    align-items: flex-start; /* Start text from left side */
+    text-align: left; /* Align text to the left within the flex item */
+    font-size: 24px;
   }
-  .main_text_large {
-    font-size: 9px;
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    #resultDiv {
+      padding: 16px;
+      border-radius: 10px;
+      width: 90%;
+      font-size: 22px;
+      height: auto;
+      max-height: 85%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
   }
-
-  #main_title {
-    top: 9px;
+  @media (min-width: 768px) and (max-width: 1024px) {
+    #resultDiv {
+      padding: 6px;
+      border-radius: 10px;
+      width: 95%;
+      font-size: 14px;
+      height: auto;
+      max-height: 70%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
   }
+  @media (min-width: 600px) and (max-width: 767px) {
+    #resultDiv {
+      padding: 6px;
+      border-radius: 10px;
+      width: 95%;
+      font-size: 12px;
+      height: auto;
+      max-height: 70%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    #resultDiv {
+      padding: 8px;
+      border-radius: 8px;
+      width: 95%;
+      font-size: 16px;
+      height: auto;
+      max-height: 85%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+  
+  /* ==========================================================================
+     FLYOVER COMPONENTS
+     ========================================================================== */
+  /* .flyoverMasterContainer */
+  .flyoverMasterContainer {
+    /* We’ll treat this as a table */
+    display: table;
+    background-color: #000000;
+    padding: 2px;
+    color: #ffffff;
+    box-sizing: border-box; /* ensures padding is included in the width */
+  }
+  
+  /* .flyoverComponent */
+  .flyoverComponent {
+    /* Each item is a table row */
+    display: table-row;
+    background-color: #000000 !important;
+    padding: 0%;
+    /* max-width: 50vw; */
+  }
+  
+  /* .flyoverTitle & .flyoverText (Base) */
+  .flyoverTitle,
   .flyoverText {
-    font-size:12px;
-
+    /* Each label/value is a table cell */
+    display: table-cell;
+    padding: 4px 8px;
+    font-size: 22px;
+    font-weight: 100;
+    text-align: left;
+    line-height: 1.1;
   }
+  
+  /* .flyoverTitle (Additional Base) */
+  .flyoverTitle {
+    text-align: right;
+    font-weight: bold; /* If you want them bold */
+    width: 1px; /* Force it to shrink to the longest label's width */
+    white-space: nowrap;
+  }
+  
+  /* .flyoverText (Additional Base) */
+  .flyoverText {
+    text-align: left;
+    word-wrap: normal;
+    font-weight: lighter;
+    /* no special width; it just expands to fill space */
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    .flyoverText {
+      font-size: 16px;
+      padding: 0px 0px;
+
+    }
+    .flyoverTitle {
+      font-size: 16px;
+    }
+
+  
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .flyoverText {
+      font-size: 12px;
+    }
+    .flyoverTitle {
+      font-size: 12px;
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    .flyoverText {
+      font-size: 9px;
+    }
+    .flyoverTitle {
+      font-size: 9px;
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    .flyoverText {
+      font-size: 12px;
+    }
+    .flyoverTitle {
+      font-size: 12px;
+    }
+    .drift-mode .leaflet-popup-content {
+      /* width: 50vw !important; */
+      background-color: #000000 !important;
+      width: 500 !important;
+
+    }
+    
+ 
+  }
+  
+  /* ==========================================================================
+     DRIFT MODE / LEAFLET POPUPS
+     ========================================================================== */
+  .drift-mode .leaflet-popup-content {
+    /* width: 50vw !important; */
+    background-color: #000000 !important;
+  }
+  
+  .drift-mode .leaflet-popup-content-wrapper {
+    background-color: #000000 !important;
+  }
+  
+  .drift-mode .leaflet-popup-tip {
+    background-color: #000000 !important;
+  }
+  
+  /* NON-DRIFT MODE */
+  body:not(.drift-mode) .leaflet-popup-content {
+    width: 327 !important;
+    background-color: /* your default color */ #ffffff !important;
+  }
+  
+  body:not(.drift-mode) .leaflet-popup-content-wrapper {
+    background-color: /* your default color */ #ffffff !important;
+  }
+  
+  body:not(.drift-mode) .leaflet-popup-content-wrapper {
+    background-color: /* your default color */ #ffffff !important;
+  }
+  
+  /* ==========================================================================
+     GLOBAL MARGIN CLASSES (.body & .h1)
+     (These only appear in media queries)
+     ========================================================================== */
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    .body, .h1 {
+      margin: 3px;
+      margin-block-start: 0.067em;
+      margin-block-end: 0.067em;
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .body, .h1 {
+      margin: 3px;
+      margin-block-start: 0.067em;
+      margin-block-end: 0.067em;
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    .body, .h1 {
+      margin: 3px;
+      margin-block-start: 0.067em;
+      margin-block-end: 0.067em;
+    }
+  }
+
+  /* For medium screens */
+@media (min-width: 600px) {
+  :root {
+    --bird-loader-master-size: 40px;
+  }
+}
+
+/* For large screens */
+@media (min-width: 900px) {
+  :root {
+    --bird-loader-master-size: 80px;
+  }
+}
+  /* Master container: its dimensions are controlled solely by --bird-loader-master-size */
+.bird-loader-wrapper {
+  width: var(--bird-loader-master-size);
+  height: var(--bird-loader-master-size);
+  background-color: var(--bird-loader-bg);
+  position: relative;
+  overflow: visible;
+  margin: 15px;
+}
+
+/* The inner loader fills the master container */
+.bird-loader {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* The orbit rotates continuously and is sized to 80% of the master container,
+   leaving a margin so the bird doesn’t clip the edges */
+.bird-loader .orbit {
+  width: 80%;
+  height: 80%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(0deg);
+  transform-origin: center;
+  animation: orbit 5s linear infinite;
+}
+
+/* The bird is positioned at the top-center of the orbit.
+   Its dimensions are defined relative to the master container.
+   (Based on a 200px design: 88px = 44% and 125px = 62.5%; adjusted for 80% orbit:
+    44%/0.8 = 55% width, 62.5%/0.8 = 78.125% height)
+*/
+.bird-loader .bird {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 55%;
+  height: 78.125%;
+  background-size: auto 100%;
+  background-position: 0 0;
+  filter: var(--bird-loader-bird-filter);
+  animation: fly-cycle 1s steps(10) infinite;
+}
+
+/* Orbit rotation animation */
+@keyframes orbit {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Bird sprite (flapping) animation.
+   The background shifts to cycle through the sprite frames.
+   Adjust the percentage if your sprite sheet dimensions change.
+*/
+@keyframes fly-cycle {
+  from { background-position: 0 0; }
+  to   { background-position: -1000% 0; }
 }

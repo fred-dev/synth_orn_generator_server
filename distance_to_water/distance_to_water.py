@@ -158,16 +158,16 @@ def getAllWaterDistanceData(lat, lon):
  
 
 
-if len(sys.argv) != 4:
-    print("Usage: script.py <latitude> <longitude> <shapefile>", file=sys.stderr)
+if len(sys.argv) != 3:
+    print("Usage: script.py <latitude> <longitude>", file=sys.stderr)
     sys.exit(1)
 
 # The following lines should not be indented further
 lat = float(sys.argv[1])  # Convert latitude to float
 lon = float(sys.argv[2])  # Convert longitude to float
 # lets make a global variable for the shapefile path
-country_shapefile = sys.argv[3]
-
+script_dir = os.path.dirname(__file__)
+country_shapefile = os.path.join(script_dir, 'country_shape/World_Countries/World_Countries_Generalized.shp')
 
 print(f"Latitude: {lat}, Longitude: {lon}, shape file path{country_shapefile}", file=sys.stderr)
 result = getAllWaterDistanceData(lat, lon)

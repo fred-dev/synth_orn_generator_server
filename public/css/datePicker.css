@@ -1,76 +1,393 @@
-
-.hidden {
-  display: none;
+/* ==========================================================================
+   HIDDEN
+   ========================================================================== */
+   .hidden {
+    display: none;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    .hidden {
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .hidden {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    .hidden {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    .hidden {
+      /* Overrides for up to 600px */
+    }
+  }
+  
+  /* ==========================================================================
+     PICKER BODY
+     ========================================================================== */
+  .picker-body {
+    width: 200;
+    height: 100;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    .picker-body {
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .picker-body {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    .picker-body {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    .picker-body {
+      /* Overrides for up to 600px */
+    }
+  }
+  
+  /* ==========================================================================
+     PICKER CONTAINER
+     ========================================================================== */
+  .picker-container {
+    width: 300px;
+    margin: 20px 0;
+    font-family: "Univers";
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    .picker-container {
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .picker-container {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    .picker-container {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    .picker-container {
+      /* Overrides for up to 600px */
+    }
+  }
+  
+  /* ==========================================================================
+     PROGRESS BAR
+     ========================================================================== */
+  .progress-bar {
+    width: 300px;
+    height: 10px;
+    background-color: #ddd;
+    border-radius: 5px;
+    margin: 20px 0;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    .progress-bar {
+      height: 8px;
+      margin: 10px 0;    
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .progress-bar {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    .progress-bar {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    .progress-bar {
+      /* Overrides for up to 600px */
+    }
+  }
+  
+  /* ==========================================================================
+     PROGRESS BAR FILL
+     ========================================================================== */
+  .progress-bar-fill {
+    height: 100%;
+    background-color: #4caf50;
+    width: 0%;
+    border-radius: 5px;
+    transition: width 0.3s ease;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    .progress-bar-fill {
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .progress-bar-fill {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    .progress-bar-fill {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    .progress-bar-fill {
+      /* Overrides for up to 600px */
+    }
+  }
+  
+  /* ==========================================================================
+     NAV BUTTONS
+     ========================================================================== */
+  .nav-buttons {
+    display: flex;
+    justify-content: space-between;
+    width: 300px;
+    margin-top: 10px;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    .nav-buttons {
+      width: 300px;
+      margin-top: 2px;
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .nav-buttons {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    .nav-buttons {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    .nav-buttons {
+      /* Overrides for up to 600px */
+    }
+  }
+  
+  /* ==========================================================================
+     NAV BUTTONS - BUTTONS
+     ========================================================================== */
+  .nav-buttons button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    .nav-buttons button {
+      padding: 5px 10px;
+      font-size: 14px;
+      border: none;
+      border-radius: 5px;
+  }
 }
-.picker-body {
-  width: 200;
-  height: 100;
-}
-.picker-container {
-  width: 300px;
-  margin: 20px 0;
-  font-family: "Univers";
-}
-.progress-bar {
-  width: 300px;
-  height: 10px;
-  background-color: #ddd;
-  border-radius: 5px;
-  margin: 20px 0;
-}
-.progress-bar-fill {
-  height: 100%;
-  background-color: #4caf50;
-  width: 0%;
-  border-radius: 5px;
-  transition: width 0.3s ease;
-}
-.nav-buttons {
-  display: flex;
-  justify-content: space-between;
-  width: 300px;
-  margin-top: 10px;
-}
-.nav-buttons button {
-  padding: 10px 20px;
-  font-size: 16px;
-  background-color: #4caf50;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-#date-display {
-  margin-top: 10px;
-  margin-bottom: 10px;
-  white-space: normal;
-  word-wrap: normal;
-}
-#picker-instructions {
-  margin-top: 20px;
-  font-size: 15px;
-  color: #333;
-  text-align: center;
-}
-
-#location-display {
-  margin-top: 20px;
-}
-
-.simulation-info {
-  font-size: 18px;
-  color: #333;
-  text-align: left;
-  font-weight: 350; /* Makes the font heavier but not totally bold */
-}
-
-#custom-picker {
-  font-family: "Univers";
-}
-.leaflet-popup-content-wrapper {
-  font-family: "Univers";
-}
-
-@media only screen and (max-width: 600px) {
-}
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .nav-buttons button {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    .nav-buttons button {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    .nav-buttons button {
+      /* Overrides for up to 600px */
+    }
+  }
+  
+  /* ==========================================================================
+     DATE DISPLAY
+     ========================================================================== */
+  #date-display {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    white-space: normal;
+    word-wrap: normal;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    #date-display {
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    #date-display {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    #date-display {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    #date-display {
+      /* Overrides for up to 600px */
+    }
+  }
+  
+  /* ==========================================================================
+     PICKER INSTRUCTIONS
+     ========================================================================== */
+  #picker-instructions {
+    margin-top: 20px;
+    font-size: 15px;
+    color: #333;
+    text-align: center;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    #picker-instructions {
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    #picker-instructions {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    #picker-instructions {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    #picker-instructions {
+      /* Overrides for up to 600px */
+    }
+  }
+  
+  /* ==========================================================================
+     LOCATION DISPLAY
+     ========================================================================== */
+  #location-display {
+    margin-top: 20px;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    #location-display {
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    #location-display {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    #location-display {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    #location-display {
+      /* Overrides for up to 600px */
+    }
+  }
+  
+  /* ==========================================================================
+     SIMULATION INFO
+     ========================================================================== */
+  .simulation-info {
+    font-size: 18px;
+    color: #333;
+    text-align: left;
+    font-weight: 350; /* Makes the font heavier but not totally bold */
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    .simulation-info {
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .simulation-info {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    .simulation-info {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    .simulation-info {
+      /* Overrides for up to 600px */
+    }
+  }
+  
+  /* ==========================================================================
+     CUSTOM PICKER
+     ========================================================================== */
+  #custom-picker {
+    font-family: "Univers";
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    #custom-picker {
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    #custom-picker {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    #custom-picker {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    #custom-picker {
+      /* Overrides for up to 600px */
+    }
+  }
+  
+  /* ==========================================================================
+     LEAFLET POPUP CONTENT WRAPPER
+     ========================================================================== */
+  .leaflet-popup-content-wrapper {
+    font-family: "Univers";
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    .leaflet-popup-content-wrapper {
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .leaflet-popup-content-wrapper {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    .leaflet-popup-content-wrapper {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    .leaflet-popup-content-wrapper {
+      /* Overrides for up to 600px */
+    }
+  }
+  
+  /* ==========================================================================
+     GLOBAL OVERRIDES FOR SMALL SCREENS (if needed)
+     ========================================================================== */
+  @media only screen and (max-width: 600px) {
+    /* Global small screen overrides can be added here */
+  }
+  

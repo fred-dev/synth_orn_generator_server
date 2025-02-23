@@ -1,140 +1,484 @@
-
-/* Weather container */
-#weather-container-input {
-  background-color: #f0f8ff;
-  padding: 10px;
-  border-radius: 5px;
-  color: #333;
-}
-
-#weather-prompt-input {
-  padding: 4px;
-  border-radius: 8px;
-  margin-bottom: 8px;
-  background-color: #9394d044;
-}
-/* Weather form */
-#weather-form-input {
-  display: flex;
-  flex-direction: column;
-}
-
-/* Row for each weather input */
-.weather-input-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-/* Input group (numeric input + drag handle) */
-.weather-input-group {
-  display: flex;
-  align-items: center;
-}
-
-/* Label styling */
-.weather-input-label {
-  white-space: nowrap;
-  font-size: 1rem;
-  margin-right: 8px;
-}
-
-/* Numeric input styling (spinners removed) */
-.weather-number-input {
-  padding: 0.4rem;
-  font-size: 1rem;
-  height: 1em;
-  text-align: left;
-  -moz-appearance: textfield;
-  -webkit-appearance: none;
-  appearance: none;
-  font-family: "Univers", sans-serif;
-  width: 4.9em;
-  border: 1px solid #ccc;
-}
-
-/* Weather result display */
-#weather-result-input {
-  text-align: left;
-  margin-top: 6px;
-  padding: 5px;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  font-family: "Univers", sans-serif;
-}
-
-/* Inline icon and description area */
-#weather-inline-icon-input {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 1rem;
-  padding-bottom: 0.5rem;
-}
-
-/* Weather icon image (if used) */
-#weather-icon-img {
-  height: 3em;
-  width: auto;
-}
-
-/* Weather description */
-#weather-description-input {
-  font-size: 1.2rem;
-  font-weight: bold;
-  margin: 0;
-  padding: 0;
-  font-family: "Univers", sans-serif;
-}
-
-/* Drag handle (for non‑touch devices) */
-.weather-input-drag-handle {
-  display: none;
-}
-/* if it is a touch device disable the input for the weather-number-input class*/
-.touch-device .weather-number-input {
-  pointer-events: none;
-
-}
-
-/* Hide the drag handle on touch devices */
-.touch-device .weather-input-drag-handle {
-  width: 30px;
-  height: 30px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border: 1px solid #ffffff;
-  margin-left: 8px;
-  cursor: ns-resize;
-  font-size: 3.2em;
-  color: #666666;
-}
-#cloud_coverage {
-  margin-bottom: 0.5rem;
-}
-#rain_prob {
-  margin-bottom: 0.5rem;
-}
-/* Mobile adjustments */
-@media only screen and (max-width: 600px) {
-  #weather-container-input {
+/* ==========================================================================
+   WEATHER CONTAINER
+   ========================================================================== */
+   #weather-container-input {
+    background-color: #f0f8ff;
+    padding: 10px;
+    border-radius: 5px;
+    color: #333;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    #weather-container-input {
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    #weather-container-input {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    #weather-container-input {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    #weather-container-input {
+      padding: 5px; /* Mobile adjustment */
+    }
+  }
+  
+  /* ==========================================================================
+     WEATHER PROMPT
+     ========================================================================== */
+  #weather-prompt-input {
+    padding: 4px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background-color: #9394d044;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    #weather-prompt-input {
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    #weather-prompt-input {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    #weather-prompt-input {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    #weather-prompt-input {
+      /* Mobile adjustments (if needed) */
+    }
+  }
+  
+  /* ==========================================================================
+     WEATHER FORM
+     ========================================================================== */
+  #weather-form-input {
+    display: flex;
+    flex-direction: column;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    #weather-form-input {
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    #weather-form-input {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    #weather-form-input {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    #weather-form-input {
+      /* Mobile adjustments (if needed) */
+    }
+  }
+  
+  /* ==========================================================================
+     WEATHER INPUT ROW
+     ========================================================================== */
+  .weather-input-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    .weather-input-row {
+      margin-bottom: 2px;
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .weather-input-row {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    .weather-input-row {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    .weather-input-row {
+      /* Mobile adjustments (if needed) */
+    }
+  }
+  
+  /* ==========================================================================
+     WEATHER INPUT GROUP
+     ========================================================================== */
+  .weather-input-group {
+    display: flex;
+    align-items: center;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    .weather-input-group {
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .weather-input-group {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    .weather-input-group {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    .weather-input-group {
+      /* Mobile adjustments (if needed) */
+    }
+  }
+  
+  /* ==========================================================================
+     WEATHER INPUT LABEL
+     ========================================================================== */
+  .weather-input-label {
+    white-space: nowrap;
+    font-size: 1rem;
+    margin-right: 8px;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    .weather-input-label {
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .weather-input-label {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    .weather-input-label {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    .weather-input-label {
+      /* Mobile adjustments (if needed) */
+    }
+  }
+  
+  /* ==========================================================================
+     WEATHER NUMBER INPUT
+     ========================================================================== */
+  .weather-number-input {
+    padding: 0.4rem;
+    font-size: 1rem;
+    height: 1em;
+    text-align: left;
+    -moz-appearance: textfield;
+    -webkit-appearance: none;
+    appearance: none;
+    font-family: "Univers", sans-serif;
+    width: 4.9em;
+    border: 1px solid #ccc;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    .weather-number-input {
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .weather-number-input {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    .weather-number-input {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    .weather-number-input {
+      /* Mobile adjustments (if needed) */
+    }
+  }
+  
+  /* ==========================================================================
+     WEATHER RESULT DISPLAY
+     ========================================================================== */
+  #weather-result-input {
+    text-align: left;
+    margin-top: 6px;
     padding: 5px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    font-family: "Univers", sans-serif;
   }
-  .weather-label {
-    font-size: 0.9rem;
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    #weather-result-input {
+      /* Overrides for 1024px to 1280px */
+    }
   }
-  .weather-input {
-    width: 80px;
-    padding: 8px;
-    font-size: 0.9rem;
+  @media (min-width: 768px) and (max-width: 1024px) {
+    #weather-result-input {
+      /* Overrides for 768px to 1024px */
+    }
   }
+  @media (min-width: 600px) and (max-width: 767px) {
+    #weather-result-input {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    #weather-result-input {
+      /* Mobile adjustments (if needed) */
+    }
+  }
+  
+  /* ==========================================================================
+     WEATHER INLINE ICON & DESCRIPTION
+     ========================================================================== */
+  #weather-inline-icon-input {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 1rem;
+    padding-bottom: 0.5rem;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    #weather-inline-icon-input {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 0.2rem;
+      padding-bottom: 0rem;    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    #weather-inline-icon-input {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    #weather-inline-icon-input {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    #weather-inline-icon-input {
+      /* Mobile adjustments (if needed) */
+    }
+  }
+  
+  /* ==========================================================================
+     WEATHER ICON IMAGE
+     ========================================================================== */
+  #weather-icon-img {
+    height: 3em;
+    width: auto;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    #weather-icon-img {
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    #weather-icon-img {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    #weather-icon-img {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    #weather-icon-img {
+      /* Mobile adjustments (if needed) */
+    }
+  }
+  
+  /* ==========================================================================
+     WEATHER DESCRIPTION
+     ========================================================================== */
   #weather-description-input {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin: 0;
+    padding: 0;
+    font-family: "Univers", sans-serif;
   }
-  .stat {
-    font-size: 0.9rem;
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    #weather-description-input {
+      /* Overrides for 1024px to 1280px */
+    }
   }
-}
+  @media (min-width: 768px) and (max-width: 1024px) {
+    #weather-description-input {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    #weather-description-input {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    #weather-description-input {
+      font-size: 1.5rem; /* Mobile adjustment as provided */
+    }
+  }
+  
+  /* ==========================================================================
+     WEATHER INPUT DRAG HANDLE
+     ========================================================================== */
+  .weather-input-drag-handle {
+    display: none;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    .weather-input-drag-handle {
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .weather-input-drag-handle {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    .weather-input-drag-handle {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    .weather-input-drag-handle {
+      /* Mobile adjustments (if needed) */
+    }
+  }
+  
+  /* ==========================================================================
+     TOUCH DEVICE OVERRIDES
+     ========================================================================== */
+  /* Disable weather number input on touch devices */
+  .touch-device .weather-number-input {
+    pointer-events: none;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    .touch-device .weather-number-input {
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .touch-device .weather-number-input {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    .touch-device .weather-number-input {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    .touch-device .weather-number-input {
+      /* Mobile adjustments (if needed) */
+    }
+  }
+  
+  /* Show drag handle on touch devices */
+  .touch-device .weather-input-drag-handle {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #ffffff;
+    margin-left: 8px;
+    cursor: ns-resize;
+    font-size: 3.2em;
+    color: #666666;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    .touch-device .weather-input-drag-handle {
+      width: 20px;
+    height: 20px;
+
+    margin-left: 5px;
+    cursor: ns-resize;
+    font-size: 3.2em;
+    color: #666666;
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .touch-device .weather-input-drag-handle {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    .touch-device .weather-input-drag-handle {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    .touch-device .weather-input-drag-handle {
+      /* Mobile adjustments (if needed) */
+    }
+  }
+  
+  /* ==========================================================================
+     CLOUD COVERAGE & RAIN PROBABILITY
+     ========================================================================== */
+  #cloud_coverage {
+    margin-bottom: 0.5rem;
+  }
+  #rain_prob {
+    margin-bottom: 0.5rem;
+  }
+  @media (min-width: 1024px) and (max-width: 1280px) {
+    #cloud_coverage,
+    #rain_prob {
+      /* Overrides for 1024px to 1280px */
+    }
+  }
+  @media (min-width: 768px) and (max-width: 1024px) {
+    #cloud_coverage,
+    #rain_prob {
+      /* Overrides for 768px to 1024px */
+    }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    #cloud_coverage,
+    #rain_prob {
+      /* Overrides for 600px to 767px */
+    }
+  }
+  @media only screen and (max-width: 600px) {
+    #cloud_coverage,
+    #rain_prob {
+      /* Mobile adjustments (if needed) */
+    }
+  }
+  
+  /* ==========================================================================
+     OPTIONAL: ADDITIONAL MOBILE ADJUSTMENTS FOR OTHER ELEMENTS
+     (e.g., .weather-label, .weather-input, .stat)
+     ========================================================================== */
+  @media only screen and (max-width: 600px) {
+    .weather-label {
+      font-size: 0.9rem;
+    }
+    .weather-input {
+      width: 80px;
+      padding: 8px;
+      font-size: 0.9rem;
+    }
+    .stat {
+      font-size: 0.9rem;
+    }
+  }
+  

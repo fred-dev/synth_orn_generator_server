@@ -7,15 +7,15 @@ import sys
 
 dotenv_path = Path(__file__).resolve().parent.parent / '.env'
 load_dotenv(dotenv_path=dotenv_path)
-
-login(os.getenv('HF_TOKEN'))
+#
+#login(os.getenv('HF_TOKEN'), False, False, True)
 gradio_space = os.getenv('GRADIO_SPACE_PATH')
 
 def sleep_space():
     pause_space(gradio_space)
     while True:
         space_status = get_space_runtime(gradio_space).stage
-        print(space_status, file=sys.stderr)
+        #print(space_status, file=sys.stderr)
         if space_status == 'PAUSED':
             break
         time.sleep(20)
@@ -25,7 +25,7 @@ def wake_space():
     restart_space(gradio_space)
     while True:
         space_status = get_space_runtime(gradio_space).stage
-        print(space_status, file=sys.stderr)
+        #print(space_status, file=sys.stderr)
         if space_status == 'RUNNING':
             break
         time.sleep(20)
@@ -37,7 +37,7 @@ def get_status():
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python control_space.py <command>")
+        print("Usage: python control_space.py <command>", file=sys.stderr)
         sys.exit(1)
 
     command = sys.argv[1]
@@ -52,5 +52,5 @@ if __name__ == "__main__":
         print("Invalid command")
         sys.exit(1)
 
-    print(result)
+    print({"status": result})
     sys.exit(0)

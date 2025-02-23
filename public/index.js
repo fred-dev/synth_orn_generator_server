@@ -1,6 +1,6 @@
 import { initCustomDatePicker } from "./customDatePicker.js";
 
-const globalLogLevel = "silent"; // "silent", "error", "warning", "info", "debug"
+const globalLogLevel = "debug"; // "silent", "error", "warning", "info", "debug"
 let mapChoicelatlng = null;
 let userGeneratedData = {};
 userGeneratedData.minutes_of_day = 0;
@@ -37,10 +37,9 @@ const normalText = `
     Australian ecosystems will respond to future climate scenarios.
     For a selected scenario, our model will produce birdsong
     and wildlife soundscapes reflecting the projected conditions.
-    <p>Simply pan and zoom across the map to choose a location
+    <p>Pan and zoom around the map to choose a location
     (it must be within Australia). Once at your desired location,
-    right-click (Control + click on Mac)
-    or long-press on touchscreen devices
+    long-press on the location
     to generate a location-specific simulation.
   `;
 
@@ -55,10 +54,9 @@ const driftText = `
     changing simulated soundscape. To choose your own scenario,
     interact with the map:
 
-    <p>Simply pan and zoom across the map to choose a location
+    <p>Pan and zoom around the map to choose a location
     (it must be within Australia). Once at your desired location,
-    right-click (Control + click on Mac)
-    or long-press on touchscreen devices
+    long-press on the location
     to generate a location-specific simulation.
   `;
 const generativeText = `
@@ -67,11 +65,10 @@ const generativeText = `
   Australian ecosystems will respond to future climate scenarios.
   For a selected scenario, our model will produce birdsong
   and wildlife soundscapes reflecting the projected conditions.
-  <p>Simply pan and zoom across the map to choose a location
-  (it must be within Australia). Once at your desired location,
-  right-click (Control + click on Mac)
-  or long-press on touchscreen devices
-  to generate a location-specific simulation.
+  <p>Pan and zoom around the map to choose a location
+    (it must be within Australia). Once at your desired location,
+    long-press on the location
+    to generate a location-specific simulation.
 `;
 var routingPrefix = "";
 
@@ -95,6 +92,8 @@ let currentMode = MODES.GENERATIVE; // or MODES.DRIFT if you prefer
 
 // Custom log function to handle different log levels.
 customLog("debug", "Current mode on start:", currentMode);
+
+let huggingFaceServerStatus = "";
 
 // Drift mode configuration
 const driftConfig = {
@@ -168,9 +167,9 @@ const modeHandlers = {
       // Clear inactivity so we don’t do partial timers
       clearInactivityTimeout();
       // (A) Close resultDiv if it’s open, so that switching to DRIFT doesn’t leave it.
-      const resultsDiv = document.getElementById("resultDiv");
-      if (resultsDiv) {
-        resultsDiv.remove();
+      const resultDiv = document.getElementById("resultDiv");
+      if (resultDiv) {
+        resultDiv.remove();
         customLog("debug", "Closed resultDiv upon leaving NORMAL mode");
       }
     },
@@ -195,7 +194,9 @@ const modeHandlers = {
       showSilentModeOverlay(); // show a UI overlay telling users we’re in sleep mode
       // Stop or pause all audio
       pauseAllAudio(); // or driftAudio.forEach(a => { a.pause(); a.currentTime = 0; });
-      // Possibly remove markers or keep them
+      //lets put the hugging face server to sleep - we need to wait for it to complete this function as it might take a while
+
+      controlHuggingFaceServer("sleep");
     },
     exit: () => {
       customLog("debug", "Exiting SILENT mode");
@@ -243,7 +244,7 @@ function switchMode(newMode) {
       containerElement.removeChild(containerElement.firstChild);
     }
   }
-  const generatedContentDiv = document.getElementById("resultsDiv");
+  const generatedContentDiv = document.getElementById("resultDiv");
   if (generatedContentDiv) {
     generatedContentDiv.remove();
   }
@@ -281,10 +282,11 @@ function showSilentModeOverlay() {
   // You can style each <h2> on a separate line.
   // You can remove <br> tags if <h2> is block-level (they’ll appear on separate lines by default).
   silentModeOverlay.innerHTML = `
-    <h2>Silent Mode</h2>
-    <h2>Installation is sleeping</h2>
-    <h2>Went silent at ${wentSilentDisplay}</h2>
-    <h2>Will resume at ${resumeDisplay}</h2>
+    <h3>Silent Mode</h3>
+    <h3>Installation is sleeping</h3>
+    <h3>Hugging face server is: ${huggingFaceServerStatus}</h3>
+    <h3>Went silent at ${wentSilentDisplay}</h3>
+    <h3>Will resume at ${resumeDisplay}</h3>
   `;
 
   document.body.appendChild(silentModeOverlay);
@@ -302,7 +304,7 @@ function hideSilentModeOverlay() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   customLog("debug", "DOMContentLoaded event fired");
-  //lets load the JSON file to get the settings
+  // Load the JSON file to get the settings
   const config = await loadConfig();
   if (config) {
     // If it has a "startMode" property, set currentMode
@@ -320,15 +322,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.warn("No config loaded; using defaults");
   }
 
+  routingPrefix = await getRoutingPrefix();
+  customLog("debug", "Routing Prefix received:", routingPrefix);
+  huggingFaceServerStatus = await controlHuggingFaceServer("status");
+  customLog("debug", "Hugging Face server status:", huggingFaceServerStatus);
   try {
-    customLog("debug", "Routing Prefix received event list:", routingPrefix);
     const style = document.createElement("style");
     style.innerHTML = `
-                        @font-face {
-                          font-family: "Univers";
-                          src: url("${routingPrefix}/fonts/Univers/UniversLight.ttf") format("truetype");
-                        }
-                        `;
+      @font-face {
+        font-family: "Univers";
+        src: url("${routingPrefix}/fonts/Univers/UniversLight.ttf") format("truetype");
+      }
+    `;
     customLog("debug", "routing prefix", routingPrefix);
     document.head.appendChild(style);
 
@@ -337,7 +342,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (error) {
     customLog("error", "Failed to fetch Routing Prefix:", error);
   }
-  // }, 100); // 3000 milliseconds = 3 seconds
 });
 
 setInterval(() => {
@@ -345,20 +349,22 @@ setInterval(() => {
   const nowTotal = minutesSinceMidnight(now.getHours(), now.getMinutes());
 
   const silentStartTotal = minutesSinceMidnight(silentStartHour, silentStartMinute);
-  const silentEndTotal   = minutesSinceMidnight(silentEndHour,   silentEndMinute);
+  const silentEndTotal = minutesSinceMidnight(silentEndHour, silentEndMinute);
 
   let isSilentTime;
   if (silentStartTotal < silentEndTotal) {
     // same-day range (e.g., 08:00 → 14:00)
-    isSilentTime = (nowTotal >= silentStartTotal && nowTotal < silentEndTotal);
+    isSilentTime = nowTotal >= silentStartTotal && nowTotal < silentEndTotal;
   } else {
     // crossing midnight (e.g., 22:30 → 07:15)
-    isSilentTime = (nowTotal >= silentStartTotal || nowTotal < silentEndTotal);
+    isSilentTime = nowTotal >= silentStartTotal || nowTotal < silentEndTotal;
   }
 
   if (isSilentTime && currentMode !== MODES.SILENT) {
     switchMode(MODES.SILENT);
   } else if (!isSilentTime && currentMode === MODES.SILENT) {
+    //we meed tot turn on the hugging face server before we move out of silent mode
+    controlHuggingFaceServer("restart");
     // return to your preferred mode
     switchMode(MODES.NORMAL);
   }
@@ -442,9 +448,9 @@ function resetGenerativeTimeout() {
   generativeTimeout = setTimeout(() => {
     if (currentMode === MODES.GENERATIVE) {
       // Close resultDiv
-      const resultsDiv = document.getElementById("resultDiv");
-      if (resultsDiv) {
-        resultsDiv.remove();
+      const resultDiv = document.getElementById("resultDiv");
+      if (resultDiv) {
+        resultDiv.remove();
         customLog("debug", "Closed resultDiv on generative inactivity");
       }
       // Re-show generative instructions
@@ -473,7 +479,6 @@ function detectTouchDevice() {
 }
 async function loadConfig() {
   try {
-
     const response = await fetch(`${routingPrefix}/config.json`);
     if (!response.ok) {
       throw new Error(`Failed to load config: ${response.status}`);
@@ -486,7 +491,7 @@ async function loadConfig() {
   }
 }
 async function getRoutingPrefix() {
-  const url = "/generate/routingPrefix"; // Relative URL for your Node.js server endpoint
+  const url = "/routingPrefix"; // Relative URL for your Node.js server endpoint
 
   try {
     const response = await fetch(url, {
@@ -560,12 +565,13 @@ async function loadAndPlayNext(playerIndex) {
       flyoverMasterContainer.appendChild(compDiv);
     });
     //lets get the window width and height
-    const windowWidth = window.innerWidth;
+    const flyoverMaxWidth = window.innerWidth * .75;
     // Bind this popup to your marker (assuming you already have a marker variable)
+
     marker = L.marker([jsonData.coord.lat, jsonData.coord.lon], {
       autoClose: false,
       closeOnClick: false,
-    }).bindPopup(flyoverMasterContainer, { minWidth: 0, maxWidth: 1920 });
+    }).bindPopup(flyoverMasterContainer, { minWidth: 0, maxWidth: flyoverMaxWidth });
 
     // Add the marker to the map (and don't call openPopup() if you want it to open later)
     marker.addTo(map);
@@ -585,7 +591,6 @@ async function loadAndPlayNext(playerIndex) {
     console.error("Error playing audio:", error);
   }
   // lets print out the marker popup to the console so I can see all its css rules
-
 
   return marker;
 }
@@ -671,9 +676,9 @@ async function startDriftMode() {
   driftActive = true;
 
   // If the results div is present, remove it
-  const resultsDiv = document.getElementById("resultDiv");
-  if (resultsDiv) {
-    resultsDiv.remove();
+  const resultDiv = document.getElementById("resultDiv");
+  if (resultDiv) {
+    resultDiv.remove();
     console.log("Results div removed");
   } else {
     console.log("Results div not found");
@@ -714,45 +719,43 @@ function stopDriftMode() {
   }
 }
 
-
 function showInstructionPopup() {
   console.log("showInstructionPopup called. Current mode:", currentMode);
-  const popup = document.getElementById("instructionPopup");
-  if (!popup) {
+  const instructionsPopup = document.getElementById("instructionPopup");
+  if (!instructionsPopup) {
     console.error("Instruction popup not found.");
     return;
   }
   // Always update the innerHTML based on mode.
   if (currentMode === MODES.DRIFT) {
-    popup.innerHTML = driftText;
+    instructionsPopup.innerHTML = driftText;
   } else if (currentMode === MODES.GENERATIVE) {
-    popup.innerHTML = generativeText;
+    instructionsPopup.innerHTML = generativeText;
   } else {
-    popup.innerHTML = normalText;
+    instructionsPopup.innerHTML = normalText;
   }
 
   // Always add the 'visible' class when calling showInstructionPopup.
-  popup.classList.add("visible");
+  instructionsPopup.classList.add("visible");
 }
 
 function hideInstructionPopup() {
   if (currentMode === "drift") return; // In drift mode, keep instructions visible.
-  const popup = document.getElementById("instructionPopup");
-  if (popup) {
-    popup.classList.remove("visible");
+  const instructionsPopup = document.getElementById("instructionPopup");
+  if (instructionsPopup) {
+    instructionsPopup.classList.remove("visible");
   }
 }
-
 
 // Function to perform reverse geocoding
 async function reverseGeocode(lat, lon) {
   const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
   try {
     const response = await fetch(url);
-    const data = await response.json();
+    const reverseGeocodeData = await response.json();
     //add the data to the userGeneratedData object
-    customLog("debug", "reverseGeocode results: " + JSON.stringify(data, null, 2));
-    return data.display_name;
+    customLog("debug", "reverseGeocode results: " + JSON.stringify(reverseGeocodeData, null, 2));
+    return reverseGeocodeData.display_name;
   } catch (error) {
     console.error("Error fetching location name:", error);
     return "Unknown location";
@@ -851,7 +854,6 @@ map.on("touchend", function () {
   clearTimeout(touchTimeout);
 });
 
-
 // Right-click event for creating a new marker
 async function handleMapClick(latlng) {
   hideInstructionPopup();
@@ -877,12 +879,41 @@ async function handleMapClick(latlng) {
   }).addTo(map);
 
   marker
-    .bindPopup("<div id='check_location_bubble' class='main_text_medium'>Checking your chosen location. <br> <br>Please wait.<br><br></div><div class='loader'></div>", {
+    .bindPopup("<div id='check_location_bubble' class='main_text_medium'>Checking your chosen location. <br> <br>Please wait.<br><br></div>", {
       autoClose: false,
       closeOnClick: false,
     })
     .openPopup();
 
+    const birdImageUrl = `${routingPrefix}/images/bird-cells-new.svg`;
+
+    // Define the bird filter to control its color (e.g. "invert(1)" for white).
+    const birdLoaderBirdFilter = 'invert(0)';
+    
+    // Create the spinner container and the loader structure.
+    const spinnerContainer = document.createElement("div");
+    spinnerContainer.id = "audioSpinnerContainer";
+    spinnerContainer.innerHTML = `
+      <div class="bird-loader-wrapper">
+        <div class="bird-loader">
+          <div class="orbit">
+            <div class="bird"></div>
+          </div>
+        </div>
+      </div>
+    `;
+    const checkLocationBubble = document.getElementById("check_location_bubble");
+    
+    // Append the spinner container to your target element.
+    checkLocationBubble.appendChild(spinnerContainer);
+    
+    // Set the bird's background image dynamically.
+    const birdElem = spinnerContainer.querySelector('.bird');
+    birdElem.style.backgroundImage = `url('${birdImageUrl}')`;
+    
+    // Set the bird filter using JavaScript.
+    document.documentElement.style.setProperty('--bird-loader-bird-filter', birdLoaderBirdFilter);
+    
   // Launch all asynchronous tasks concurrently.
   const isInAusPromise = getisInAustralia(lat, lon);
   const locationNamePromise = reverseGeocode(lat, lon);
@@ -1035,10 +1066,34 @@ async function callGenerateWithGradio(lat, lon, temp, humidity, wind_speed, pres
 async function loadAudio() {
   const resultDiv = document.getElementById("resultDiv");
 
+  const birdImageUrl = `${routingPrefix}/images/bird-cells-new.svg`;
+
+
+  // Define the bird filter to control its color (e.g. "invert(1)" for white).
+  const birdLoaderBirdFilter = "invert(1)";
+
+  // Create the spinner container and the loader structure.
   const spinnerContainer = document.createElement("div");
   spinnerContainer.id = "audioSpinnerContainer";
-  spinnerContainer.innerHTML = `<div class="loaderAudio"></div>`;
+  spinnerContainer.innerHTML = `
+  <div class="bird-loader-wrapper">
+    <div class="bird-loader">
+      <div class="orbit">
+        <div class="bird"></div>
+      </div>
+    </div>
+  </div>
+`;
+
+  // Append the spinner container to your target element.
   resultDiv.appendChild(spinnerContainer);
+
+  // Set the bird's background image dynamically.
+  const birdElem = spinnerContainer.querySelector(".bird");
+  birdElem.style.backgroundImage = `url('${birdImageUrl}')`;
+
+  // Set the bird filter using JavaScript.
+  document.documentElement.style.setProperty("--bird-loader-bird-filter", birdLoaderBirdFilter);
 
   const audioUrl = await callGenerateWithGradio(
     userGeneratedData.lat,
@@ -1068,16 +1123,22 @@ async function loadAudio() {
     audioPlayer.setAttribute("autoplay", "");
     audioPlayer.setAttribute("playsinline", "");
 
-    audioPlayer.addEventListener("canplaythrough", () => {
-      spinnerContainer.remove();  // remove spinner
-    }, { once: true });
-  
-    audioPlayer.addEventListener("error", (err) => {
-      spinnerContainer.remove();  // remove spinner on error
-      console.error("Audio load error:", err);
-    }, { once: true });
-  
+    audioPlayer.addEventListener(
+      "canplaythrough",
+      () => {
+        spinnerContainer.remove(); // remove spinner
+      },
+      { once: true }
+    );
 
+    audioPlayer.addEventListener(
+      "error",
+      (err) => {
+        spinnerContainer.remove(); // remove spinner on error
+        console.error("Audio load error:", err);
+      },
+      { once: true }
+    );
 
     audioPlayer.src = audioUrl;
     resultDiv.appendChild(audioPlayer);
@@ -1190,11 +1251,16 @@ function centerMarkerInView(latlngIn) {
   const markerPoint = map.latLngToContainerPoint(latlngIn);
   customLog("debug", "markerPoint: " + markerPoint);
   var desiredPoint;
-  if (mapSize.x > 600) {
+  if (mapSize.x > 1280) {
     // Desired container point: center horizontally, 80% down vertically.
-    desiredPoint = L.point(mapSize.x / 2, mapSize.y * 0.8);
+    desiredPoint = L.point(mapSize.x / 2, mapSize.y * 0.85);
     customLog("debug", "desiredPoint: " + desiredPoint);
-  } else {
+  } else if (mapSize.x > 800) {
+    // Desired container point: center horizontally, 85% down vertically.
+    desiredPoint = L.point(mapSize.x / 2, mapSize.y * 0.9);
+    customLog("debug", "desiredPoint: " + desiredPoint);
+  }
+  else {
     // Desired container point: center horizontally, 80% down vertically.
     desiredPoint = L.point(mapSize.x / 2, mapSize.y * 0.95);
     customLog("debug", "desiredPoint: " + desiredPoint);
@@ -1279,4 +1345,27 @@ function getRandomFileNumber() {
  */
 function formatFileNumber(num) {
   return String(num).padStart(4, "0");
+}
+
+async function controlHuggingFaceServer(command) {
+  try {
+    const response = await fetch(`${routingPrefix}/hug_space_control`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ command: command }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+
+    const result = await response.json();
+    customLog("debug", "controlHuggingFaceServer::Result from server:", JSON.stringify(result, null, 2));
+    return result.status;
+  } catch (error) {
+    console.error("Error controlling Hugging Face server:", error);
+    throw error;
+  }
 }

@@ -28,14 +28,11 @@ const app = express();
 const port = process.env.PORT || 4001;
 const HF_TOKEN = process.env.HF_TOKEN;
 const openWeatherMapsAPIKey = process.env.OPENWEATHER_API_KEY; // Your API key stored in .env file
-const shapeFilePathWater = process.env.SHAPE_FILE_PATH_WATER;
-const shapeFilePathInside = process.env.SHAPE_FILE_PATH_INSIDE;
 const routingPrefix = process.env.GET_PATH_PREFIX;
+const clientPathPrefix = process.env.CLIENT_PATH_PREFIX;
 const pythonPath = process.env.PYTHON_PATH;
 const tempDebugVerbose = process.env.DEBUG_VERBOSE;
-const rootMediaPath = process.env.ROOT_MEDIA_PATH;
-const clientPathPrefix = process.env.CLIENT_PATH_PREFIX;
-const installation_session = process.env.INSTALLATION_SESSION;
+const gradioSpacePath = process.env.GRADIO_SPACE_PATH;
 
 if (tempDebugVerbose == "true") {
   logger.level = "debug";
@@ -43,37 +40,13 @@ if (tempDebugVerbose == "true") {
   logger.level = "silent";
 }
 
-logger.debug("rootMediaPath: " + rootMediaPath);
 logger.debug("clientPathPrefix: " + clientPathPrefix);
 logger.debug("routingPrefix: " + routingPrefix);
-logger.debug("isInAustralia shape file" + shapeFilePathInside);
-logger.debug("Distance to water shape file" + shapeFilePathWater);
 
 app.use(express.json());
 
-// // Middleware to check the application mode and modify request handling
-// app.use((req, res, next) => {
-//   const appMode = process.env.APP_MODE || "testing"; // Default to testing mode if not specified
-//   req.appMode = appMode;
-//   next();
-// });
-
-// app.use((req, res, next) => {
-//   logger.debug("Second app request path:", JSON.stringify(req.path));
-//   next();
-// });
-
 app.use(express.static("public"));
 
-app.get(routingPrefix + "/routingPrefix", (req, res) => {
-  res.setHeader("Cache-Control", "no-store");
-  res.json({
-    route: clientPathPrefix,
-  });
-  console.log("routingPrefix: ", clientPathPrefix);
-});
-
-// or const { Dropbox } = require('dropbox'); if using CommonJS
 
 // 1. Create an instance of the Dropbox class with your stored token
 const dbx = new Dropbox({
@@ -121,8 +94,8 @@ async function completeDate(audioUrl) {
     fs.writeFileSync(`tempFiles/${uploadFilePrefix}.json`, JSON.stringify(jsonToSave, null, 2));
 
     // 5) Upload them both to Dropbox
-    await uploadFileToDropbox(`tempFiles/${uploadFilePrefix}.wav`, `${installation_session}`, `${uploadFilePrefix}.wav`);
-    await uploadFileToDropbox(`tempFiles/${uploadFilePrefix}.json`, `${installation_session}`, `${uploadFilePrefix}.json`);
+    await uploadFileToDropbox(`tempFiles/${uploadFilePrefix}.wav`, `${clientPathPrefix}`, `${uploadFilePrefix}.wav`);
+    await uploadFileToDropbox(`tempFiles/${uploadFilePrefix}.json`, `${clientPathPrefix}`, `${uploadFilePrefix}.json`);
 
     console.log("completeDate done successfully");
   } catch (error) {
@@ -132,7 +105,7 @@ async function completeDate(audioUrl) {
 
 async function initializeGradio() {
   try {
-    const app = await Client.connect("fred-dev/synth_orn_gen", {
+    const app = await Client.connect(gradioSpacePath, {
       hf_token: HF_TOKEN,
       space_status: (status) => logger.debug("Space status:", JSON.stringify(status)),
     });
@@ -210,7 +183,7 @@ app.post(routingPrefix + "/generateAudio", async (req, res) => {
 
 // api_name="/generate"
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env['OPENAI_API_KEY'], // This is the default and can be omitted
 });
 
 // Start the server
@@ -223,21 +196,18 @@ app.post(routingPrefix + "/generate-text", async (req, res) => {
   const userInput = JSON.parse(req.body.userInput);
   const dateObj = new Date(userInput.date);
   const year = dateObj.getUTCFullYear();
-  const month = dateObj.getUTCMonth() + 1; // Months are zero-indexed
+  const month = dateObj.getUTCMonth() + 1;
   const day = dateObj.getUTCDate();
   const hours = dateObj.getHours();
   const minutes = dateObj.getUTCMinutes();
   const seconds = dateObj.getUTCSeconds();
-
   logger.debug(
-    `Generate text: Date: ${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")} ${hours.toString().padStart(2, "0")}:${minutes
-      .toString()
-      .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+    `Generate text: Date: ${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")} ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
   );
 
   try {
     const prompt = `
-      You are a multi-functional agent tasked with gathering comprehensive information and generating a narrative. The tasks of each agent are described here, each agent should perform their tasks separately in the order they appear. To perform this research you will be given input information containing a date and time in the format Date: yyyy-m-d-hr-min-sec, a location name in the format Location: suburb, city, state, postcode, Country (all the locations will be within the Australian territory), weather conditions in the format Climate: Temperature - °C, Humidity - %, Wind Speed - km/h, the distance of the location from the coast Distance to coast: in km and the distance of the location from the nearest body of inland water Distance to inland water (in km). These will form the basis of the research and cannot be changed in any circumstances. Following are the different agents and their tasks.
+    You are a multi-functional agent tasked with gathering comprehensive information and generating a narrative. The tasks of each agent are described here, each agent should perform their tasks separately in the order they appear. To perform this research you will be given input information containing a date and time in the format Date: yyyy-m-d-hr-min-sec, a location name in the format Location: suburb, city, state, postcode, Country (all the locations will be within the Australian territory), weather conditions in the format Climate: Temperature - °C, Humidity - %, Wind Speed - km/h, the distance of the location from the coast Distance to coast: in km and the distance of the location from the nearest body of inland water Distance to inland water (in km). These will form the basis of the research and cannot be changed in any circumstances. Following are the different agents and their tasks.
       Climate research: taking the given location, date and time, decide whether the proposed conditions are normal or unusual, for all individual conditions, as well as the complete group, it could be slightly hotter than expected for that date, time and location, windier, more humid. Consider the conditions individually and as a whole and describe their relative difference. This might take the form: An unusually hot day, or indicating a storm, unusual for this time of year. 
       Indigenous history researcher agent: Find information about the traditional owners of the land, including tribe and or clan only. Check this information thoroughly as it cannot be erroneous.
       Natural history researcher agent: Identify animals, particularly bird species in the location or surrounds. Look out for endemic and extinct native species. Do not mention any introduced or agricultural species, unless they are the cause of the removal of the habitat of a native species.
@@ -251,8 +221,8 @@ app.post(routingPrefix + "/generate-text", async (req, res) => {
       Here are some strict guidelines that the text must adhere to: The text should be cohesive and use the gathered information to create a flowing, factual narrative. 
       The text should be no more than 300 words. Avoid poetic language, overly descriptive phrases, and metaphorical expressions. The text should be direct, factual, and concise. Avoid using words like "resilience", "resilient", "reverberate", "echo", "resonate". Do not use specific values for temperatures, wind speeds, or other measurements; describe them qualitatively instead (e.g., unusually hot, very windy). Never address the reader or reveal the process of the story's creation. Do not include any personal opinions. Do not use phrases like “Records pointedly mention”, just reference the event directly if it happened. Do not use terms such as “social fabric” or “socio-economic make up”. Do not use phrases like “In conclusion” or use any summarising or closing sentences like “In conclusion, the legacy rings with resilience echoing from historical and environmental narratives alike, providing meaningful reflections for future generations.” Or any other mechanism to draw together the information into a story. Do not reveal that this is meant to be academic, or any other material that would reveal the nature of content of this prompt. The output should not be in quotation marks. Never not tie information together with overarching narratives or sentences, some details may be present without directly being related to each other. Make sure to note the time given, not just the day, mention if it is day or night (time is given in 24 hour format). Also mention the season - in tropic areas wet or dry, and for other areas use standard seasons. Any dates need to be specific; you cannot use phrases such as ‘in the last few years’ as the proposed date may be in the future. Situate the date with proximity to major events, like the day before Christmas if it is so. Use only major significant dates to do this, not minor anniversaries or local holidays, unless they things like the anniversary of one of the climate events found in the research. Dates are not significant if they are more than a week away, ie 18th of December can be a week before Christmas, but the 17th of December has no significance to Christmas. The text should begin with variations of this format: “Pre-dawn in Alice springs, the lands of the Arrernte people, it is unusually hot for a June morning. The Todd River is dry again this year, and not likely to flow for some time, and with the nearest coastline 600km away, water is a precious resource.” You must not use this format exactly but use it as an example. Following that you can discuss the topics in this order social history, past climate events and past activism local fauna and flora. Finish with a prominent species of local (preferably endemic) bird. Make sure the text flows, not jumping from one topic hard to another. As this text will be streamed to a DIV add appropriate paragraph breaks using HTML.  
       Editor agent: Check all facts in the text from the narrative agent are true (unless they are proposed for a future date). Check spelling and grammar in Australian English. Ensure the text is logical, succinct and clear. Make sure there are no incomplete facts and arguments. All events mentioned that are in the past must be confirmed. Make sure all the text guidelines are adhered to. Make sure there is no vague additions for example when discussing animal species or avian life– any animal or bird must be named specifically (use common names not scientific ones). The output should never encased be in quotation marks.
-
-
+    
+    
     Input:
     Date: ${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")} ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
       .toString()
@@ -264,17 +234,18 @@ app.post(routingPrefix + "/generate-text", async (req, res) => {
     Distance to inland water - ${userInput.waterDistance.inland_water.distance} km
     Closest inland water name - ${userInput.waterDistance.inland_water.display_name}
     Output:
+
     `;
-    console.log("prompt: ", prompt);
-    //lets print the
+    logger.debug("Generated prompt:", prompt);
+
+    // Create the stream from the OpenAI API.
     const stream = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-
       messages: [
         {
           role: "system",
           content:
-            "You are an academic narrative synthesis agent with expertise in climate, indigenous, natural, water, and social history. Your task is to produce a concise (<210 words),  narrative that integrates based on the instructions you are given.",
+            "You are an academic narrative synthesis agent with expertise in climate, indigenous, natural, water, and social history. Your task is to produce a concise (<210 words), narrative that integrates based on the instructions you are given.",
         },
         { role: "user", content: prompt },
       ],
@@ -285,21 +256,41 @@ app.post(routingPrefix + "/generate-text", async (req, res) => {
       presence_penalty: 0.51,
       stream: true,
     });
+
+    // Start streaming. Headers are sent once here.
     res.writeHead(200, {
       "Content-Type": "text/plain; charset=utf-8",
       "Transfer-Encoding": "chunked",
     });
-    uploadFilePrefix = dateObj.toISOString().replace(/:/g, "-");
+    
 
+    // Process the streamed chunks.
     for await (const chunk of stream) {
+      logger.debug("Received chunk:", chunk);
+      // Write the chunk or an empty string if not present.
       res.write(chunk.choices[0]?.delta?.content || "");
     }
-    res.end(); // End the response when the stream ends
+    res.end();
   } catch (error) {
-    logger.error("Error calling OpenAI API:", error);
-    res.status(500).send("Failed to generate text");
+    // Use the error handling style from the docs
+    if (error instanceof OpenAI.APIError) {
+      logger.error("OpenAI API Error:");
+      logger.error("Request ID:", error.request_id);
+      logger.error("Status:", error.status);
+      logger.error("Name:", error.name);
+      logger.error("Headers:", JSON.stringify(error.headers));
+    } else {
+      logger.error("Unknown error calling OpenAI API:", error);
+    }
+    if (!res.headersSent) {
+      res.status(500).send("Failed to generate text");
+    } else {
+      res.end();
+    }
   }
 });
+
+
 
 app.get(routingPrefix + "/weather", async (req, res) => {
   logger.debug("weather request");
@@ -332,9 +323,9 @@ app.post(routingPrefix + "/waterdistance", (req, res) => {
   logger.debug("Received water distance request:", JSON.stringify(req.body));
 
   const { lat, lon } = req.body;
-  logger.debug(`Water distance request lat: ${lat}, lon: ${lon}, shapeFilePath: ${shapeFilePathWater}`);
+  logger.debug(`Water distance request lat: ${lat}, lon: ${lon}`);
 
-  const pythonProcess = spawn(pythonPath, ["distance_to_water/distance_to_water.py", lat, lon, shapeFilePathWater]);
+  const pythonProcess = spawn(pythonPath, ["distance_to_water/distance_to_water.py", lat, lon]);
 
   // Capture stdout in a string buffer
   let stdoutData = "";
@@ -368,9 +359,9 @@ app.post(routingPrefix + "/isInAustralia", (req, res) => {
   logger.debug("Received isInAustralia request:", JSON.stringify(req.body));
 
   const { lat, lon } = req.body;
-  logger.debug(`isInAustralia lat: ${lat}, lon: ${lon}, shapeFilePath: ${shapeFilePathInside}`);
+  logger.debug(`isInAustralia lat: ${lat}, lon: ${lon}`);
 
-  const pythonProcess = spawn(pythonPath, ["isInAustralia/isInAustralia.py", lat, lon, shapeFilePathInside]);
+  const pythonProcess = spawn(pythonPath, ["isInAustralia/isInAustralia.py", lat, lon]);
 
   // Capture stdout in a string buffer
   let stdoutData = "";
@@ -399,4 +390,57 @@ app.post(routingPrefix + "/isInAustralia", (req, res) => {
       res.status(500).send("Server error parsing Python response.");
     }
   });
+});
+
+app.post(routingPrefix + "/hug_space_control", (req, res) => {
+  //logger.debug("hug_space_con:", JSON.stringify(req.body));
+
+  const { command } = req.body;
+  logger.debug(`hug_space_con: ${command}`);
+
+  const pythonProcess = spawn(pythonPath, ["space_control/control_space.py", command]);
+
+  // Capture stdout in a string buffer
+  let stdoutData = "";
+
+  // Whenever data is available on stdout, accumulate it
+  pythonProcess.stdout.on("data", (data) => {
+    stdoutData += data.toString();
+    console.log("hug_space_control from server stdoutData: ", stdoutData);
+  });
+
+  // Print Python stderr to your Node logs (debugging info only)
+  pythonProcess.stderr.on("data", (data) => {
+    logger.error(`Python stderr: ${data.toString()}`);
+  });
+
+  // When the process ends, parse the accumulated stdout as JSON
+  pythonProcess.on("close", (code) => {
+    logger.debug(`Child process exited with code ${code}`);
+    try {
+      //lets check the stdoutData and if it is not JSON then we will ignore it
+      if (stdoutData.startsWith("{")) {
+        logger.debug(`Currently parsing: ${stdoutData}`);
+        const jsonData = JSON.parse(stdoutData.replace(/'/g, '"'));
+        res.json(jsonData);
+        logger.debug(`hug_space_control. Parsed JSON: ${JSON.stringify(jsonData)}`);
+      }
+      
+    } catch (error) {
+      logger.error("Error parsing JSON:", error);
+      res.status(500).send("Server error parsing Python response.");
+    }
+  });
+});
+
+app.get('*', (req, res) => {
+  if (req.path.endsWith('/routingPrefix')) {
+    // do your thing
+    // e.g. everything up to /routingPrefix is the prefix
+    console.log('routingPrefix param:', clientPathPrefix);
+    res.json({ route: clientPathPrefix });
+  } else {
+    // maybe pass to next() or 404
+    res.status(404).send('Not found');
+  }
 });

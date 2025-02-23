@@ -2,8 +2,11 @@ import sys
 import geopandas as gpd
 from shapely.geometry import Point
 import json
+import os
+
 
 country_shapefile = ""
+
 
 def point_in_bounding_box(lat, lon):
     """
@@ -38,7 +41,7 @@ def point_in_bounding_box(lat, lon):
         return True
     return False
 
-def is_point_in_australia(lat, lon, shapefile_path):
+def is_point_in_australia(lat, lon, country_shapefile_path):
     """
     Determines whether the given point (lat, lon) falls on Australian territory.
     The check first uses a rough bounding box, and if that passes, loads the simplified
@@ -60,8 +63,9 @@ def is_point_in_australia(lat, lon, shapefile_path):
     point = Point(lon, lat)
     
     # Load the simplified shapefile
-    gdf = gpd.read_file(shapefile_path)
-    print(f"From pythin function Shapefile CRS: {gdf.crs} :: {shapefile_path}", file=sys.stderr)
+    
+    gdf = gpd.read_file(country_shapefile_path)
+    print(f"From python function Shapefile CRS: {gdf.crs} :: {country_shapefile_path}", file=sys.stderr)
     
     # If the shapefile's CRS is not EPSG:4326, reproject the point to the shapefile's CRS.
     if gdf.crs and gdf.crs.to_string() != "EPSG:4326":
@@ -76,19 +80,21 @@ def is_point_in_australia(lat, lon, shapefile_path):
             return True
     return False
 
-if len(sys.argv) != 4:
-    print("isInAustralia error Usage: script.py <latitude> <longitude> <shapefile>", file=sys.stderr)
+if len(sys.argv) != 3:
+    print("isInAustralia error Usage: script.py <latitude> <longitude>", file=sys.stderr)
     sys.exit(1)
 
 # The following lines should not be indented further
 lat = float(sys.argv[1])  # Convert latitude to float
 lon = float(sys.argv[2])  # Convert longitude to float
 # lets make a global variable for the shapefile path
-country_shapefile = sys.argv[3]
 
+script_dir = os.path.dirname(__file__)
+shapefile_path = os.path.join(script_dir, 'AUS_2021_AUST_SHP_GDA2020/AUS_2021_AUST_GDA2020.shp')
+print(f"shapefile_path Joined:  + {shapefile_path}", file=sys.stderr)
 
-print(f"isInAustralia request from python: Latitude: {lat}, Longitude: {lon}, shape file path{country_shapefile}", file=sys.stderr)
-result = is_point_in_australia(lat, lon, country_shapefile)
+print(f"isInAustralia request from python: Latitude: {lat}, Longitude: {lon}, shape file path{shapefile_path}", file=sys.stderr)
+result = is_point_in_australia(lat, lon, shapefile_path)
 print(f"isInAustralia request response:  + {result}", file=sys.stderr)
 print(json.dumps(result))  # Serialize and print the result as a JSON string
 
