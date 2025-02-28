@@ -1050,35 +1050,6 @@ async function callGenerateWithGradio(lat, lon, temp, humidity, wind_speed, pres
 }
 
 async function loadAudio() {
-  //   const resultDiv = document.getElementById("resultDiv");
-
-  //   const birdImageUrl = `${routingPrefix}/images/bird-cells-new.svg`;
-
-  //   // Define the bird filter to control its color (e.g. "invert(1)" for white).
-  //   const birdLoaderBirdFilter = "invert(1)";
-
-  //   // Create the spinner container and the loader structure.
-  //   const spinnerContainer = document.createElement("div");
-  //   spinnerContainer.id = "audioSpinnerContainer";
-  //   spinnerContainer.innerHTML = `
-  //   <div class="bird-loader-wrapper">
-  //     <div class="bird-loader">
-  //       <div class="orbit">
-  //         <div class="bird"></div>
-  //       </div>
-  //     </div>
-  //   </div>
-  // `;
-
-  //   // Append the spinner container to your target element.
-  //   resultDiv.appendChild(spinnerContainer);
-
-  //   // Set the bird's background image dynamically.
-  //   const birdElem = spinnerContainer.querySelector(".bird");
-  //   birdElem.style.backgroundImage = `url('${birdImageUrl}')`;
-
-  //   // Set the bird filter using JavaScript.
-  //   document.documentElement.style.setProperty("--bird-loader-bird-filter", birdLoaderBirdFilter);
 
   const audioUrl = await callGenerateWithGradio(
     userGeneratedData.lat,
@@ -1208,8 +1179,8 @@ async function fetchDataAndDisplay() {
 
     let resultText = "";
     // Flags to track removal of the first <p> and first </p>
-    // let firstPRemoved = false;
-    // let firstClosePRemoved = false;
+    let firstPRemoved = false;
+    let firstClosePRemoved = false;
 
     reader.read().then(function processText({ done, value }) {
       if (done) {
@@ -1227,23 +1198,23 @@ async function fetchDataAndDisplay() {
       // Add the processed chunk to the result
       resultText += chunkStr;
 
-      // if (!firstPRemoved) {
-      //   const newResultText = resultText.replace("<p>", "");
-      //   // Check if replacement actually happened
-      //   if (newResultText !== resultText) {
-      //     firstPRemoved = true;
-      //     resultText = newResultText;
-      //   }
-      // }
+      if (!firstPRemoved) {
+        const newResultText = resultText.replace("<p>", "");
+        // Check if replacement actually happened
+        if (newResultText !== resultText) {
+          firstPRemoved = true;
+          resultText = newResultText;
+        }
+      }
 
-      // // Remove the very first </p> if not removed yet
-      // if (!firstClosePRemoved) {
-      //   const newResultText = resultText.replace("</p>", "");
-      //   if (newResultText !== resultText) {
-      //     firstClosePRemoved = true;
-      //     resultText = newResultText;
-      //   }
-      // }
+      // Remove the very first </p> if not removed yet
+      if (!firstClosePRemoved) {
+        const newResultText = resultText.replace("</p>", "");
+        if (newResultText !== resultText) {
+          firstClosePRemoved = true;
+          resultText = newResultText;
+        }
+      }
       streamedText.innerHTML = resultText;
 
       // Read the next chunk
