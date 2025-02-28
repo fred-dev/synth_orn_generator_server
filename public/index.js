@@ -86,7 +86,6 @@ const MODES = {
   SILENT: "silent",
   GENERATIVE: "generative",
 };
-let startMode = "";
 // 2) The current mode, default to something on load:
 let currentMode = MODES.GENERATIVE; // or MODES.DRIFT if you prefer
 
@@ -549,7 +548,7 @@ async function loadAndPlayNext(playerIndex) {
       flyoverMasterContainer.appendChild(compDiv);
     });
     //lets get the window width and height
-    const flyoverMaxWidth = window.innerWidth * .75;
+    const flyoverMaxWidth = window.innerWidth * 0.75;
     // Bind this popup to your marker (assuming you already have a marker variable)
 
     marker = L.marker([jsonData.coord.lat, jsonData.coord.lon], {
@@ -869,15 +868,15 @@ async function handleMapClick(latlng) {
     })
     .openPopup();
 
-    const birdImageUrl = `${routingPrefix}/images/bird-cells-new.svg`;
+  const birdImageUrl = `${routingPrefix}/images/bird-cells-new.svg`;
 
-    // Define the bird filter to control its color (e.g. "invert(1)" for white).
-    const birdLoaderBirdFilter = 'invert(0)';
-    
-    // Create the spinner container and the loader structure.
-    const spinnerContainer = document.createElement("div");
-    spinnerContainer.id = "audioSpinnerContainer";
-    spinnerContainer.innerHTML = `
+  // Define the bird filter to control its color (e.g. "invert(1)" for white).
+  const birdLoaderBirdFilter = "invert(0)";
+
+  // Create the spinner container and the loader structure.
+  const spinnerContainer = document.createElement("div");
+  spinnerContainer.id = "audioSpinnerContainer";
+  spinnerContainer.innerHTML = `
       <div class="bird-loader-wrapper">
         <div class="bird-loader">
           <div class="orbit">
@@ -886,18 +885,18 @@ async function handleMapClick(latlng) {
         </div>
       </div>
     `;
-    const checkLocationBubble = document.getElementById("check_location_bubble");
-    
-    // Append the spinner container to your target element.
-    checkLocationBubble.appendChild(spinnerContainer);
-    
-    // Set the bird's background image dynamically.
-    const birdElem = spinnerContainer.querySelector('.bird');
-    birdElem.style.backgroundImage = `url('${birdImageUrl}')`;
-    
-    // Set the bird filter using JavaScript.
-    document.documentElement.style.setProperty('--bird-loader-bird-filter', birdLoaderBirdFilter);
-    
+  const checkLocationBubble = document.getElementById("check_location_bubble");
+
+  // Append the spinner container to your target element.
+  checkLocationBubble.appendChild(spinnerContainer);
+
+  // Set the bird's background image dynamically.
+  const birdElem = spinnerContainer.querySelector(".bird");
+  birdElem.style.backgroundImage = `url('${birdImageUrl}')`;
+
+  // Set the bird filter using JavaScript.
+  document.documentElement.style.setProperty("--bird-loader-bird-filter", birdLoaderBirdFilter);
+
   // Launch all asynchronous tasks concurrently.
   const isInAusPromise = getisInAustralia(lat, lon);
   const locationNamePromise = reverseGeocode(lat, lon);
@@ -1011,6 +1010,8 @@ async function handleMapClick(latlng) {
       document.getElementById("humidity-input").value = userGeneratedData.humidity;
       document.getElementById("pressure-input").value = userGeneratedData.pressure;
       document.getElementById("wind-speed-input").value = userGeneratedData.windSpeed;
+      //lets trigger the onWeatherDataAdjusted function from the csutomDatePicker class
+      onWeatherDataAdjusted();
     }
   }
 }
@@ -1048,36 +1049,35 @@ async function callGenerateWithGradio(lat, lon, temp, humidity, wind_speed, pres
 }
 
 async function loadAudio() {
-  const resultDiv = document.getElementById("resultDiv");
+  //   const resultDiv = document.getElementById("resultDiv");
 
-  const birdImageUrl = `${routingPrefix}/images/bird-cells-new.svg`;
+  //   const birdImageUrl = `${routingPrefix}/images/bird-cells-new.svg`;
 
+  //   // Define the bird filter to control its color (e.g. "invert(1)" for white).
+  //   const birdLoaderBirdFilter = "invert(1)";
 
-  // Define the bird filter to control its color (e.g. "invert(1)" for white).
-  const birdLoaderBirdFilter = "invert(1)";
+  //   // Create the spinner container and the loader structure.
+  //   const spinnerContainer = document.createElement("div");
+  //   spinnerContainer.id = "audioSpinnerContainer";
+  //   spinnerContainer.innerHTML = `
+  //   <div class="bird-loader-wrapper">
+  //     <div class="bird-loader">
+  //       <div class="orbit">
+  //         <div class="bird"></div>
+  //       </div>
+  //     </div>
+  //   </div>
+  // `;
 
-  // Create the spinner container and the loader structure.
-  const spinnerContainer = document.createElement("div");
-  spinnerContainer.id = "audioSpinnerContainer";
-  spinnerContainer.innerHTML = `
-  <div class="bird-loader-wrapper">
-    <div class="bird-loader">
-      <div class="orbit">
-        <div class="bird"></div>
-      </div>
-    </div>
-  </div>
-`;
+  //   // Append the spinner container to your target element.
+  //   resultDiv.appendChild(spinnerContainer);
 
-  // Append the spinner container to your target element.
-  resultDiv.appendChild(spinnerContainer);
+  //   // Set the bird's background image dynamically.
+  //   const birdElem = spinnerContainer.querySelector(".bird");
+  //   birdElem.style.backgroundImage = `url('${birdImageUrl}')`;
 
-  // Set the bird's background image dynamically.
-  const birdElem = spinnerContainer.querySelector(".bird");
-  birdElem.style.backgroundImage = `url('${birdImageUrl}')`;
-
-  // Set the bird filter using JavaScript.
-  document.documentElement.style.setProperty("--bird-loader-bird-filter", birdLoaderBirdFilter);
+  //   // Set the bird filter using JavaScript.
+  //   document.documentElement.style.setProperty("--bird-loader-bird-filter", birdLoaderBirdFilter);
 
   const audioUrl = await callGenerateWithGradio(
     userGeneratedData.lat,
@@ -1110,7 +1110,7 @@ async function loadAudio() {
     audioPlayer.addEventListener(
       "canplaythrough",
       () => {
-        spinnerContainer.remove(); // remove spinner
+        document.getElementById("audioSpinnerContainer").remove(); // remove spinner
       },
       { once: true }
     );
@@ -1156,6 +1156,36 @@ async function fetchDataAndDisplay() {
 
     document.body.appendChild(generatedContentDiv);
 
+    const resultDiv = document.getElementById("resultDiv");
+
+    const birdImageUrl = `${routingPrefix}/images/bird-cells-new.svg`;
+
+    // Define the bird filter to control its color (e.g. "invert(1)" for white).
+    const birdLoaderBirdFilter = "invert(1)";
+
+    // Create the spinner container and the loader structure.
+    const spinnerContainer = document.createElement("div");
+    spinnerContainer.id = "audioSpinnerContainer";
+    spinnerContainer.innerHTML = `
+                                <div class="bird-loader-wrapper">
+                                  <div class="bird-loader">
+                                    <div class="orbit">
+                                      <div class="bird"></div>
+                                    </div>
+                                  </div>
+                                </div>
+                              `;
+
+    // Append the spinner container to your target element.
+    resultDiv.appendChild(spinnerContainer);
+
+    // Set the bird's background image dynamically.
+    const birdElem = spinnerContainer.querySelector(".bird");
+    birdElem.style.backgroundImage = `url('${birdImageUrl}')`;
+
+    // Set the bird filter using JavaScript.
+    document.documentElement.style.setProperty("--bird-loader-bird-filter", birdLoaderBirdFilter);
+
     loadAudio();
 
     const streamedText = document.getElementById("streamedText");
@@ -1176,18 +1206,44 @@ async function fetchDataAndDisplay() {
     const decoder = new TextDecoder("utf-8");
 
     let resultText = "";
+    // Flags to track removal of the first <p> and first </p>
+    let firstPRemoved = false;
+    let firstClosePRemoved = false;
 
     reader.read().then(function processText({ done, value }) {
       if (done) {
         customLog("debug", "Stream complete");
-        streamedText.innerHTML = resultText; // Final update to the text
+        streamedText.innerHTML = resultText;
         return;
       }
 
-      // Decode the stream chunk to text
-      const chunk = decoder.decode(value, { stream: true });
-      resultText += chunk;
-      streamedText.innerHTML = resultText; // Update the displayed text with each chunk
+      // Decode the chunk
+      let chunkStr = decoder.decode(value, { stream: true });
+
+      // Remove the very first <p> if not removed yet
+      
+
+      // Add the processed chunk to the result
+      resultText += chunkStr;
+
+      if (!firstPRemoved) {
+        const newResultText = resultText.replace("<p>", "");
+        // Check if replacement actually happened
+        if (newResultText !== resultText) {
+          firstPRemoved = true;
+          resultText = newResultText;
+        }
+      }
+
+      // Remove the very first </p> if not removed yet
+      if (!firstClosePRemoved) {
+        const newResultText = resultText.replace("</p>", "");
+        if (newResultText !== resultText) {
+          firstClosePRemoved = true;
+          resultText = newResultText;
+        }
+      }
+      streamedText.innerHTML = resultText;
 
       // Read the next chunk
       reader.read().then(processText);
@@ -1196,7 +1252,6 @@ async function fetchDataAndDisplay() {
     console.error("Failed to fetch response:", error);
   }
 }
-
 async function getisInAustralia(lat, lon) {
   //lets log the time to see how long it takes to get a response
   //console.time("isInAustralia");
@@ -1243,8 +1298,7 @@ function centerMarkerInView(latlngIn) {
     // Desired container point: center horizontally, 85% down vertically.
     desiredPoint = L.point(mapSize.x / 2, mapSize.y * 0.9);
     customLog("debug", "desiredPoint: " + desiredPoint);
-  }
-  else {
+  } else {
     // Desired container point: center horizontally, 80% down vertically.
     desiredPoint = L.point(mapSize.x / 2, mapSize.y * 0.95);
     customLog("debug", "desiredPoint: " + desiredPoint);

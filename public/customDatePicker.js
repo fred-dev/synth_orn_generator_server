@@ -598,6 +598,12 @@ function selectWeatherIcon() {
   cloudCover += Math.max(0, (1013 - pressure) * 0.2);
   cloudCover = Math.min(100, Math.max(0, cloudCover));
 
+  //check if cloud cover is nan or infinity
+  if (isNaN(cloudCover) || !isFinite(cloudCover)) {
+
+    cloudCover = 0;
+  }
+
   // Update UI elements for rain and cloud values
   document.getElementById("rain-probability-input").textContent = `${Math.round(rainProb)}%`;
   document.getElementById("cloud-coverage-input").textContent = `${Math.round(cloudCover)}%`;
@@ -762,6 +768,7 @@ function selectWeatherIcon() {
   document.getElementById("weather-description-input").textContent = selected.description;
 
   customLog("debug", "selected icon", selected.icon);
+
   return selected.icon;
 }
 

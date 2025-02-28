@@ -47,7 +47,6 @@ app.use(express.json());
 
 app.use(express.static("public"));
 
-
 // 1. Create an instance of the Dropbox class with your stored token
 const dbx = new Dropbox({
   accessToken: process.env.DROPBOX_ACCESS_TOKEN, // or hardcode, but best to keep it in env
@@ -183,7 +182,7 @@ app.post(routingPrefix + "/generateAudio", async (req, res) => {
 
 // api_name="/generate"
 const openai = new OpenAI({
-  apiKey: process.env['OPENAI_API_KEY'], // This is the default and can be omitted
+  apiKey: process.env["OPENAI_API_KEY"], // This is the default and can be omitted
 });
 
 // Start the server
@@ -202,27 +201,55 @@ app.post(routingPrefix + "/generate-text", async (req, res) => {
   const minutes = dateObj.getUTCMinutes();
   const seconds = dateObj.getUTCSeconds();
   logger.debug(
-    `Generate text: Date: ${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")} ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+    `Generate text: Date: ${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")} ${hours.toString().padStart(2, "0")}:${minutes
+      .toString()
+      .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
   );
 
   try {
     const prompt = `
-    You are a multi-functional agent tasked with gathering comprehensive information and generating a narrative. The tasks of each agent are described here, each agent should perform their tasks separately in the order they appear. To perform this research you will be given input information containing a date and time in the format Date: yyyy-m-d-hr-min-sec, a location name in the format Location: suburb, city, state, postcode, Country (all the locations will be within the Australian territory), weather conditions in the format Climate: Temperature - °C, Humidity - %, Wind Speed - km/h, the distance of the location from the coast Distance to coast: in km and the distance of the location from the nearest body of inland water Distance to inland water (in km). These will form the basis of the research and cannot be changed in any circumstances. Following are the different agents and their tasks.
-      Climate research: taking the given location, date and time, decide whether the proposed conditions are normal or unusual, for all individual conditions, as well as the complete group, it could be slightly hotter than expected for that date, time and location, windier, more humid. Consider the conditions individually and as a whole and describe their relative difference. This might take the form: An unusually hot day, or indicating a storm, unusual for this time of year. 
-      Indigenous history researcher agent: Find information about the traditional owners of the land, including tribe and or clan only. Check this information thoroughly as it cannot be erroneous.
-      Natural history researcher agent: Identify animals, particularly bird species in the location or surrounds. Look out for endemic and extinct native species. Do not mention any introduced or agricultural species, unless they are the cause of the removal of the habitat of a native species.
-      Climate history researcher agent: Find historical weather related events such as floods, fires, heatwaves and get specific details. Did people die? Were species threatened? What natural habitat was damaged. Were these were attributed to climate change. Only mention specific verified events, and check they are correct before allowing them to be added, no speculation can be used, only facts.
-      Climate and nature activism research agent: Find any protests over land use, like mining, deforestation or other related protests that are close by to the location. Find specific information about these events, dates, companies and groups involved, outcomes. Also find the details of specific areas or species that were threatened by the actions that were being protested. Look for other details like if a mine that was being protested was to be run by a company that had a track record of environmental destruction. Do not generalise, or speculate, use only factual verified information for all of this research.    
-      Water information researcher agent: You are given distances to inland water and coastline, using these as a starting point identify the names of the water bodies they refer to. Find out if the bodies of water are significant to the area and ecosystem in any way, are they threatened, is there a lack of water in the area? Have they been contaminated.
-      Social history researcher agent: Describe the social history of the town. Include settlement details, current population, socio-economic makeup, and changes over time. 
-      Fact checker agent: Verify the accuracy of all information. Remove any information that is speculative. Make sure all events, species or any other information is checked and verified.
-      Speculative agent: If the date is more than 6 years in the future you must create no more than 4 pieces of speculative information. These pieces are designed to bridge the present day (and recent history and climate) with the proposed future scenario. Where the future scenario is unusually hot, adding events that lead to this is appropriate. The same as if it is cold or windy. Speculative information can be protests over future industrial activity such as mining, fracking or deforestation, future species extinction, or future extreme weather events. Any speculative events are to be logically possible, and where feasible related to paste events, so more and larger fires or floods in places that had them before. Species that are known to be endangered going extinct, protests against industrial activity where there has been a history of this. Here there is some room for a little imagination. The speculative events are likely negative, but do not have to be, for example if the climate scenario suggests a reduction in global warming there may be some positive speculative events, like protestors stopping a mine or preventing fracking. Any speculative events are to be added to their respective categories as researched by other agents so far. The further the date is into the future, the more pieces of speculative information you may create.
-      Narrative creation agent: Using the information gathered from the previous agents, create a short narrative text in an academic style that frames input scenario, integrating all collected information. The specific information collected by the other agents is only to be used as source material should never be output directly. 
-      Here are some strict guidelines that the text must adhere to: The text should be cohesive and use the gathered information to create a flowing, factual narrative. 
-      The text should be no more than 300 words. Avoid poetic language, overly descriptive phrases, and metaphorical expressions. The text should be direct, factual, and concise. Avoid using words like "resilience", "resilient", "reverberate", "echo", "resonate". Do not use specific values for temperatures, wind speeds, or other measurements; describe them qualitatively instead (e.g., unusually hot, very windy). Never address the reader or reveal the process of the story's creation. Do not include any personal opinions. Do not use phrases like “Records pointedly mention”, just reference the event directly if it happened. Do not use terms such as “social fabric” or “socio-economic make up”. Do not use phrases like “In conclusion” or use any summarising or closing sentences like “In conclusion, the legacy rings with resilience echoing from historical and environmental narratives alike, providing meaningful reflections for future generations.” Or any other mechanism to draw together the information into a story. Do not reveal that this is meant to be academic, or any other material that would reveal the nature of content of this prompt. The output should not be in quotation marks. Never not tie information together with overarching narratives or sentences, some details may be present without directly being related to each other. Make sure to note the time given, not just the day, mention if it is day or night (time is given in 24 hour format). Also mention the season - in tropic areas wet or dry, and for other areas use standard seasons. Any dates need to be specific; you cannot use phrases such as ‘in the last few years’ as the proposed date may be in the future. Situate the date with proximity to major events, like the day before Christmas if it is so. Use only major significant dates to do this, not minor anniversaries or local holidays, unless they things like the anniversary of one of the climate events found in the research. Dates are not significant if they are more than a week away, ie 18th of December can be a week before Christmas, but the 17th of December has no significance to Christmas. The text should begin with variations of this format: “Pre-dawn in Alice springs, the lands of the Arrernte people, it is unusually hot for a June morning. The Todd River is dry again this year, and not likely to flow for some time, and with the nearest coastline 600km away, water is a precious resource.” You must not use this format exactly but use it as an example. Following that you can discuss the topics in this order social history, past climate events and past activism local fauna and flora. Finish with a prominent species of local (preferably endemic) bird. Make sure the text flows, not jumping from one topic hard to another. As this text will be streamed to a DIV add appropriate paragraph breaks using HTML.  
-      Editor agent: Check all facts in the text from the narrative agent are true (unless they are proposed for a future date). Check spelling and grammar in Australian English. Ensure the text is logical, succinct and clear. Make sure there are no incomplete facts and arguments. All events mentioned that are in the past must be confirmed. Make sure all the text guidelines are adhered to. Make sure there is no vague additions for example when discussing animal species or avian life– any animal or bird must be named specifically (use common names not scientific ones). The output should never encased be in quotation marks.
-    
-    
+    You are a multi-functional agent tasked with gathering comprehensive information and generating a narrative. Each step should be performed separately in the order they appear. To perform this overall task you will be given input information containing a date and time in the format Date: yyyy-m-d-hr-min-sec, a location name in the format Location: suburb, city, state, postcode, Country (all the locations will be within the Australian territory), weather conditions in the format Climate: Temperature - °C, Humidity - %, Wind Speed - km/h, the distance of the location from the coast Distance to coast: in km as well as a location name and the distance of the location from the nearest body of inland water Distance to inland water (in km) as well as a location name. These will form the basis of all the tasks and cannot be changed in any circumstances. Each research task requires specific information be collected in relation to the location, date and climate conditions, for each research task keep a list of the information that is found, this will used in the final aggregation. If you cannot find verifiable information with specific information like actual dates, locations, place names, clan names, species names, company names or other non-generic information then NO INFORMATION is to be recorded in the output for that task. The information gathered in each research task is to stored in point form as each task is complete, and should not be output, but used in the following generation tasks. Only verified specified information can be included. Following are the different tasks. Once the research tasks are complete you can begin with the generation and editing tasks, their guidelines follow the other task descriptions.
+
+    Indigenous history researcher task: Find information about the traditional owners of the land, including tribe and or clan only (do not use English translations of clan names). Check this information thoroughly as it cannot be erroneous. 
+
+    Environment classification task: Find information about the local environment, is it a desert, coastal town, grasslands.
+
+    Climate research task: taking the given location, date and time, decide whether the proposed conditions are normal or unusual, for all individual conditions, as well as the complete group, it could be slightly hotter than expected for that date, time and location, windier, more humid. Consider the conditions individually and as a whole and describe their relative difference. This might take the form: An unusually hot day, or indicating a storm, unusual for this time of year. 
+
+    Local fauna researcher task: Identify animals, particularly bird species that inhabit the location or surrounds. Make particular note of endemic and extinct native species. Do not mention any introduced or agricultural species. Are there migrating species that stop here? For all species find their sources of food or habitat in this area – ie what natural resources do they require from this area to live?
+
+    Climate history researcher task: Find historical weather related events such as floods, fires, heatwaves and get specific details. Did people die? Were species threatened? What natural habitat was damaged. Were these were attributed to climate change. Only mention specific verified events with dates, and check they are correct before allowing them to be added, no speculation can be used, only facts. 
+
+    Climate and nature activism research task: Find any protests over land use, like mining, deforestation or other related protests that are close by to the location. Find specific information about these events, dates, companies and groups involved, outcomes. Also find the details of specific areas or species that were threatened by the actions that were being protested. Look for other details like if a mine that was being protested was to be run by a company that had a track record of environmental destruction. Do not generalise, or speculate, use only factual verified information for all of this research. 
+
+    Water information researcher task: You are given distances to inland water and coastline, using these as a starting point identify the names of the water bodies they refer to. Find out if the bodies of water are significant to the area and ecosystem in any way, are they threatened, is there a lack of water in the area? Have they been contaminated. 
+
+    Land use researcher task: Is this land used for a specific agricultural or pastoral purpose? What is the main crop or species (ie what farming, sheep or cattle, logging for timber or mining, do NOT include tourism). List impacts of that land use that are confirmed for the location, like salination or water degradation, water polluting – the inclusion of the effects of the land use is very important.
+
+    Speculative event task: If the proposed year is more than 5 years in the future generate speculative events with specific details, these may be in several categories, they could be a future protest, a future mining or agricultural operation, or a future extreme weather event or fire. For every 5 years after the current year you must generate at least one and a maximum of two speculative events. These speculative events must be logical extensions based on previous events and also must have specific dates. For example, devastating floods in June 2038 washed away topsoil and the food supply for the local xxxx species. Or the fires of 2041 razed local ecosystems, or protests against the expansion of the local gold mine in 2036 resulted in mass arrests, or after years of protests, in august 2036 the expansion of the uranium mine was stopped by a high court injunction. Or In 2041 the previously endangered (xxx use specific species name) was officially categorised as extinct. Or in 2038 these lands were returned to their traditional owners, and sustainable land management has seen the local ecosystems flourish. Each speculative event must be added to the appropriate category list collected by the previous research tasks and must ALWAYS be accompanied by a YEAR and date of the future event. Make sure the speculative events are added to the information gathered from research task that matches the category of the speculative event, this is vital for the following processes.
+
+    Text generation task: Using the information gathered from the previous tasks, create a short narrative text in an academic style that frames input scenario, integrating all collected information, where there is no information from a research category this category can be excluded from the text. Here are some strict guidelines that the text must adhere to: The text should be cohesive and use the gathered information to create a flowing, factual text. The text should be in an academic style, informative and importantly concise, with few extra words, but a focus on ease of reading and flow, for example instead of “Uranium mining underpins regional development, involving sites such as Ranger and Jabiluka.” Write Uranium mining at Ranger and Jabiluka produce toxic tailings and radioactive waste” note the removal of involving sites such as – this kind of verbosity is bad. The text should be close to but not over 300 words, no less than 250 words. Make sure not to use phrases like species such as – just name the species directly, use this concept for all parts of the text not just species. Make sure to add all events from the research tasks, including the speculative ones. The text is written on the date and year from the input, so these speculative events will be in the past from this perspective.
+
+    The text should begin with the Year and then time and date information followed by the indigenous traditional owners and then the western place name using this format but adjusted to the specific input for example. 2035, 6:12am on March 18th, just before dawn in the monsoon season on the lands of the Mungguy people (use actual traditional owners), Kakadu (use actual western name)
+
+    Then add the Environment classification to this information, - a tropical/desert/suburban/mountainous area.
+
+    Then move on to the water information, make particular note if water is significant, ie is it a coastal town – then we don’t need to list the distance to the coast. For a desert both distances are important. For example, This desert town is 500 km from the xxxx coastline. Or the ecosystems of this coastal town are deeply connected to the sea, or the local ecosystems are dependent on the xxx river. ALWAYS name the water or locations of the water specifically.
+
+    Then move on to the climate information. It is an unusually hot/cold/windy or typical morning/day/night. Never use the specific values of climate conditions, if it is unusually hot or cold or windy say this, but don’t reference the actual values unless they are incredibly extreme.
+
+    Then move on to the local species information. Home to the endangered/profile, extinct (list verified species, that rely on the (relevant food source/natural resource) for sustenance/shelter. 
+
+    Then move on to previous extreme weather events, for example the floods/fires/avalanches of month and year devastated, impacted, the area resulting in ******
+
+    Then move on to land use information, for location name is known for, is a centre of, is a ****** town (ie mining, timber logging, wheat growing, lupus cultivation, mining, cattle ranches etc. That have little/significant/disastrous impact on the land resulting in ****** and ***** due to the *******
+
+    Then move on to climate activism. Make sure to note all details, especially dates, locations, companies and organisations involved.
+
+    Finally add a small summary, no more than two sentences, an example would be “Continued, mining/agriculture/deforestation/climate change/fires/floods/salination will further impact the ecosystems and their ability to support the **mention bird species and other fauna or extreme weather events, or threated species or specific activities from the gathered data that impact the ecosystems.
+
+    Editor task: The text from Text generation task must be checked and edited. It should be easy to read and flowing and factual, unless it refers to events that are in the future. Check all facts in the text are true, where events are discussed having future dates, they do not need to be fact checked.  Future events are included as if the text is being written after they happened and never mention the events are speculative. Check spelling and grammar in Australian English. Ensure the text is logical, succinct and clear and between 250 and 300 words. Make sure there are no incomplete facts and arguments. All events mentioned that are in the past must be confirmed. Make sure all the text guidelines are adhered to. Make sure there is no vague additions for example when discussing animal species or avian life– any animal or bird must be named specifically (use common names not scientific ones). The output should never encased be in quotation marks. The text must be in paragraphs, with a maximum of 4, us the <p> to define paragraphs.
+
     Input:
     Date: ${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")} ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
       .toString()
@@ -237,10 +264,12 @@ app.post(routingPrefix + "/generate-text", async (req, res) => {
 
     `;
     logger.debug("Generated prompt:", prompt);
+    //save the promtp to a file
+    fs.writeFileSync("tempFiles/prompt.txt", prompt);
 
     // Create the stream from the OpenAI API.
     const stream = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4.5-preview",
       messages: [
         {
           role: "system",
@@ -262,7 +291,6 @@ app.post(routingPrefix + "/generate-text", async (req, res) => {
       "Content-Type": "text/plain; charset=utf-8",
       "Transfer-Encoding": "chunked",
     });
-    
 
     // Process the streamed chunks.
     for await (const chunk of stream) {
@@ -289,8 +317,6 @@ app.post(routingPrefix + "/generate-text", async (req, res) => {
     }
   }
 });
-
-
 
 app.get(routingPrefix + "/weather", async (req, res) => {
   logger.debug("weather request");
@@ -425,7 +451,6 @@ app.post(routingPrefix + "/hug_space_control", (req, res) => {
         res.json(jsonData);
         logger.debug(`hug_space_control. Parsed JSON: ${JSON.stringify(jsonData)}`);
       }
-      
     } catch (error) {
       logger.error("Error parsing JSON:", error);
       res.status(500).send("Server error parsing Python response.");
