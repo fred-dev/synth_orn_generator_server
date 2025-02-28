@@ -1208,8 +1208,8 @@ async function fetchDataAndDisplay() {
 
     let resultText = "";
     // Flags to track removal of the first <p> and first </p>
-    let firstPRemoved = false;
-    let firstClosePRemoved = false;
+    // let firstPRemoved = false;
+    // let firstClosePRemoved = false;
 
     reader.read().then(function processText({ done, value }) {
       if (done) {
@@ -1227,23 +1227,23 @@ async function fetchDataAndDisplay() {
       // Add the processed chunk to the result
       resultText += chunkStr;
 
-      if (!firstPRemoved) {
-        const newResultText = resultText.replace("<p>", "");
-        // Check if replacement actually happened
-        if (newResultText !== resultText) {
-          firstPRemoved = true;
-          resultText = newResultText;
-        }
-      }
+      // if (!firstPRemoved) {
+      //   const newResultText = resultText.replace("<p>", "");
+      //   // Check if replacement actually happened
+      //   if (newResultText !== resultText) {
+      //     firstPRemoved = true;
+      //     resultText = newResultText;
+      //   }
+      // }
 
-      // Remove the very first </p> if not removed yet
-      if (!firstClosePRemoved) {
-        const newResultText = resultText.replace("</p>", "");
-        if (newResultText !== resultText) {
-          firstClosePRemoved = true;
-          resultText = newResultText;
-        }
-      }
+      // // Remove the very first </p> if not removed yet
+      // if (!firstClosePRemoved) {
+      //   const newResultText = resultText.replace("</p>", "");
+      //   if (newResultText !== resultText) {
+      //     firstClosePRemoved = true;
+      //     resultText = newResultText;
+      //   }
+      // }
       streamedText.innerHTML = resultText;
 
       // Read the next chunk
