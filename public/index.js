@@ -107,6 +107,7 @@ const driftConfig = {
 
 // Global variables for drift mode state.
 let driftActive = false;
+let startMode = "";
 let playedFiles = new Set();
 let currentPlayer = 0; // Index of the currently playing audio (0 or 1)
 const driftAudio = [new Audio(), new Audio()];
