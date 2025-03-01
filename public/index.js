@@ -1012,7 +1012,7 @@ async function handleMapClick(latlng) {
       document.getElementById("pressure-input").value = userGeneratedData.pressure;
       document.getElementById("wind-speed-input").value = userGeneratedData.windSpeed;
       //lets trigger the onWeatherDataAdjusted function from the csutomDatePicker class
-      onWeatherDataAdjusted();
+      //onWeatherDataAdjusted();
     }
   }
 }

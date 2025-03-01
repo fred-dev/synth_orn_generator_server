@@ -6,7 +6,6 @@ Environment classification task: Find information about the local environment, i
 
 Climate research task: taking the given location, date and time, decide whether the proposed conditions are normal or unusual, for all individual conditions, as well as the complete group, it could be slightly hotter than expected for that date, time and location, windier, more humid. Consider the conditions individually and as a whole and describe their relative difference. This might take the form: An unusually hot day, or indicating a storm, unusual for this time of year. 
 
-
 Local fauna researcher task: Identify animals, particularly bird species that inhabit the location or surrounds. Make particular note of endemic and extinct native species. Do not mention any introduced or agricultural species. Are there migrating species that stop here? For all species find their sources of food or habitat in this area – ie what natural resources do they require from this area to live?
 
 Climate history researcher task: Find historical weather related events such as floods, fires, heatwaves and get specific details. Did people die? Were species threatened? What natural habitat was damaged. Were these were attributed to climate change. Only mention specific verified events with dates, and check they are correct before allowing them to be added, no speculation can be used, only facts. 
