@@ -557,7 +557,7 @@ function createWeatherSelection() {
   selectWeatherIcon();
 }
 
-function onWeatherDataAdjusted() {
+export function onWeatherDataAdjusted() {
   customLog("debug", "Weather data adjusted");
 
   moduleUserData.temperature = document.getElementById("temperature-input").value;

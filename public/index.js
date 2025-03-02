@@ -1,4 +1,4 @@
-import { initCustomDatePicker } from "./customDatePicker.js";
+import { initCustomDatePicker, onWeatherDataAdjusted } from "./customDatePicker.js";
 
 const globalLogLevel = "debug"; // "silent", "error", "warning", "info", "debug"
 let mapChoicelatlng = null;
@@ -71,7 +71,6 @@ const generativeText = `
     to generate a location-specific simulation.
 `;
 let routingPrefix = "/generate";
-
 let suppressGlobalEvents = false;
 
 // Set this to true during development if you want the system to load in drift mode by default.
@@ -91,6 +90,8 @@ let currentMode = MODES.GENERATIVE; // or MODES.DRIFT if you prefer
 
 // Custom log function to handle different log levels.
 customLog("debug", "Current mode on start:", currentMode);
+
+let textGenerationComplete = false;
 
 let huggingFaceServerStatus = "";
 
@@ -1012,7 +1013,7 @@ async function handleMapClick(latlng) {
       document.getElementById("pressure-input").value = userGeneratedData.pressure;
       document.getElementById("wind-speed-input").value = userGeneratedData.windSpeed;
       //lets trigger the onWeatherDataAdjusted function from the csutomDatePicker class
-      //onWeatherDataAdjusted();
+      onWeatherDataAdjusted();
     }
   }
 }
@@ -1050,7 +1051,6 @@ async function callGenerateWithGradio(lat, lon, temp, humidity, wind_speed, pres
 }
 
 async function loadAudio() {
-
   const audioUrl = await callGenerateWithGradio(
     userGeneratedData.lat,
     userGeneratedData.lon,
@@ -1076,13 +1076,14 @@ async function loadAudio() {
     audioPlayer.controls = true;
 
     // For mobile autoplay support, you need autoplay, playsinline, and possibly muted
-    audioPlayer.setAttribute("autoplay", "");
+    //audioPlayer.setAttribute("autoplay", "");
     audioPlayer.setAttribute("playsinline", "");
 
     audioPlayer.addEventListener(
-      "canplaythrough",
+      "canplay",
       () => {
         document.getElementById("audioSpinnerContainer").remove(); // remove spinner
+
       },
       { once: true }
     );
@@ -1106,6 +1107,42 @@ async function loadAudio() {
 
 async function fetchDataAndDisplay() {
   customLog("debug", "fetchDataAndDisplay start: " + JSON.stringify(userGeneratedData, null, 2));
+  textGenerationComplete = false;
+
+  // Prepare the result div when the button is pressed, before the response starts streaming
+  const generatedContentDiv = document.createElement("div");
+  generatedContentDiv.id = "resultDiv";
+  generatedContentDiv.innerHTML = '<button id="closeBtn" style="position: absolute; top: 10px; right: 10px;">&times;</button><p id="streamedText"></p>';
+
+  document.body.appendChild(generatedContentDiv);
+
+  const birdImageUrl = `${routingPrefix}/images/bird-cells-new.svg`;
+
+  // Define the bird filter to control its color (e.g. "invert(1)" for white).
+  const birdLoaderBirdFilter = "invert(1)";
+
+  // Create the spinner container and the loader structure.
+  const spinnerContainer = document.createElement("div");
+  spinnerContainer.id = "audioSpinnerContainer";
+  spinnerContainer.innerHTML = `
+                              <div class="bird-loader-wrapper">
+                                <div class="bird-loader">
+                                  <div class="orbit">
+                                    <div class="bird"></div>
+                                  </div>
+                                </div>
+                              </div>
+                            `;
+
+  // Append the spinner container to your target element.
+  generatedContentDiv.appendChild(spinnerContainer);
+
+  // Set the bird's background image dynamically.
+  const birdElem = spinnerContainer.querySelector(".bird");
+  birdElem.style.backgroundImage = `url('${birdImageUrl}')`;
+
+  // Set the bird filter using JavaScript.
+  document.documentElement.style.setProperty("--bird-loader-bird-filter", birdLoaderBirdFilter);
   try {
     // Send a POST request to the server
     const response = await fetch(routingPrefix + "/generate-text", {
@@ -1121,47 +1158,11 @@ async function fetchDataAndDisplay() {
       throw new Error("Network response was not ok");
     }
 
-    // Prepare the result div when the button is pressed, before the response starts streaming
-    const generatedContentDiv = document.createElement("div");
-    generatedContentDiv.id = "resultDiv";
-    generatedContentDiv.innerHTML = '<button id="closeBtn" style="position: absolute; top: 10px; right: 10px;">&times;</button><p id="streamedText">Loading...</p>';
-
-    document.body.appendChild(generatedContentDiv);
-
-    const resultDiv = document.getElementById("resultDiv");
-
-    const birdImageUrl = `${routingPrefix}/images/bird-cells-new.svg`;
-
-    // Define the bird filter to control its color (e.g. "invert(1)" for white).
-    const birdLoaderBirdFilter = "invert(1)";
-
-    // Create the spinner container and the loader structure.
-    const spinnerContainer = document.createElement("div");
-    spinnerContainer.id = "audioSpinnerContainer";
-    spinnerContainer.innerHTML = `
-                                <div class="bird-loader-wrapper">
-                                  <div class="bird-loader">
-                                    <div class="orbit">
-                                      <div class="bird"></div>
-                                    </div>
-                                  </div>
-                                </div>
-                              `;
-
-    // Append the spinner container to your target element.
-    resultDiv.appendChild(spinnerContainer);
-
-    // Set the bird's background image dynamically.
-    const birdElem = spinnerContainer.querySelector(".bird");
-    birdElem.style.backgroundImage = `url('${birdImageUrl}')`;
-
-    // Set the bird filter using JavaScript.
-    document.documentElement.style.setProperty("--bird-loader-bird-filter", birdLoaderBirdFilter);
-
     loadAudio();
 
     const streamedText = document.getElementById("streamedText");
     const closeBtn = document.getElementById("closeBtn");
+    // streamedText.innerHTML = "Loading...";
 
     closeBtn.addEventListener("click", () => {
       generatedContentDiv.remove();
@@ -1186,6 +1187,9 @@ async function fetchDataAndDisplay() {
       if (done) {
         customLog("debug", "Stream complete");
         streamedText.innerHTML = resultText;
+        textGenerationComplete = true;
+        document.getElementById("audioPlayer").play();
+
         return;
       }
 
@@ -1193,7 +1197,6 @@ async function fetchDataAndDisplay() {
       let chunkStr = decoder.decode(value, { stream: true });
 
       // Remove the very first <p> if not removed yet
-      
 
       // Add the processed chunk to the result
       resultText += chunkStr;

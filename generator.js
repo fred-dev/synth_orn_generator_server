@@ -70,7 +70,11 @@ async function uploadFileToDropbox(localFilePath, dropboxFolderPath, newFileName
     });
 
     console.log("Upload successful:", response.result);
-    //delete the file once it is uploaded it is here localFilePath
+
+    // Delete the local file after uploading
+    fs.unlinkSync(localFilePath);
+    console.log("Local file deleted:", localFilePath);
+
   } catch (error) {
     console.error("Error uploading file:", error);
   }
@@ -109,7 +113,6 @@ async function initializeGradio() {
       space_status: (status) => logger.debug("Space status:", JSON.stringify(status)),
     });
     const appInfo = await app.view_api();
-    logger.debug("This is the app API" + JSON.stringify(appInfo));
     return app;
   } catch (error) {
     logger.error("Failed to initialize Gradio:", error);
@@ -194,16 +197,18 @@ app.post(routingPrefix + "/generate-text", async (req, res) => {
   jsonToSave = req.body.userInput;
   const userInput = JSON.parse(req.body.userInput);
   const dateObj = new Date(userInput.date);
+  const ampm = dateObj.getHours() >= 12 ? "pm" : "am";
   const year = dateObj.getUTCFullYear();
   const month = dateObj.getUTCMonth() + 1;
   const day = dateObj.getUTCDate();
   const hours = dateObj.getHours();
   const minutes = dateObj.getUTCMinutes();
   const seconds = dateObj.getUTCSeconds();
+  const dateInfoString = `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")} ${hours.toString().padStart(2, "0")}:${minutes
+    .toString()
+    .padStart(2, "0")}:${seconds.toString().padStart(2, "0")} ${ampm}`;
   logger.debug(
-    `Generate text: Date: ${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")} ${hours.toString().padStart(2, "0")}:${minutes
-      .toString()
-      .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+    `Generate text: Date: ${dateInfoString}`
   );
 
   try {
@@ -251,9 +256,7 @@ app.post(routingPrefix + "/generate-text", async (req, res) => {
     Editor task: The text from Text generation task must be checked and edited. It should be easy to read and flowing and factual, unless it refers to events that are in the future. Check all facts in the text are true, where events are discussed having future dates, they do not need to be fact checked.  Future events are included as if the text is being written after they happened and never mention the events are speculative. Check spelling and grammar in Australian English. Refer to the guidelines for the text generation to ensure they are also followed in the editing process. Ensure the text is logical, succinct and clear and between 220 and 280 words. Make sure there are no incomplete facts and arguments. All events mentioned that are in the past must be confirmed. Make sure all the text guidelines are adhered to. Make sure there is no vague additions for example when discussing animal species or avian life– any animal or bird must be named specifically (use common names not scientific ones). The output should never encased be in quotation marks. The text must be in paragraphs, us the <p> to define paragraphs.
 
     Input:
-    Date: ${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")} ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
-      .toString()
-      .padStart(2, "0")}
+    Date: ${dateInfoString}
     Location: ${userInput.locationName}
     Climate: Temperature - ${userInput.temperature}°C, Humidity - ${userInput.humidity}%, Wind Speed - ${userInput.windSpeed} km/h
     Distance to coast - ${userInput.waterDistance.coastal_water.distance} km
