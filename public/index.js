@@ -70,7 +70,7 @@ const generativeText = `
     long-press on the location
     to generate a location-specific simulation.
 `;
-let routingPrefix = "/generate";
+let routingPrefix = "/examination";
 let suppressGlobalEvents = false;
 
 // Set this to true during development if you want the system to load in drift mode by default.
