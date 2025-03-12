@@ -197,7 +197,7 @@ const modeHandlers = {
       pauseAllAudio(); // or driftAudio.forEach(a => { a.pause(); a.currentTime = 0; });
       //lets put the hugging face server to sleep - we need to wait for it to complete this function as it might take a while
 
-      controlHuggingFaceServer("sleep");
+      controlHuggingFaceServer("pause");
     },
     exit: () => {
       customLog("debug", "Exiting SILENT mode");

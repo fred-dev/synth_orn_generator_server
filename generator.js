@@ -47,34 +47,84 @@ app.use(express.json());
 
 app.use(express.static("public"));
 
-// 1. Create an instance of the Dropbox class with your stored token
-const dbx = new Dropbox({
-  accessToken: process.env.DROPBOX_ACCESS_TOKEN, // or hardcode, but best to keep it in env
+
+const dbxConfig = {
+  fetch,
+  clientId: process.env.DROPBOX_CLIENT_ID,
+  clientSecret: process.env.DROPBOX_CLIENT_SECRET,
+  refreshToken: process.env.DROPBOX_REFRESH_TOKEN, // from your saved token
+};
+const dbx = new Dropbox(dbxConfig);
+
+const redirectUri = `https://audioweather.com/examination/auth`;
+
+app.get("/getauth", (req, res) => {
+  dbx.auth
+    .getAuthenticationUrl(redirectUri, null, "code", "offline", null, "none", false)
+    .then((authUrl) => {
+      // Send the user to Dropbox to grant permission.
+      res.redirect(authUrl);
+    })
+    .catch((error) => {
+      logger.error("Error generating auth URL:", error);
+      res.status(500).send("Error generating Dropbox auth URL.");
+    });
 });
+
+/**
+ * After the user approves access on Dropbox, Dropbox redirects them here.
+ * We grab the 'code' from the querystring, exchange for an access + refresh token,
+ * then store that refresh token so the SDK can auto-refresh in future.
+ */
+app.get("/auth", (req, res) => {
+  const { code } = req.query;
+  if (!code) {
+    return res.status(400).send("Missing authorization code from Dropbox.");
+  }
+
+  dbx.auth
+    .getAccessTokenFromCode(redirectUri, code)
+    .then((tokenResponse) => {
+      const refreshToken = tokenResponse.result.refresh_token;
+      console.log("Your new refresh token:", refreshToken); // LOG IT
+      //lets write this to the .env file
+
+      // Or show it in the browser (just be careful about exposing secrets!)
+      // res.send(`Your refresh token: ${refreshToken}`);
+
+      // Then set it on the SDK so it can refresh automatically
+      dbx.auth.setRefreshToken(refreshToken);
+
+      // ... proceed as normal
+      return dbx.usersGetCurrentAccount();
+    })
+    .then((accountInfo) => {
+      res.send("Authorization successful! You can close this tab now.");
+    })
+    .catch((error) => {
+      console.error("Error exchanging code for token:", error);
+      res.status(500).send("Error exchanging code for token.");
+    });
+});
+
+
 
 async function uploadFileToDropbox(localFilePath, dropboxFolderPath, newFileName) {
   try {
-    // Read file from disk into a Buffer
+    // (Optional) Force-check if the token is expired and refresh if needed
+    await dbx.auth.checkAndRefreshAccessToken();
+
     const fileContents = fs.readFileSync(localFilePath);
-
-    // Construct the desired Dropbox path
-    // For example, if dropboxFolderPath = "/MyGeneratedFiles",
-    // and newFileName = "example.wav", final path = "/MyGeneratedFiles/example.wav"
     const dropboxPath = `${dropboxFolderPath}/${newFileName}`;
-
-    // Perform the upload
     const response = await dbx.filesUpload({
       path: dropboxPath,
       contents: fileContents,
-      mode: { ".tag": "add" }, // or 'overwrite' if you'd rather overwrite
+      mode: { ".tag": "add" },
     });
 
     console.log("Upload successful:", response.result);
-
-    // Delete the local file after uploading
     fs.unlinkSync(localFilePath);
     console.log("Local file deleted:", localFilePath);
-
   } catch (error) {
     console.error("Error uploading file:", error);
   }
@@ -105,6 +155,8 @@ async function completeDate(audioUrl) {
     console.error("Error in completeDate:", error);
   }
 }
+
+
 
 async function initializeGradio() {
   try {
