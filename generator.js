@@ -249,7 +249,6 @@ app.post(routingPrefix + "/generate-text", async (req, res) => {
   jsonToSave = req.body.userInput;
   const userInput = JSON.parse(req.body.userInput);
   const dateObj = new Date(userInput.date);
-  const ampm = dateObj.getHours() >= 12 ? "pm" : "am";
   const year = dateObj.getUTCFullYear();
   const month = dateObj.getUTCMonth() + 1;
   const day = dateObj.getUTCDate();
@@ -258,7 +257,7 @@ app.post(routingPrefix + "/generate-text", async (req, res) => {
   const seconds = dateObj.getUTCSeconds();
   const dateInfoString = `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")} ${hours.toString().padStart(2, "0")}:${minutes
     .toString()
-    .padStart(2, "0")}:${seconds.toString().padStart(2, "0")} ${ampm}`;
+    .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
   logger.debug(
     `Generate text: Date: ${dateInfoString}`
   );
