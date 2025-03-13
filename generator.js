@@ -253,6 +253,7 @@ app.post(routingPrefix + "/generate-text", async (req, res) => {
   const month = dateObj.getUTCMonth() + 1;
   const day = dateObj.getUTCDate();
   const hours = dateObj.getHours();
+  console.log("hours: ", hours);
   const minutes = dateObj.getUTCMinutes();
   const seconds = dateObj.getUTCSeconds();
   const dateInfoString = `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")} ${hours.toString().padStart(2, "0")}:${minutes
