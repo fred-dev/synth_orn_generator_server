@@ -324,7 +324,7 @@ app.post(routingPrefix + "/generate-text", async (req, res) => {
 
     // Create the stream from the OpenAI API.
     const stream = await openai.chat.completions.create({
-      model: "gpt-4.5-preview",
+      model: "gpt-5-chat-latest",
       messages: [
         {
           role: "system",
