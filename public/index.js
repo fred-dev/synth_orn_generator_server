@@ -70,7 +70,7 @@ const generativeText = `
     long-press on the location
     to generate a location-specific simulation.
 `;
-let routingPrefix = "/examination";
+let routingPrefix = "";
 let suppressGlobalEvents = false;
 
 // Set this to true during development if you want the system to load in drift mode by default.
@@ -121,9 +121,10 @@ let fadeIntervalId = null;
 
 // To keep track of markers on the map.
 let currentMarker = null;
-
+// ... existing code ...
 let inactivityTimeout = 0;
 let generativeTimeout = 0;
+let selectionTimeout = null;
 
 let hasTouch = false;
 
@@ -913,10 +914,16 @@ async function handleMapClick(latlng) {
       .bindPopup("<div class='main_text_medium' id='error_bubble'>The selected point is not in Australia.  <br>Please select a point on any Australian territory.</div>")
       .openPopup();
 
+    // Set up cleanup for when the popup is closed (either by timeout or user action)
+    marker.on("popupclose", () => {
+      cleanupFailedLocation(marker);
+    });
+
     // After 3 seconds, close the popup and remove the marker.
     setTimeout(() => {
-      marker.closePopup();
-      map.removeLayer(marker);
+      if (marker && map.hasLayer(marker)) {
+        marker.closePopup();
+      }
     }, 3000);
 
     // Stop further processing.
@@ -956,10 +963,13 @@ async function handleMapClick(latlng) {
     onDateSelectionComplete: (finalDate) => {
       customLog("debug", "Final date/time chosen:", finalDate);
       fillSuggestedWeatherData(userGeneratedData.date);
+      // Reset the selection timeout since user is still active
+      resetSelectionTimeout();
     },
     onWeatherSelectionComplete: (finalWeather) => {
       customLog("debug", "Final weather chosen:", finalWeather);
-
+      // Clear the selection timeout since selection is complete
+      clearSelectionTimeout();
       fetchDataAndDisplay();
       //lets close the leaflet popoup and marker
       map.eachLayer(function (layer) {
@@ -969,6 +979,9 @@ async function handleMapClick(latlng) {
       });
     },
   });
+
+  // Set up the initial selection timeout
+  resetSelectionTimeout();
 
   // Set up cleanup for when the popup is closed.
   marker.on("popupclose", async function (event) {
@@ -981,6 +994,9 @@ async function handleMapClick(latlng) {
     userGeneratedData.locationName = "";
     userGeneratedData.lat = 0;
     userGeneratedData.lon = 0;
+    
+    // Restore instructions when the date selection popup is closed
+    ensureInstructionsVisible();
   });
 
   // (Optional) Define or include your fetchWeatherData and fillSuggestedWeatherData functions below.
@@ -1015,6 +1031,72 @@ async function handleMapClick(latlng) {
       //lets trigger the onWeatherDataAdjusted function from the csutomDatePicker class
       onWeatherDataAdjusted();
     }
+  }
+}
+
+function cleanupFailedLocation(marker) {
+  // Reset all location-related state
+  mapChoicelatlng = null;
+  userGeneratedData.locationName = "";
+  userGeneratedData.lat = 0;
+  userGeneratedData.lon = 0;
+  userGeneratedData.waterDistance = {
+    inland_water: { closest_point: { lat: 0, lon: 0 }, display_name: "" },
+    coastal_water: { closest_point: { lat: 0, lon: 0 }, display_name: "" }
+  };
+  
+  // Remove the marker from the map
+  if (marker && map.hasLayer(marker)) {
+    map.removeLayer(marker);
+  }
+  
+  // Don't call map.closePopup() here as it triggers the recursion
+  // The popup will be closed automatically when the marker is removed
+  
+  // Add a small delay to ensure popup is fully closed before showing instructions
+  setTimeout(() => {
+    // Restore instructions after cleanup
+    ensureInstructionsVisible();
+  }, 100);
+  
+  customLog("debug", "Location cleanup completed - all state reset");
+}
+
+function ensureInstructionsVisible() {
+  // Hide any existing result div
+  const resultDiv = document.getElementById("resultDiv");
+  if (resultDiv) {
+    resultDiv.remove();
+  }
+  
+  // Remove any existing markers
+  map.eachLayer(function (layer) {
+    if (layer instanceof L.Marker) {
+      map.removeLayer(layer);
+    }
+  });
+  
+  // Clear any existing popups
+  map.closePopup();
+  
+  // Show instructions based on current mode
+  showInstructionPopup();
+  
+  customLog("debug", "Instructions restored and all state cleared");
+}
+
+function resetSelectionTimeout() {
+  clearSelectionTimeout();
+  selectionTimeout = setTimeout(() => {
+    customLog("debug", "Selection timeout reached - restoring instructions");
+    ensureInstructionsVisible();
+  }, 60000); // 60 seconds
+}
+
+function clearSelectionTimeout() {
+  if (selectionTimeout) {
+    clearTimeout(selectionTimeout);
+    selectionTimeout = null;
   }
 }
 
@@ -1171,7 +1253,8 @@ async function fetchDataAndDisplay() {
           map.removeLayer(layer);
         }
       });
-      //resetInstructionTimeout();
+      // Restore instructions when results are closed
+      ensureInstructionsVisible();
     });
 
     // Read the stream using a reader

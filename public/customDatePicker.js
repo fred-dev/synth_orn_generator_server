@@ -46,7 +46,7 @@ let pickerInstructions = null;
 let customPicker = null;
 let customPickerContainer = null;
 let moduleUserData = {};
-let routingPrefix = "/examination";
+let routingPrefix = "";
 
 export function initCustomDatePicker({ containerId, userGeneratedData, onDateSelectionComplete, onWeatherSelectionComplete }) {
   dateSelectionCalback = onDateSelectionComplete;

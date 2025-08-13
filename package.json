@@ -5,7 +5,9 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node generator.js"
+    "start": "node server.js",
+    "dev": "node start.js",
+    "validate": "node -e \"import('./config/environment.js').then(m => m.validateConfig())\""
   },
   "author": "",
   "license": "ISC",
