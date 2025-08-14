@@ -30,7 +30,7 @@ userGeneratedData.pressure = 0;
 userGeneratedData.windSpeed = 0;
 userGeneratedData.lat = 0;
 userGeneratedData.lon = 0;
-userGeneratedData.locationName = "";
+userGeneratedData.locationName = "/examination";
 userGeneratedData.waterDistance = {
   inland_water: { closest_point: { lat: 0, lon: 0 }, display_name: "" },
   coastal_water: { closest_point: { lat: 0, lon: 0 }, display_name: "" },
