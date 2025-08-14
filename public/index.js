@@ -30,7 +30,7 @@ userGeneratedData.pressure = 0;
 userGeneratedData.windSpeed = 0;
 userGeneratedData.lat = 0;
 userGeneratedData.lon = 0;
-userGeneratedData.locationName = "/examination";
+userGeneratedData.locationName = "";
 userGeneratedData.waterDistance = {
   inland_water: { closest_point: { lat: 0, lon: 0 }, display_name: "" },
   coastal_water: { closest_point: { lat: 0, lon: 0 }, display_name: "" },
@@ -77,7 +77,7 @@ const generativeText = `
     to generate a location-specific simulation.
 `;
 
-let routingPrefix = "";
+let routingPrefix = "/examination";
 let suppressGlobalEvents = false;
 
 // Leaflet / Map setup
