@@ -81,15 +81,26 @@ let routingPrefix = "/examination";
 let suppressGlobalEvents = false;
 
 // Leaflet / Map setup
-const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+const attribution = '© OpenStreetMap contributors'; // plain text, no <a> tag
 const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const map = L.map("map", { zoomControl: false }).setView([-24.801233, 132.94551], 5);
+
+const map = L.map("map", {
+  zoomControl: false,
+  attributionControl: true
+}).setView([-24.801233, 132.94551], 5);
+
 map.fitBounds([
   [-10, 112],
   [-44, 154],
 ]);
-const tiles = L.tileLayer(tileUrl, { attribution });
-tiles.addTo(map);
+
+// Disable Leaflet link in attribution
+map.attributionControl.setPrefix(false);
+
+// Add tiles with your custom attribution
+L.tileLayer(tileUrl, {
+  attribution: attribution
+}).addTo(map);
 
 // Modes
 const MODES = {
