@@ -28,8 +28,8 @@ const app = express();
 const port = process.env.PORT || 4001;
 const HF_TOKEN = process.env.HF_TOKEN;
 const openWeatherMapsAPIKey = process.env.OPENWEATHER_API_KEY; // Your API key stored in .env file
-const routingPrefix = process.env.GET_PATH_PREFIX;
-const clientPathPrefix = process.env.CLIENT_PATH_PREFIX;
+const routingPrefix = process.env.GET_PATH_PREFIX || "";
+const clientPathPrefix = process.env.CLIENT_PATH_PREFIX || "";
 const pythonPath = process.env.PYTHON_PATH;
 const tempDebugVerbose = process.env.DEBUG_VERBOSE;
 const gradioSpacePath = process.env.GRADIO_SPACE_PATH;
@@ -40,8 +40,8 @@ if (tempDebugVerbose == "true") {
   logger.level = "silent";
 }
 
-logger.debug("clientPathPrefix: " + clientPathPrefix);
-logger.debug("routingPrefix: " + routingPrefix);
+logger.debug(`clientPathPrefix:   ${clientPathPrefix}`);
+logger.debug(`routingPrefix: ${routingPrefix}`);
 
 app.use(express.json());
 

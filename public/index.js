@@ -1,6 +1,24 @@
 import { initCustomDatePicker, onWeatherDataAdjusted } from "./customDatePicker.js";
 
+// =========================
+// Global config & state
+// =========================
 const globalLogLevel = "debug"; // "silent", "error", "warning", "info", "debug"
+
+// Meta modes: high-level behaviour controller
+//   - normal: allows DRIFT and GENERATIVE; idle returns to DRIFT
+//   - quiet:  allows GENERATIVE only (no DRIFT); idle resets UI to generative instructions
+let metaMode = "normal"; // from config.startMetaMode
+let masterInactivityMs = 70000; // from config.masterInactivityMs (default 70s)
+let postGenerateWaitMs = 10000; // from config.postGenerateWaitMs (default 10s)
+
+let userPresentTimerId = null;
+let postGenerateTimerId = null;
+
+let isStreamingText = false;
+let isAudioPlaying = false;
+let generatedUIOpen = false;
+
 let mapChoicelatlng = null;
 let userGeneratedData = {};
 userGeneratedData.minutes_of_day = 0;
@@ -14,22 +32,10 @@ userGeneratedData.lat = 0;
 userGeneratedData.lon = 0;
 userGeneratedData.locationName = "";
 userGeneratedData.waterDistance = {
-  inland_water: {
-    closest_point: {
-      lat: 0,
-      lon: 0,
-    },
-    display_name: "",
-  },
-  coastal_water: {
-    closest_point: {
-      lat: 0,
-      lon: 0,
-    },
-    display_name: "",
-  },
+  inland_water: { closest_point: { lat: 0, lon: 0 }, display_name: "" },
+  coastal_water: { closest_point: { lat: 0, lon: 0 }, display_name: "" },
 };
-customLog("debug", userGeneratedData);
+customLog("debug", "init userGeneratedData", userGeneratedData);
 
 const normalText = `
     <h3 id="popup-heading">Welcome: </h3>
@@ -70,219 +76,192 @@ const generativeText = `
     long-press on the location
     to generate a location-specific simulation.
 `;
-let routingPrefix = "/examination";
+
+let routingPrefix = "";
 let suppressGlobalEvents = false;
 
-// Set this to true during development if you want the system to load in drift mode by default.
-const DRIFT_MODE_DEFAULT = true;
-// Key (e.g. "d") used to toggle modes.
+// Leaflet / Map setup
+const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+const map = L.map("map", { zoomControl: false }).setView([-24.801233, 132.94551], 5);
+map.fitBounds([
+  [-10, 112],
+  [-44, 154],
+]);
+const tiles = L.tileLayer(tileUrl, { attribution });
+tiles.addTo(map);
 
-// Current mode: either "normal" or "drift".
-// 1) Enumerate modes
+// Modes
 const MODES = {
   NORMAL: "normal",
   DRIFT: "drift",
   SILENT: "silent",
   GENERATIVE: "generative",
 };
-// 2) The current mode, default to something on load:
-let currentMode = MODES.GENERATIVE; // or MODES.DRIFT if you prefer
-
-// Custom log function to handle different log levels.
+let currentMode = MODES.GENERATIVE; // will be overwritten by config
 customLog("debug", "Current mode on start:", currentMode);
 
 let textGenerationComplete = false;
-
 let huggingFaceServerStatus = "";
 
 // Drift mode configuration
 const driftConfig = {
-  crossfade: 4, // seconds (fly-to and crossfade will run for 4 seconds)
-  fileDuration: 23, // seconds (all files are 23 sec long, so crossfade starts at 18 sec)
+  crossfade: 4, // seconds
+  fileDuration: 23, // seconds
   totalFiles: 1000,
-  // This folder should be accessible via your web server (e.g. via a symlink) and contain files in subfolders:
-  // drift_mp3s: contains files named "0001.mp3", "0002.mp3", etc.
-  // drift_json: contains files named "0001.json", "0002.json", etc.
   folderPath: "/drift",
 };
 
-// Global variables for drift mode state.
+// Drift state
 let driftActive = false;
 let startMode = "";
 let playedFiles = new Set();
-let currentPlayer = 0; // Index of the currently playing audio (0 or 1)
+let currentPlayer = 0; // 0 or 1
 const driftAudio = [new Audio(), new Audio()];
 driftAudio[0].volume = 1;
 driftAudio[1].volume = 0;
-
-// To keep track of scheduled timeouts/intervals.
 let crossfadeTimeoutId = null;
 let fadeIntervalId = null;
-
-// To keep track of markers on the map.
 let currentMarker = null;
 
+// Legacy timeouts (replaced by master presence timer)
 let inactivityTimeout = 0;
 let generativeTimeout = 0;
-let selectionTimeout = null;
 
 let hasTouch = false;
-
 let silentStartHour = 22;
 let silentEndHour = 7;
 let silentStartMinute = 0;
 let silentEndMinute = 0;
 
-// const map = L.map("map", {center: [-25.2744, 133.7751], zoom: 4,});
-const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const map = L.map("map", { zoomControl: false }).setView([-24.801233, 132.94551], 5);
-//lets diable all map interactions
-
-map.fitBounds([
-  [-10, 112],
-  [-44, 154],
-]);
-
-//const tiles = L.tileLayer("https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.jpg", { attribution });
-//const tiles = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { attribution });
-const tiles = L.tileLayer(tileUrl, { attribution });
-tileUrl;
-tiles.addTo(map);
-
+// =========================
+// Mode handlers
+// =========================
 const modeHandlers = {
   [MODES.NORMAL]: {
     enter: () => {
-      customLog("debug", "Entering NORMAL mode");
+      customLog("debug", "[MODE] Enter NORMAL");
       document.body.classList.remove("drift-mode");
-
-      // Show normal instructions
-      showInstructionPopup("normal");
-
-      // Start inactivity timer that leads to DRIFT if no user action
-      resetInactivityTimeout();
+      showInstructionPopupFor(MODES.NORMAL);
+      clearUserPresenceTimer();
+      startUserPresenceTimer("enter normal");
     },
     exit: () => {
-      customLog("debug", "Exiting NORMAL mode");
-      // Hide normal instructions if needed
+      customLog("debug", "[MODE] Exit NORMAL");
       hideInstructionPopup();
-      // Clear inactivity so we don’t do partial timers
-      clearInactivityTimeout();
-      // (A) Close resultDiv if it’s open, so that switching to DRIFT doesn’t leave it.
-      const resultDiv = document.getElementById("resultDiv");
-      if (resultDiv) {
-        resultDiv.remove();
-        customLog("debug", "Closed resultDiv upon leaving NORMAL mode");
-      }
+      clearUserPresenceTimer();
+      clearPostGenerateTimer();
+      closeGeneratedContentIfOpen();
     },
   },
 
   [MODES.DRIFT]: {
     enter: () => {
-      customLog("debug", "Entering DRIFT mode");
+      customLog("debug", "[MODE] Enter DRIFT");
       document.body.classList.add("drift-mode");
-      startDriftMode(); // your existing function that triggers infinite crossfade, etc.
+      showInstructionPopupFor(MODES.DRIFT);
+      startDriftMode();
     },
     exit: () => {
-      customLog("debug", "Exiting DRIFT mode");
+      customLog("debug", "[MODE] Exit DRIFT");
       document.body.classList.remove("drift-mode");
-      stopDriftMode(); // pause audio, remove drift markers
+      stopDriftMode();
     },
   },
 
   [MODES.SILENT]: {
-    enter: () => {
-      customLog("debug", "Entering SILENT mode");
-      showSilentModeOverlay(); // show a UI overlay telling users we’re in sleep mode
-      // Stop or pause all audio
-      pauseAllAudio(); // or driftAudio.forEach(a => { a.pause(); a.currentTime = 0; });
-      //lets put the hugging face server to sleep - we need to wait for it to complete this function as it might take a while
-
-      controlHuggingFaceServer("pause");
+    enter: async () => {
+      customLog("info", "[MODE] Enter SILENT (pausing HF space)");
+      showSilentModeOverlay();
+      pauseAllAudio();
+      try {
+        huggingFaceServerStatus = await controlHuggingFaceServer("pause");
+        customLog("info", "HF status after pause:", huggingFaceServerStatus);
+      } catch (e) {
+        customLog("error", "HF pause error:", e);
+      }
     },
     exit: () => {
-      customLog("debug", "Exiting SILENT mode");
+      customLog("debug", "[MODE] Exit SILENT");
       hideSilentModeOverlay();
     },
   },
 
   [MODES.GENERATIVE]: {
     enter: () => {
-      customLog("debug", "Entering GENERATIVE mode");
+      customLog("debug", "[MODE] Enter GENERATIVE");
       document.body.classList.remove("drift-mode");
-
-      // Show “generative” instructions if you want
-      showInstructionPopup("generative");
-      resetGenerativeTimeout();
-
-      // Important: do NOT set inactivity timers if you want it never to auto-switch
-      // Possibly call some "startGenerativeProcess()" if you had specific code
-      // But if generative mode is literally the same as normal minus inactivity,
-      // you don't need the rest of normal’s logic. Just do your standard UI usage.
+      showInstructionPopupFor(MODES.GENERATIVE);
+      clearUserPresenceTimer();
+      startUserPresenceTimer("enter generative");
     },
     exit: () => {
-      customLog("debug", "Exiting GENERATIVE mode");
+      customLog("debug", "[MODE] Exit GENERATIVE");
       hideInstructionPopup();
-      clearGenerativeTimeout();
-
-      // If you had a startGenerativeProcess(), call endGenerativeProcess() here
+      clearUserPresenceTimer();
+      clearPostGenerateTimer();
     },
   },
 };
 
 function pauseAllAudio() {
   driftAudio.forEach((audio) => {
-    audio.pause();
-    audio.currentTime = 0;
+    try {
+      audio.pause();
+      audio.currentTime = 0;
+    } catch (e) {
+      customLog("warning", "pauseAllAudio fail:", e);
+    }
   });
 }
 
 function switchMode(newMode) {
-  customLog("debug", "Switching to mode:", newMode);
+  customLog("info", "[switchMode]", currentMode, "→", newMode);
 
-  const containerElement = document.getElementById("popup_bubble");
-  if (containerElement) {
-    while (containerElement.firstChild) {
-      containerElement.removeChild(containerElement.firstChild);
+  // Idempotent cleanup before switching
+  try {
+    const containerElement = document.getElementById("popup_bubble");
+    if (containerElement) {
+      while (containerElement.firstChild) containerElement.removeChild(containerElement.firstChild);
     }
+  } catch {}
+
+  closeGeneratedContentIfOpen();
+
+  // Remove all markers
+  try {
+    map.eachLayer(function (layer) {
+      if (layer instanceof L.Marker) {
+        map.removeLayer(layer);
+      }
+    });
+  } catch {}
+
+  if (newMode === currentMode) {
+    customLog("debug", "[switchMode] no-op (already in", newMode, ")");
+    return;
   }
-  const generatedContentDiv = document.getElementById("resultDiv");
-  if (generatedContentDiv) {
-    generatedContentDiv.remove();
-  }
-  map.eachLayer(function (layer) {
-    if (layer instanceof L.Marker) {
-      map.removeLayer(layer);
-    }
-  });
 
-  if (newMode === currentMode) return; // No change needed
+  // exit old
+  try { modeHandlers[currentMode]?.exit?.(); } catch (e) { customLog("warning", "mode exit error:", e); }
 
-  // 1) exit the old mode
-  modeHandlers[currentMode].exit();
-
-  // 2) update
+  // update
   currentMode = newMode;
 
-  // 3) enter the new mode
-  modeHandlers[newMode].enter();
+  // enter new
+  try { modeHandlers[newMode]?.enter?.(); } catch (e) { customLog("warning", "mode enter error:", e); }
 }
 
+// =========================
+// Silent overlay
+// =========================
 function showSilentModeOverlay() {
-  // The time we actually switched to silent:
   const now = new Date();
-  const wentSilentHour = now.getHours();
-  const wentSilentMinute = now.getMinutes();
-
-  // Convert them to display strings (24-hour format for example)
-  const wentSilentDisplay = formatTime24(wentSilentHour, wentSilentMinute);
+  const wentSilentDisplay = formatTime24(now.getHours(), now.getMinutes());
   const resumeDisplay = formatTime24(silentEndHour, silentEndMinute);
 
   const silentModeOverlay = document.createElement("div");
   silentModeOverlay.id = "silentModeOverlay";
-
-  // You can style each <h2> on a separate line.
-  // You can remove <br> tags if <h2> is block-level (they’ll appear on separate lines by default).
   silentModeOverlay.innerHTML = `
     <h3>Silent Mode</h3>
     <h3>Installation is sleeping</h3>
@@ -290,11 +269,9 @@ function showSilentModeOverlay() {
     <h3>Went silent at ${wentSilentDisplay}</h3>
     <h3>Will resume at ${resumeDisplay}</h3>
   `;
-
   document.body.appendChild(silentModeOverlay);
 }
 function formatTime24(hour, minute) {
-  // Pad hours/minutes to two digits, e.g. "07:05"
   const hh = String(hour).padStart(2, "0");
   const mm = String(minute).padStart(2, "0");
   return `${hh}:${mm}`;
@@ -304,497 +281,323 @@ function hideSilentModeOverlay() {
   if (overlay) overlay.remove();
 }
 
+// =========================
+// Boot / Config
+// =========================
 document.addEventListener("DOMContentLoaded", async () => {
-  customLog("debug", "DOMContentLoaded event fired");
-  // Load the JSON file to get the settings
+  customLog("debug", "DOMContentLoaded fired");
+
+  // Detect touch ASAP (needed for overlay listener decisions)
+  detectTouchDevice();
+
+  // Load the JSON config
   const config = await loadConfig();
   if (config) {
-    // If it has a "startMode" property, set currentMode
     startMode = config.startMode;
     currentMode = MODES[config.startMode?.toUpperCase()] || MODES.NORMAL;
 
-    // If it has silentMode times, store them for your setInterval check
     silentStartHour = config.silentModeStartHour ?? 22;
     silentStartMinute = config.silentModeStartMinute ?? 0;
     silentEndHour = config.silentModeEndHour ?? 7;
     silentEndMinute = config.silentModeEndMinute ?? 0;
 
-    customLog("debug", "Loaded config:", config, " => currentMode:", currentMode);
+    // NEW: meta + timers
+    metaMode = (config.startMetaMode || metaMode).toLowerCase();
+    masterInactivityMs = Number.isFinite(config.masterInactivityMs) ? config.masterInactivityMs : masterInactivityMs;
+    postGenerateWaitMs = Number.isFinite(config.postGenerateWaitMs) ? config.postGenerateWaitMs : postGenerateWaitMs;
+
+    customLog("info", "Loaded config:", config, "=> currentMode:", currentMode, "meta:", metaMode,
+      "masterInactivityMs:", masterInactivityMs, "postGenerateWaitMs:", postGenerateWaitMs);
   } else {
-    console.warn("No config loaded; using defaults");
+    customLog("warning", "No config loaded; using defaults");
   }
 
   huggingFaceServerStatus = await controlHuggingFaceServer("status");
-  customLog("debug", "Hugging Face server status:", huggingFaceServerStatus);
+  customLog("debug", "HF server status:", huggingFaceServerStatus);
+
   try {
     const style = document.createElement("style");
     style.innerHTML = `
-      @font-face {
-        font-family: "Univers";
-        src: url("${routingPrefix}/fonts/Univers/UniversLight.ttf") format("truetype");
-      }
+      @font-face { font-family: "Univers"; src: url("${routingPrefix}/fonts/Univers/UniversLight.ttf") format("truetype"); }
     `;
-    customLog("debug", "routing prefix", routingPrefix);
     document.head.appendChild(style);
 
     showPermissionOverlay();
-    // Use the routingPrefix as needed in your client-side code
   } catch (error) {
-    customLog("error", "Failed to fetch Routing Prefix:", error);
+    customLog("error", "Failed to set font / show overlay:", error);
   }
 });
 
+// Silent window watcher
 setInterval(() => {
   const now = new Date();
   const nowTotal = minutesSinceMidnight(now.getHours(), now.getMinutes());
-
   const silentStartTotal = minutesSinceMidnight(silentStartHour, silentStartMinute);
   const silentEndTotal = minutesSinceMidnight(silentEndHour, silentEndMinute);
 
   let isSilentTime;
   if (silentStartTotal < silentEndTotal) {
-    // same-day range (e.g., 08:00 → 14:00)
     isSilentTime = nowTotal >= silentStartTotal && nowTotal < silentEndTotal;
   } else {
-    // crossing midnight (e.g., 22:30 → 07:15)
     isSilentTime = nowTotal >= silentStartTotal || nowTotal < silentEndTotal;
   }
 
   if (isSilentTime && currentMode !== MODES.SILENT) {
     switchMode(MODES.SILENT);
   } else if (!isSilentTime && currentMode === MODES.SILENT) {
-    //we meed tot turn on the hugging face server before we move out of silent mode
-    controlHuggingFaceServer("restart");
-    // return to your preferred mode
-    switchMode(MODES.NORMAL);
+    (async () => {
+      try {
+        huggingFaceServerStatus = await controlHuggingFaceServer("restart");
+        customLog("info", "HF status after restart:", huggingFaceServerStatus);
+      } catch (e) {
+        customLog("error", "HF restart error:", e);
+      }
+      // Resume sub-mode based on meta
+      if (metaMode === "normal") {
+        switchMode(MODES.DRIFT);
+      } else {
+        switchMode(MODES.GENERATIVE);
+      }
+    })();
   }
-}, 60_000);
+}, 60000);
 
-function minutesSinceMidnight(hour, minute) {
-  return hour * 60 + minute;
-}
+function minutesSinceMidnight(hour, minute) { return hour * 60 + minute; }
+
+// =========================
+// Permission overlay (autoplay unlock)
+// =========================
 function showPermissionOverlay() {
-  // overlayActive = true; // flag the overlay is active
   const overlay = document.createElement("div");
   overlay.id = "permissionOverlay";
   overlay.textContent = "CLICK / TOUCH";
   document.body.appendChild(overlay);
 
-  const removeOverlay = (e) => {
+  const removeOverlay = async (e) => {
     e.stopPropagation();
     overlay.remove();
-    suppressGlobalEvents = true; // temporarily ignore global events
-    setTimeout(() => {
-      suppressGlobalEvents = false;
-    }, 1000);
 
-    customLog("debug", "Permission overlay removed. Current mode:", currentMode);
-    //switchMode(currentMode);
-    modeHandlers[currentMode].enter();
-    customLog("debug", "SwitchMode call is done:", currentMode);
-    if (currentMode === MODES.DRIFT) {
-      //setTimeout(() => {
-      //startDriftMode();
-      driftAudio[0].load();
-      driftAudio[1].load();
-      // }, 800);
-      hasTouch = detectTouchDevice();
-      customLog("debug", "Starting drift mode from permission overlay.");
+    suppressGlobalEvents = true;
+    setTimeout(() => { suppressGlobalEvents = false; }, 1000);
+
+    // Enter starting sub-mode by metaMode
+    if (metaMode === "normal") {
+      switchMode(MODES.DRIFT);
+    } else {
+      switchMode(MODES.GENERATIVE);
     }
   };
-  if (hasTouch) {
-    overlay.addEventListener("touchstart", removeOverlay, { once: true });
-  } else {
-    overlay.addEventListener("click", removeOverlay, { once: true });
-  }
+
+  // Register both to be safe on hybrid devices
+  overlay.addEventListener("click", removeOverlay, { once: true });
+  overlay.addEventListener("touchstart", removeOverlay, { once: true, passive: true });
 }
 
+// =========================
+// Global interaction listener (master presence timer)
+// =========================
 ["mousemove", "mousedown", "touchstart", "touchend", "touchmove", "click"].forEach((evt) => {
   document.addEventListener(evt, (e) => {
-    // Ignore events if the permission overlay is active or if we're currently suppressing global events.
-    if (suppressGlobalEvents || (e.target && (e.target.id === "permissionOverlay" || e.target.closest("#permissionOverlay")))) {
+    if (suppressGlobalEvents) return;
+    const t = e.target;
+    if (t && (t.id === "permissionOverlay" || t.closest?.("#permissionOverlay"))) return;
+
+    // No interactions during SILENT should change behaviour
+    if (currentMode === MODES.SILENT) return;
+
+    // Any interaction while in DRIFT → jump to GENERATIVE (usable state)
+    if (currentMode === MODES.DRIFT) {
+      switchMode(MODES.GENERATIVE);
+      showInstructionPopupFor(MODES.GENERATIVE);
+      clearUserPresenceTimer();
+      startUserPresenceTimer("left drift via interaction");
       return;
     }
 
-    if (currentMode === MODES.DRIFT) {
-      switchMode(MODES.NORMAL);
-    } else if (currentMode === MODES.NORMAL) {
-      resetInactivityTimeout();
-    } else if (currentMode === MODES.GENERATIVE) {
-      resetGenerativeTimeout();
-    }
-  });
+    // For all other interactive modes, reset master presence timer
+    clearUserPresenceTimer();
+    startUserPresenceTimer("generic interaction");
+  }, { passive: true });
 });
 
-function resetInactivityTimeout() {
-  clearTimeout(inactivityTimeout);
-  // Always check if we are STILL in normal mode
-  // If in normal mode after X ms, switch to drift.
-  inactivityTimeout = setTimeout(() => {
-    if (currentMode === MODES.NORMAL) {
-      switchMode(MODES.DRIFT);
-    }
-  }, 180000); // 3 minutes
-}
-
-function clearInactivityTimeout() {
-  clearTimeout(inactivityTimeout);
-  inactivityTimeout = null;
-}
-
-function resetGenerativeTimeout() {
-  clearTimeout(generativeTimeout);
-  // After 3 minutes, close resultDiv (if open) & re-show instructions for generative
-  generativeTimeout = setTimeout(() => {
-    if (currentMode === MODES.GENERATIVE) {
-      // Close resultDiv
-      const resultDiv = document.getElementById("resultDiv");
-      if (resultDiv) {
-        resultDiv.remove();
-        customLog("debug", "Closed resultDiv on generative inactivity");
-      }
-      // Re-show generative instructions
-      showInstructionPopup("generative");
-    }
-  }, 180000);
-}
-
-function clearGenerativeTimeout() {
-  clearTimeout(generativeTimeout);
-  generativeTimeout = null;
-}
-
-function detectTouchDevice() {
-  const hasTouchSupport = "ontouchstart" in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints && navigator.msMaxTouchPoints > 0);
-
-  const isCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
-
-  if (hasTouchSupport || isCoarsePointer) {
-    document.body.classList.add("touch-device");
-    console.log("Touch device detected");
-    return true;
-  }
-  console.log("Touch device not detected");
-  return false;
-}
-async function loadConfig() {
-  try {
-    const response = await fetch(`${routingPrefix}/config.json`);
-    if (!response.ok) {
-      throw new Error(`Failed to load config: ${response.status}`);
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Error loading config:", error);
-    return null;
+// =========================
+// Master presence timer & helpers
+// =========================
+function clearUserPresenceTimer() {
+  if (userPresentTimerId) {
+    clearTimeout(userPresentTimerId);
+    userPresentTimerId = null;
+    customLog("verbose", "[presence] cleared");
   }
 }
-
-// In loadAndPlayNext(), after fetching and parsing the JSON:
-async function loadAndPlayNext(playerIndex) {
-  const fileNumber = getRandomFileNumber();
-  const fileName = formatFileNumber(fileNumber);
-  const audioUrl = `${routingPrefix}${driftConfig.folderPath}/drift_mp3s/${fileName}.mp3`;
-  const jsonUrl = `${routingPrefix}${driftConfig.folderPath}/drift_json/${fileName}.json`;
-
-  let marker;
-  try {
-    const response = await fetch(jsonUrl);
-    if (!response.ok) throw new Error(`Failed to load ${jsonUrl}`);
-    const jsonData = await response.json();
-
-    // Assume jsonData.dateName is in the format: "HH:MM:SS DayName DD Month YYYY"
-    // Assume jsonData has been fetched and parsed.
-    // Parse the dateName (format: "HH:MM:SS DayName DD Month YYYY")
-    const dateParts = jsonData.dateName.split(" "); // e.g., ["08:00:00", "Monday", "11", "October", "2028"]
-    const time24 = dateParts[0];
-    const dayName = dateParts[1];
-    const dateNumber = dateParts[2];
-    const monthName = dateParts[3];
-    const year = dateParts[4];
-    const time12 = convertTimeTo12Hour(time24); // Use your existing helper
-    if (year == "") {
-      console.log("Year is empty: ", jsonData.dateName);
-    }
-
-    const shortDisplayName = wrapTextAtWhitespace(jsonData.display_name, 70); // Use your existing helper
-    const items = [
-      { title: "Location: ", text: shortDisplayName },
-      { title: "Year: ", text: year },
-      { title: "Date: ", text: `${dayName} ${monthName} ${dateNumber} ${time12}` },
-      { title: "Temperature: ", text: jsonData.main.temp + "°C" },
-      { title: "Humidity: ", text: Math.min(jsonData.main.humidity, 100) + "%" },
-      { title: "Pressure: ", text: Math.min(jsonData.main.pressure, 1084) + "hPa" },
-      { title: "Wind Speed: ", text: jsonData.wind.speed + "km/h" },
-    ];
-
-    // Create the popup container
-    const flyoverMasterContainer = document.createElement("div");
-    flyoverMasterContainer.className = "flyoverMasterContainer";
-
-    // For each item, create a container with the appropriate classes.
-    items.forEach((item) => {
-      const compDiv = document.createElement("div");
-      compDiv.className = "flyoverComponent";
-
-      const componentTitle = document.createElement("div");
-      componentTitle.className = "flyoverTitle";
-      componentTitle.textContent = item.title;
-
-      const componentText = document.createElement("div");
-      componentText.className = "flyoverText";
-      componentText.innerHTML = item.text;
-
-      compDiv.appendChild(componentTitle);
-      compDiv.appendChild(componentText);
-      flyoverMasterContainer.appendChild(compDiv);
-    });
-    //lets get the window width and height
-    const flyoverMaxWidth = window.innerWidth * 0.75;
-    // Bind this popup to your marker (assuming you already have a marker variable)
-
-    marker = L.marker([jsonData.coord.lat, jsonData.coord.lon], {
-      autoClose: false,
-      closeOnClick: false,
-    }).bindPopup(flyoverMasterContainer, { minWidth: 0, maxWidth: flyoverMaxWidth });
-
-    // Add the marker to the map (and don't call openPopup() if you want it to open later)
-    marker.addTo(map);
-  } catch (error) {
-    console.error("Error loading JSON:", error);
-    marker = null;
-  }
-
-  // Set the new audio source.
-  driftAudio[playerIndex].src = audioUrl;
-  driftAudio[playerIndex].load();
-
-  try {
-    // Start playback (for the current track, this will be audible; for the next track, volume is 0).
-    await driftAudio[playerIndex].play();
-  } catch (error) {
-    console.error("Error playing audio:", error);
-  }
-  // lets print out the marker popup to the console so I can see all its css rules
-
-  return marker;
-}
-
-function flyToWithOffset(latlng, zoom, flyDuration, panDuration) {
-  return new Promise((resolve) => {
-    // Start the flyTo animation.
-    map.flyTo(latlng, zoom, { duration: flyDuration });
-    // Wait for the flyTo to finish.
-    map.once("moveend", () => {
-      const size = map.getSize();
-      // Desired container point: center horizontally, 90% down vertically.
-      const desiredPoint = L.point(size.x * 0.4, size.y * 0.05);
-      const markerPoint = map.latLngToContainerPoint(latlng);
-      const offset = desiredPoint.subtract(markerPoint);
-      // Pan the map by the calculated offset.
-      map.panBy(offset, { animate: true, duration: panDuration });
-      // Wait until the pan is complete.
-      map.once("moveend", () => {
-        resolve();
-      });
-    });
-  });
-}
-
-function scheduleNext() {
-  // Calculate when to start the crossfade.
-  const crossfadeStartTime = (driftConfig.fileDuration - driftConfig.crossfade) * 1000;
-  crossfadeTimeoutId = setTimeout(async () => {
-    const nextPlayer = (currentPlayer + 1) % 2;
-    // Load the next track and get its marker.
-    const newMarker = await loadAndPlayNext(nextPlayer);
-
-    // Close the popup of the current marker (if any) as soon as we start the transition.
-    if (currentMarker) {
-      currentMarker.closePopup();
-    }
-
-    // Start the map flyTo (with offset) and get a promise that resolves when complete.
-    let flyPromise = null;
-    if (newMarker) {
-      flyPromise = flyToWithOffset(newMarker.getLatLng(), 11, driftConfig.crossfade - 1.5, 1.5);
-    }
-
-    // Start the audio crossfade concurrently.
-    const fadeSteps = 20;
-    const stepTime = (driftConfig.crossfade * 1000) / fadeSteps;
-    let currentStep = 0;
-    fadeIntervalId = setInterval(() => {
-      currentStep++;
-      // Fade out the current audio.
-      driftAudio[currentPlayer].volume = Math.max(0, 1 - currentStep / fadeSteps);
-      // Fade in the next audio.
-      driftAudio[nextPlayer].volume = Math.min(1, currentStep / fadeSteps);
-      if (currentStep >= fadeSteps) {
-        clearInterval(fadeIntervalId);
-        // Pause and reset the previous audio.
-        driftAudio[currentPlayer].pause();
-        driftAudio[currentPlayer].currentTime = 0;
-        // Switch currentPlayer.
-        currentPlayer = nextPlayer;
-        // Schedule the next crossfade.
-        scheduleNext();
-      }
-    }, stepTime);
-
-    // Once the map movement is complete, remove the old marker and open the new marker's popup.
-    if (flyPromise) {
-      await flyPromise;
-      if (currentMarker) {
-        map.removeLayer(currentMarker);
-      }
-      currentMarker = newMarker;
-      newMarker.openPopup();
-    }
-  }, crossfadeStartTime);
-}
-
-/**
- * Starts the drift mode loop.
- */
-async function startDriftMode() {
-  driftActive = true;
-
-  // If the results div is present, remove it
-  const resultDiv = document.getElementById("resultDiv");
-  if (resultDiv) {
-    resultDiv.remove();
-    console.log("Results div removed");
-  } else {
-    console.log("Results div not found");
-  }
-
-  showInstructionPopup();
-
-  currentPlayer = 0;
-  // Load and start the first track, and store its marker.
-  currentMarker = await loadAndPlayNext(currentPlayer);
-  // Once the first marker is loaded, fly to it:
-  if (currentMarker) {
-    await flyToWithOffset(currentMarker.getLatLng(), 12, 1, 0.5);
-    currentMarker.openPopup();
-  }
-  // Then schedule subsequent transitions.
-  scheduleNext();
-}
-
-/**
- * Stops the drift mode loop.
- */
-function stopDriftMode() {
-  driftActive = false;
-  document.body.classList.remove("drift-mode");
-  customLog("debug", "Drift mode deactivated");
-  if (crossfadeTimeoutId) clearTimeout(crossfadeTimeoutId);
-  if (fadeIntervalId) clearInterval(fadeIntervalId);
-  // Stop both audio players.
-  driftAudio.forEach((audio) => {
-    audio.pause();
-    audio.currentTime = 0;
-  });
-  // Optionally, remove any markers.
-  if (currentMarker) {
-    map.removeLayer(currentMarker);
-    currentMarker = null;
-  }
-}
-
-function showInstructionPopup() {
-  console.log("showInstructionPopup called. Current mode:", currentMode);
-  const instructionsPopup = document.getElementById("instructionPopup");
-  if (!instructionsPopup) {
-    console.error("Instruction popup not found.");
+function startUserPresenceTimer(reason = "") {
+  if (currentMode === MODES.SILENT || isStreamingText || isAudioPlaying) {
+    customLog("debug", "[presence] NOT started (mode/flags)", { currentMode, isStreamingText, isAudioPlaying, reason });
     return;
   }
-  // Always update the innerHTML based on mode.
-  if (currentMode === MODES.DRIFT) {
-    instructionsPopup.innerHTML = driftText;
-  } else if (currentMode === MODES.GENERATIVE) {
-    instructionsPopup.innerHTML = generativeText;
-  } else {
-    instructionsPopup.innerHTML = normalText;
+  clearUserPresenceTimer();
+  userPresentTimerId = setTimeout(() => {
+    customLog("info", "[presence] expired in", currentMode, "meta:", metaMode);
+    if (currentMode === MODES.SILENT) return;
+
+    if (metaMode === "normal") {
+      switchMode(MODES.DRIFT);
+    } else {
+      // quiet: never drift
+      closeGeneratedContentIfOpen();
+      showInstructionPopupFor(MODES.GENERATIVE);
+      if (currentMode !== MODES.GENERATIVE) switchMode(MODES.GENERATIVE);
+    }
+  }, masterInactivityMs);
+  customLog("verbose", `
+    [presence] started for ${Math.round(masterInactivityMs / 1000)}s (reason: ${reason})
+  `);
+}
+
+function clearPostGenerateTimer() {
+  if (postGenerateTimerId) {
+    clearTimeout(postGenerateTimerId);
+    postGenerateTimerId = null;
+    customLog("debug", "[postGen] cleared");
+  }
+}
+
+function closeGeneratedContentIfOpen() {
+  const generatedContentDiv = document.getElementById("resultDiv");
+
+  if (generatedContentDiv) {
+    // 1) Remove spinner if present
+    try { document.getElementById("audioSpinnerContainer")?.remove(); } catch {}
+
+    // 2) Stop & fully unload audio (without triggering error)
+    const ap = generatedContentDiv.querySelector("#audioPlayer");
+    if (ap) {
+      try { ap.pause(); } catch {}
+
+      // Drop all event listeners by cloning, so our "error" handler won't run.
+      const clone = ap.cloneNode(true);
+      ap.replaceWith(clone);
+
+      // Remove any source and force the element into a 'no src' state.
+      clone.removeAttribute("src");
+      // Some engines reset better if we call load() after removing src.
+      try { clone.load(); } catch {}
+
+      // Finally remove the element from the DOM.
+      clone.remove();
+    }
+
+    // 3) Remove the results panel
+    generatedContentDiv.remove();
+    customLog("debug", "[generated] closed UI");
   }
 
-  // Always add the 'visible' class when calling showInstructionPopup.
+  // 4) Reset flags and timers
+  generatedUIOpen = false;
+  isStreamingText = false;
+  isAudioPlaying = false;
+  clearPostGenerateTimer();
+}
+
+// =========================
+// Instruction popup helpers
+// =========================
+function showInstructionPopupFor(mode) {
+  customLog("debug", "showInstructionPopupFor:", mode);
+  const instructionsPopup = document.getElementById("instructionPopup");
+  if (!instructionsPopup) { customLog("warning", "Instruction popup not found"); return; }
+  if (mode === MODES.DRIFT) instructionsPopup.innerHTML = driftText;
+  else if (mode === MODES.GENERATIVE) instructionsPopup.innerHTML = generativeText;
+  else instructionsPopup.innerHTML = normalText;
   instructionsPopup.classList.add("visible");
 }
-
 function hideInstructionPopup() {
-  if (currentMode === "drift") return; // In drift mode, keep instructions visible.
+  if (currentMode === MODES.DRIFT) return; // keep visible in drift
   const instructionsPopup = document.getElementById("instructionPopup");
-  if (instructionsPopup) {
-    instructionsPopup.classList.remove("visible");
-  }
+  if (instructionsPopup) instructionsPopup.classList.remove("visible");
 }
 
-// Function to perform reverse geocoding
+// =========================
+// Reverse geocoding & helpers
+// =========================
 async function reverseGeocode(lat, lon) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return "N/A";
   const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
   try {
     const response = await fetch(url);
     const reverseGeocodeData = await response.json();
-    //add the data to the userGeneratedData object
-    customLog("debug", "reverseGeocode results: " + JSON.stringify(reverseGeocodeData, null, 2));
-    return reverseGeocodeData.display_name;
+    customLog("debug", "reverseGeocode results:", reverseGeocodeData);
+    return reverseGeocodeData.display_name || "N/A";
   } catch (error) {
-    console.error("Error fetching location name:", error);
-    return "Unknown location";
+    customLog("error", "Error fetching location name:", error);
+    return "N/A";
   }
 }
 
 function constructHistoricalDate() {
-  //make a new date object from the user data
   let historicalDate = userGeneratedData.date;
-  //set the year to the current year minus 1
   historicalDate.setFullYear(new Date().getFullYear() - 1);
-
-  // //log the date bfeore it is formamted
-  customLog("debug", "preformated historical date: " + historicalDate);
-  //convert the date to a unix timestamp in seconds
-  let formattedDate = historicalDate.getTime() / 1000;
-  //remove any decimal places from the formatted date
-  formattedDate = Math.floor(formattedDate);
-  customLog("debug", "Historical date unix timestamp: " + formattedDate);
-
+  customLog("debug", "preformatted historical date:", historicalDate);
+  let formattedDate = Math.floor(historicalDate.getTime() / 1000);
+  customLog("debug", "Historical date unix timestamp:", formattedDate);
   return formattedDate;
 }
 
 async function getWaterDistanceData(lat, lon) {
-  const url = routingPrefix + "/waterdistance"; // Relative URL for your Node.js server endpoint
-
+  const url = routingPrefix + "/waterdistance"; // your Node endpoint
   try {
     const response = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lat, lon }),
     });
+
     const data = await response.json();
-    //add the data to the userGeneratedData object
-    userGeneratedData.waterDistance = data;
-    customLog("debug", JSON.stringify(userGeneratedData, null, 2));
-    userGeneratedData.waterDistance.inland_water.display_name = await reverseGeocode(
-      userGeneratedData.waterDistance.inland_water.closest_point.lat,
-      userGeneratedData.waterDistance.inland_water.closest_point.lon
-    );
-    userGeneratedData.waterDistance.coastal_water.display_name = await reverseGeocode(
-      userGeneratedData.waterDistance.coastal_water.closest_point.lat,
-      userGeneratedData.waterDistance.coastal_water.closest_point.lon
-    );
-    customLog("debug", "getWaterDistanceData" + JSON.stringify(userGeneratedData, null, 2));
+    customLog("debug", "waterDistance raw:", data);
+
+    // Normalise shape so downstream code is safe
+    const normalised = {
+      inland_water: {
+        closest_point: {
+          lat: Number(data?.inland_water?.closest_point?.lat ?? NaN),
+          lon: Number(data?.inland_water?.closest_point?.lon ?? NaN),
+        },
+        display_name: "",
+      },
+      coastal_water: {
+        closest_point: {
+          lat: Number(data?.coastal_water?.closest_point?.lat ?? NaN),
+          lon: Number(data?.coastal_water?.closest_point?.lon ?? NaN),
+        },
+        display_name: "",
+      },
+    };
+
+    // Helper: reverse geocode only if we have valid coords
+    const revIfValid = async (pt) => {
+      if (Number.isFinite(pt.lat) && Number.isFinite(pt.lon)) {
+        return await reverseGeocode(pt.lat, pt.lon);
+      }
+      return "N/A";
+    };
+
+    // Try to enrich names; fall back to "N/A" if we can't
+    normalised.inland_water.display_name = await revIfValid(normalised.inland_water.closest_point);
+    normalised.coastal_water.display_name = await revIfValid(normalised.coastal_water.closest_point);
+
+    userGeneratedData.waterDistance = normalised;
+    customLog("debug", "waterDistance enriched:", userGeneratedData.waterDistance);
   } catch (error) {
-    console.error("Error:", error);
+    customLog("error", "getWaterDistanceData error:", error);
+
+    // Ensure we still leave a safe, predictable structure
+    userGeneratedData.waterDistance = {
+      inland_water: { closest_point: { lat: NaN, lon: NaN }, display_name: "N/A" },
+      coastal_water: { closest_point: { lat: NaN, lon: NaN }, display_name: "N/A" },
+    };
   }
 }
 
-// Function to calculate variance based on the selected year
 function calculateClimateVariance(weatherData) {
   customLog("debug", "calculateClimateVariance start");
   const currentYear = new Date().getFullYear();
@@ -804,59 +607,58 @@ function calculateClimateVariance(weatherData) {
   const varianceFactor = Math.min(yearsIntoFuture * minVariance, maxVariance);
   const variance = 1 + (Math.random() - 0.5) * varianceFactor;
 
-  //add the data to the userGeneratedData object
   userGeneratedData.temperature = (weatherData.data[0].temp * variance).toFixed(2);
   userGeneratedData.humidity = (weatherData.data[0].humidity * variance).toFixed(2);
   userGeneratedData.pressure = (weatherData.data[0].pressure * variance).toFixed(2);
   userGeneratedData.windSpeed = (weatherData.data[0].wind_speed * variance).toFixed(2);
 
-  customLog("debug", "calculateClimateVariance temperature: " + userGeneratedData.temperature);
-  customLog("debug", "calculateClimateVariance humidity: " + userGeneratedData.humidity);
-  customLog("debug", "calculateClimateVariance pressure: " + userGeneratedData.pressure);
-  customLog("debug", "calculateClimateVariance windSpeed: " + userGeneratedData.windSpeed);
+  customLog("debug", "variance outputs:", {
+    temperature: userGeneratedData.temperature,
+    humidity: userGeneratedData.humidity,
+    pressure: userGeneratedData.pressure,
+    windSpeed: userGeneratedData.windSpeed,
+  });
 
   return {
-    temperature: (weatherData.data[0].temp * variance).toFixed(2),
-    humidity: (weatherData.data[0].humidity * variance).toFixed(2),
-    pressure: (weatherData.data[0].pressure * variance).toFixed(2),
-    windSpeed: (weatherData.data[0].wind_speed * variance).toFixed(2),
+    temperature: userGeneratedData.temperature,
+    humidity: userGeneratedData.humidity,
+    pressure: userGeneratedData.pressure,
+    windSpeed: userGeneratedData.windSpeed,
   };
 }
 
+// =========================
+// Map interactions
+// =========================
 map.on("contextmenu", async function (event) {
-  if (currentMode !== "normal" && currentMode !== "generative") return;
+  if (currentMode !== MODES.NORMAL && currentMode !== MODES.GENERATIVE) return;
   handleMapClick(event.latlng);
 });
 
 let touchTimeout;
 map.on("touchstart", function (event) {
-  if (currentMode !== "normal" && currentMode !== "generative") return;
-  touchTimeout = setTimeout(() => {
-    handleMapClick(event.latlng);
-  }, 200);
+  if (currentMode !== MODES.NORMAL && currentMode !== MODES.GENERATIVE) return;
+  touchTimeout = setTimeout(() => { handleMapClick(event.latlng); }, 200);
 });
 map.on("touchend", function () {
-  if (currentMode !== "normal" && currentMode !== "generative") return;
+  if (currentMode !== MODES.NORMAL && currentMode !== MODES.GENERATIVE) return;
   clearTimeout(touchTimeout);
 });
 
-// Right-click event for creating a new marker
 async function handleMapClick(latlng) {
+  customLog("debug", "handleMapClick", latlng);
   hideInstructionPopup();
-  // Remove any existing markers from the map.
-  map.eachLayer(function (layer) {
-    if (layer instanceof L.Marker) {
-      map.removeLayer(layer);
-    }
-  });
 
-  // Get the coordinates for the new marker.
+  // Remove any existing markers from the map.
+  try {
+    map.eachLayer(function (layer) { if (layer instanceof L.Marker) map.removeLayer(layer); });
+  } catch {}
+
   mapChoicelatlng = latlng;
   const lat = mapChoicelatlng.lat;
   const lon = mapChoicelatlng.lng;
   centerMarkerInView(mapChoicelatlng);
 
-  // Create a new marker.
   const marker = L.marker(mapChoicelatlng, {
     title: "Temporary Marker",
     alt: "Temporary Marker",
@@ -865,18 +667,14 @@ async function handleMapClick(latlng) {
   }).addTo(map);
 
   marker
-    .bindPopup("<div id='check_location_bubble' class='main_text_medium'>Checking your chosen location. <br> <br>Please wait.<br><br></div>", {
+    .bindPopup("<div id='check_location_bubble' class='main_text_medium'>Checking your chosen location. <br><br>Please wait.<br><br></div>", {
       autoClose: false,
       closeOnClick: false,
     })
     .openPopup();
 
+  // Spinner
   const birdImageUrl = `${routingPrefix}/images/bird-cells-new.svg`;
-
-  // Define the bird filter to control its color (e.g. "invert(1)" for white).
-  const birdLoaderBirdFilter = "invert(0)";
-
-  // Create the spinner container and the loader structure.
   const spinnerContainer = document.createElement("div");
   spinnerContainer.id = "audioSpinnerContainer";
   spinnerContainer.innerHTML = `
@@ -889,127 +687,85 @@ async function handleMapClick(latlng) {
       </div>
     `;
   const checkLocationBubble = document.getElementById("check_location_bubble");
-
-  // Append the spinner container to your target element.
-  checkLocationBubble.appendChild(spinnerContainer);
-
-  // Set the bird's background image dynamically.
+  if (checkLocationBubble) checkLocationBubble.appendChild(spinnerContainer);
   const birdElem = spinnerContainer.querySelector(".bird");
-  birdElem.style.backgroundImage = `url('${birdImageUrl}')`;
+  if (birdElem) birdElem.style.backgroundImage = `url('${birdImageUrl}')`;
+  document.documentElement.style.setProperty("--bird-loader-bird-filter", "invert(0)");
 
-  // Set the bird filter using JavaScript.
-  document.documentElement.style.setProperty("--bird-loader-bird-filter", birdLoaderBirdFilter);
-
-  // Launch all asynchronous tasks concurrently.
+  // Async tasks
   const isInAusPromise = getisInAustralia(lat, lon);
   const locationNamePromise = reverseGeocode(lat, lon);
   getWaterDistanceData(lat, lon);
 
-  // Wait for the Australia check.
   const isInAustralia = await isInAusPromise;
-
   if (!isInAustralia) {
-    // If the point is not in Australia, update the popup with an error message.
-    marker
-      .bindPopup("<div class='main_text_medium' id='error_bubble'>The selected point is not in Australia.  <br>Please select a point on any Australian territory.</div>")
-      .openPopup();
+    marker.bindPopup("<div class='main_text_medium' id='error_bubble'>The selected point is not in Australia.  <br>Please select a point on any Australian territory.</div>").openPopup();
 
-    // Set up cleanup for when the popup is closed (either by timeout or user action)
-    marker.on("popupclose", () => {
-      cleanupFailedLocation(marker);
-    });
-
-    // After 3 seconds, close the popup and remove the marker.
-    setTimeout(() => {
-      if (marker && map.hasLayer(marker)) {
-        marker.closePopup();
-      }
-    }, 3000);
-
-    // Stop further processing.
+    const closeAll = () => {
+      try { marker.closePopup(); } catch {}
+      try { map.removeLayer(marker); } catch {}
+      showInstructionPopupFor(MODES.GENERATIVE);
+      clearUserPresenceTimer();
+      startUserPresenceTimer("not-in-aus closed");
+    };
+    const tempCloser = () => { document.removeEventListener("click", tempCloser, true); closeAll(); };
+    document.addEventListener("click", tempCloser, true);
+    setTimeout(() => { document.removeEventListener("click", tempCloser, true); closeAll(); }, 3000);
     return;
   }
 
-  // If the point is in Australia, await the remaining tasks.
   const locationName = await locationNamePromise;
-  //const waterDistance = await waterDistancePromise;
-
-  //lets add line breaks instead of commas in the lo
-  // Update your user data.
   userGeneratedData.locationName = locationName;
   userGeneratedData.lat = lat;
   userGeneratedData.lon = lon;
-  // userGeneratedData.waterDistance = waterDistance; // if needed
 
-  // Create new popup content.
-  // The container (with id "popup_bubble") will also hold the date picker.
   const popupContent = document.createElement("div");
   popupContent.id = "popup_bubble";
-
   const locationDiv = document.createElement("div");
   locationDiv.id = "location-display";
   locationDiv.className = "main_text_small";
   locationDiv.innerHTML = `<span class="main_text_medium_bold">Simulation location:</span><br> ${locationName}`;
   popupContent.appendChild(locationDiv);
 
-  // Update the marker’s popup content and open it.
   marker.setPopupContent(popupContent);
   marker.openPopup();
 
-  // Directly call the date picker initializer now that the popup is rebuilt.
   initCustomDatePicker({
     containerId: "popup_bubble",
     userGeneratedData,
     onDateSelectionComplete: (finalDate) => {
       customLog("debug", "Final date/time chosen:", finalDate);
       fillSuggestedWeatherData(userGeneratedData.date);
-      // Reset the selection timeout since user is still active
-      resetSelectionTimeout();
     },
     onWeatherSelectionComplete: (finalWeather) => {
       customLog("debug", "Final weather chosen:", finalWeather);
-      // Clear the selection timeout since selection is complete
-      clearSelectionTimeout();
       fetchDataAndDisplay();
-      //lets close the leaflet popoup and marker
-      map.eachLayer(function (layer) {
-        if (layer instanceof L.Marker) {
-          map.removeLayer(layer);
-        }
-      });
+      // Close Leaflet popups and markers
+      try {
+        map.eachLayer(function (layer) { if (layer instanceof L.Marker) map.removeLayer(layer); });
+      } catch {}
     },
   });
 
-  // Set up the initial selection timeout
-  resetSelectionTimeout();
-
-  // Set up cleanup for when the popup is closed.
-  marker.on("popupclose", async function (event) {
-    //clear all the elements from the popup
+  marker.on("popupclose", async function () {
     const containerElement = document.getElementById("popup_bubble");
-    while (containerElement.firstChild) {
-      containerElement.removeChild(containerElement.firstChild);
-    }
-    map.removeLayer(marker);
+    if (containerElement) while (containerElement.firstChild) containerElement.removeChild(containerElement.firstChild);
+    try { map.removeLayer(marker); } catch {}
     userGeneratedData.locationName = "";
     userGeneratedData.lat = 0;
     userGeneratedData.lon = 0;
-    
-    // Restore instructions when the date selection popup is closed
-    ensureInstructionsVisible();
   });
 
-  // (Optional) Define or include your fetchWeatherData and fillSuggestedWeatherData functions below.
   async function fetchWeatherData() {
     customLog("debug", "fetchWeatherData start");
     let altered_date = constructHistoricalDate();
     try {
       const response = await fetch(`${routingPrefix}/weather?lat=${lat}&lon=${lon}&date=${altered_date}`);
       const data = await response.json();
-      customLog("debug", "fetchWeatherData received response: " + JSON.stringify(data));
+      customLog("debug", "weatherData:", data);
       return data;
     } catch (error) {
-      console.error("Error fetching weather data from server:", error);
+      customLog("error", "Error fetching weather data:", error);
       return null;
     }
   }
@@ -1028,107 +784,27 @@ async function handleMapClick(latlng) {
       document.getElementById("humidity-input").value = userGeneratedData.humidity;
       document.getElementById("pressure-input").value = userGeneratedData.pressure;
       document.getElementById("wind-speed-input").value = userGeneratedData.windSpeed;
-      //lets trigger the onWeatherDataAdjusted function from the csutomDatePicker class
       onWeatherDataAdjusted();
     }
   }
 }
 
-function cleanupFailedLocation(marker) {
-  // Reset all location-related state
-  mapChoicelatlng = null;
-  userGeneratedData.locationName = "";
-  userGeneratedData.lat = 0;
-  userGeneratedData.lon = 0;
-  userGeneratedData.waterDistance = {
-    inland_water: { closest_point: { lat: 0, lon: 0 }, display_name: "" },
-    coastal_water: { closest_point: { lat: 0, lon: 0 }, display_name: "" }
-  };
-  
-  // Remove the marker from the map
-  if (marker && map.hasLayer(marker)) {
-    map.removeLayer(marker);
-  }
-  
-  // Don't call map.closePopup() here as it triggers the recursion
-  // The popup will be closed automatically when the marker is removed
-  
-  // Add a small delay to ensure popup is fully closed before showing instructions
-  setTimeout(() => {
-    // Restore instructions after cleanup
-    ensureInstructionsVisible();
-  }, 100);
-  
-  customLog("debug", "Location cleanup completed - all state reset");
-}
-
-function ensureInstructionsVisible() {
-  // Hide any existing result div
-  const resultDiv = document.getElementById("resultDiv");
-  if (resultDiv) {
-    resultDiv.remove();
-  }
-  
-  // Remove any existing markers
-  map.eachLayer(function (layer) {
-    if (layer instanceof L.Marker) {
-      map.removeLayer(layer);
-    }
-  });
-  
-  // Clear any existing popups
-  map.closePopup();
-  
-  // Show instructions based on current mode
-  showInstructionPopup();
-  
-  customLog("debug", "Instructions restored and all state cleared");
-}
-
-function resetSelectionTimeout() {
-  clearSelectionTimeout();
-  selectionTimeout = setTimeout(() => {
-    customLog("debug", "Selection timeout reached - restoring instructions");
-    ensureInstructionsVisible();
-  }, 60000); // 60 seconds
-}
-
-function clearSelectionTimeout() {
-  if (selectionTimeout) {
-    clearTimeout(selectionTimeout);
-    selectionTimeout = null;
-  }
-}
-
+// =========================
+// Generation & streaming
+// =========================
 async function callGenerateWithGradio(lat, lon, temp, humidity, wind_speed, pressure, minutes_of_day, day_of_year) {
   try {
     const response = await fetch(routingPrefix + "/generateAudio", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        lat,
-        lon,
-        temp,
-        humidity,
-        wind_speed,
-        pressure,
-        minutes_of_day,
-        day_of_year,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lat, lon, temp, humidity, wind_speed, pressure, minutes_of_day, day_of_year }),
     });
-
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
-    }
-
+    if (!response.ok) throw new Error("Network response was not ok");
     const result = await response.json();
-    customLog("debug", "callGenerateWithGradio::Result from audio generation: ", JSON.stringify(result, null, 2));
-
+    customLog("debug", "audio generation result:", result);
     return result.audioUrl;
   } catch (error) {
-    console.error("Error:", error);
+    customLog("error", "callGenerateWithGradio error:", error);
   }
 }
 
@@ -1143,126 +819,161 @@ async function loadAudio() {
     userGeneratedData.minutes_of_day,
     userGeneratedData.day_of_year
   );
-  if (audioUrl) {
-    const resultDiv = document.getElementById("resultDiv");
 
-    // Remove existing audio player if any
-    const existingAudioPlayer = document.getElementById("audioPlayer");
-    if (existingAudioPlayer) {
-      existingAudioPlayer.remove();
-    }
-
-    // Create a new audio player
-    const audioPlayer = document.createElement("audio");
-    audioPlayer.id = "audioPlayer";
-    audioPlayer.controls = true;
-
-    // For mobile autoplay support, you need autoplay, playsinline, and possibly muted
-    //audioPlayer.setAttribute("autoplay", "");
-    audioPlayer.setAttribute("playsinline", "");
-
-    audioPlayer.addEventListener(
-      "canplay",
-      () => {
-        document.getElementById("audioSpinnerContainer").remove(); // remove spinner
-
-      },
-      { once: true }
-    );
-
-    audioPlayer.addEventListener(
-      "error",
-      (err) => {
-        spinnerContainer.remove(); // remove spinner on error
-        console.error("Audio load error:", err);
-      },
-      { once: true }
-    );
-
-    audioPlayer.src = audioUrl;
-    resultDiv.appendChild(audioPlayer);
-
-    audioPlayer.load();
-    resultDiv.scrollTop = resultDiv.scrollHeight;
+  if (!audioUrl) {
+    customLog("error", "No audioUrl returned from generator");
+    // resume presence to avoid dead state
+    isAudioPlaying = false;
+    isStreamingText = false;
+    clearUserPresenceTimer();
+    startUserPresenceTimer("audio url missing");
+    return;
   }
+
+  const resultDiv = document.getElementById("resultDiv");
+  if (!resultDiv) {
+    customLog("warning", "resultDiv missing when attempting to load audio");
+    return;
+  }
+
+  // We'll buffer off-DOM, then swap into the UI once ready
+  const audioEl = document.createElement("audio");
+  audioEl.id = "audioPlayer";
+  audioEl.controls = true;           // Keep controls visible
+  audioEl.autoplay = true;           // Try autoplay
+  audioEl.setAttribute("playsinline", ""); // iOS inline playback
+  audioEl.preload = "auto";
+  audioEl.src = audioUrl;
+
+  const spinner = document.getElementById("audioSpinnerContainer");
+
+  const removeSpinner = () => {
+    try { spinner?.remove(); } catch {}
+  };
+
+  // Helper: robust autoplay attempt
+  const tryPlay = () => {
+    const p = audioEl.play();
+    if (p && typeof p.then === "function") {
+      p.catch((err) => {
+        // Common on iOS if it thinks there wasn't a user gesture
+        customLog("warning", "Autoplay was blocked, waiting for a tap to play.", err);
+        // One-time user gesture handler to trigger play
+        const nudge = () => {
+          audioEl.play().catch(() => {}); // best effort
+          document.removeEventListener("touchend", nudge, true);
+          document.removeEventListener("click", nudge, true);
+        };
+        document.addEventListener("touchend", nudge, true);
+        document.addEventListener("click", nudge, true);
+      });
+    }
+  };
+
+  // When enough is buffered to start playing
+  const onCanPlay = () => {
+    audioEl.removeEventListener("canplay", onCanPlay);
+    removeSpinner();
+
+    // Swap into the UI NOW (player only arrives when ready)
+    resultDiv.appendChild(audioEl);
+    resultDiv.scrollTop = resultDiv.scrollHeight;
+
+    // Update flags and start playback
+    isStreamingText = false;     // text stream might still be going, but audio is independent
+    isAudioPlaying = true;
+    tryPlay();
+
+    // When the audio ends, start post-generate timer and presence timer
+    audioEl.addEventListener("ended", () => {
+      isAudioPlaying = false;
+      clearPostGenerateTimer();
+      postGenerateTimerId = setTimeout(() => {
+        if (generatedUIOpen) {
+          closeGeneratedContentIfOpen();
+          showInstructionPopupFor(MODES.GENERATIVE);
+          clearUserPresenceTimer();
+          startUserPresenceTimer("post-generate auto close");
+        }
+      }, postGenerateWaitMs);
+
+      clearUserPresenceTimer();
+      startUserPresenceTimer("audio ended");
+    }, { once: true });
+  };
+
+  const onError = (err) => {
+    removeSpinner();
+    customLog("error", "Audio load error:", err);
+    isAudioPlaying = false;
+    isStreamingText = false;
+    clearUserPresenceTimer();
+    startUserPresenceTimer("audio error");
+  };
+
+  // Wire events BEFORE setting src (already set above; safe to add now)
+  audioEl.addEventListener("canplay", onCanPlay, { once: true });
+  audioEl.addEventListener("error", onError, { once: true });
+
+  // Don’t append audioEl yet. We only append in onCanPlay.
 }
 
 async function fetchDataAndDisplay() {
-  customLog("debug", "fetchDataAndDisplay start: " + JSON.stringify(userGeneratedData, null, 2));
+  customLog("debug", "fetchDataAndDisplay userGeneratedData:", userGeneratedData);
   textGenerationComplete = false;
 
-  // Prepare the result div when the button is pressed, before the response starts streaming
+  // Ensure old content is gone
+  closeGeneratedContentIfOpen();
+
   const generatedContentDiv = document.createElement("div");
   generatedContentDiv.id = "resultDiv";
   generatedContentDiv.innerHTML = '<button id="closeBtn" style="position: absolute; top: 10px; right: 10px;">&times;</button><p id="streamedText"></p>';
-
   document.body.appendChild(generatedContentDiv);
 
+  generatedUIOpen = true;
+  isStreamingText = true;
+  clearUserPresenceTimer(); // pause presence while streaming / audio
+
   const birdImageUrl = `${routingPrefix}/images/bird-cells-new.svg`;
-
-  // Define the bird filter to control its color (e.g. "invert(1)" for white).
-  const birdLoaderBirdFilter = "invert(1)";
-
-  // Create the spinner container and the loader structure.
   const spinnerContainer = document.createElement("div");
   spinnerContainer.id = "audioSpinnerContainer";
   spinnerContainer.innerHTML = `
-                              <div class="bird-loader-wrapper">
-                                <div class="bird-loader">
-                                  <div class="orbit">
-                                    <div class="bird"></div>
-                                  </div>
-                                </div>
-                              </div>
-                            `;
-
-  // Append the spinner container to your target element.
+    <div class="bird-loader-wrapper">
+      <div class="bird-loader">
+        <div class="orbit">
+          <div class="bird"></div>
+        </div>
+      </div>
+    </div>`;
   generatedContentDiv.appendChild(spinnerContainer);
-
-  // Set the bird's background image dynamically.
   const birdElem = spinnerContainer.querySelector(".bird");
-  birdElem.style.backgroundImage = `url('${birdImageUrl}')`;
+  if (birdElem) birdElem.style.backgroundImage = `url('${birdImageUrl}')`;
+  document.documentElement.style.setProperty("--bird-loader-bird-filter", "invert(1)");
 
-  // Set the bird filter using JavaScript.
-  document.documentElement.style.setProperty("--bird-loader-bird-filter", birdLoaderBirdFilter);
   try {
-    // Send a POST request to the server
     const response = await fetch(routingPrefix + "/generate-text", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userInput: JSON.stringify(userGeneratedData) }),
-      //lets print the userGeneratedData object to the console
     });
-
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
-    }
+    if (!response.ok) throw new Error("Network response was not ok");
 
     loadAudio();
 
     const streamedText = document.getElementById("streamedText");
     const closeBtn = document.getElementById("closeBtn");
-    // streamedText.innerHTML = "Loading...";
 
     closeBtn.addEventListener("click", () => {
-      generatedContentDiv.remove();
-      map.eachLayer(function (layer) {
-        if (layer instanceof L.Marker) {
-          map.removeLayer(layer);
-        }
-      });
-      // Restore instructions when results are closed
-      ensureInstructionsVisible();
+      closeGeneratedContentIfOpen();
+      showInstructionPopupFor(MODES.GENERATIVE);
+      clearUserPresenceTimer();
+      startUserPresenceTimer("user closed generated");
     });
 
-    // Read the stream using a reader
     const reader = response.body.getReader();
     const decoder = new TextDecoder("utf-8");
 
     let resultText = "";
-    // Flags to track removal of the first <p> and first </p>
     let firstPRemoved = false;
     let firstClosePRemoved = false;
 
@@ -1271,197 +982,328 @@ async function fetchDataAndDisplay() {
         customLog("debug", "Stream complete");
         streamedText.innerHTML = resultText;
         textGenerationComplete = true;
-        document.getElementById("audioPlayer").play();
+        const ap = document.getElementById("audioPlayer");
+        if (ap) {
+          ap.play().catch(()=>{});
+          isStreamingText = false;
+          isAudioPlaying = true;
+          ap.addEventListener("ended", () => {
+            isAudioPlaying = false;
+            // start post-generate auto-close timer
+            clearPostGenerateTimer();
+            postGenerateTimerId = setTimeout(() => {
+              if (generatedUIOpen) {
+                closeGeneratedContentIfOpen();
+                showInstructionPopupFor(MODES.GENERATIVE);
+                clearUserPresenceTimer();
+                startUserPresenceTimer("post-generate auto close");
+              }
+            }, postGenerateWaitMs);
 
+            clearUserPresenceTimer();
+            startUserPresenceTimer("audio ended");
+          }, { once: true });
+        } else {
+          isStreamingText = false;
+          clearUserPresenceTimer();
+          startUserPresenceTimer("streamed no audio");
+        }
         return;
       }
 
-      // Decode the chunk
       let chunkStr = decoder.decode(value, { stream: true });
-
-      // Remove the very first <p> if not removed yet
-
-      // Add the processed chunk to the result
       resultText += chunkStr;
 
       if (!firstPRemoved) {
         const newResultText = resultText.replace("<p>", "");
-        // Check if replacement actually happened
-        if (newResultText !== resultText) {
-          firstPRemoved = true;
-          resultText = newResultText;
-        }
+        if (newResultText !== resultText) { firstPRemoved = true; resultText = newResultText; }
       }
-
-      // Remove the very first </p> if not removed yet
       if (!firstClosePRemoved) {
         const newResultText = resultText.replace("</p>", "");
-        if (newResultText !== resultText) {
-          firstClosePRemoved = true;
-          resultText = newResultText;
-        }
+        if (newResultText !== resultText) { firstClosePRemoved = true; resultText = newResultText; }
       }
-      streamedText.innerHTML = resultText;
 
-      // Read the next chunk
+      streamedText.innerHTML = resultText;
       reader.read().then(processText);
     });
   } catch (error) {
-    console.error("Failed to fetch response:", error);
+    customLog("error", "Failed to fetch response:", error);
+    // resume presence to avoid dead state
+    isStreamingText = false;
+    clearUserPresenceTimer();
+    startUserPresenceTimer("text fetch error");
   }
 }
-async function getisInAustralia(lat, lon) {
-  //lets log the time to see how long it takes to get a response
-  //console.time("isInAustralia");
-  const url = routingPrefix + "/isInAustralia"; // Relative URL for your Node.js server endpoint
 
+// =========================
+// DRIFT implementation
+// =========================
+async function loadAndPlayNext(playerIndex) {
+  const fileNumber = getRandomFileNumber();
+  const fileName = formatFileNumber(fileNumber);
+  const audioUrl = `${routingPrefix}${driftConfig.folderPath}/drift_mp3s/${fileName}.mp3`;
+  const jsonUrl = `${routingPrefix}${driftConfig.folderPath}/drift_json/${fileName}.json`;
+
+  let marker;
+  try {
+    const response = await fetch(jsonUrl);
+    if (!response.ok) throw new Error(`Failed to load ${jsonUrl}`);
+    const jsonData = await response.json();
+
+    const dateParts = (jsonData.dateName || "").split(" ");
+    const time24 = dateParts[0] || "00:00:00";
+    const dayName = dateParts[1] || "";
+    const dateNumber = dateParts[2] || "";
+    const monthName = dateParts[3] || "";
+    const year = dateParts[4] || "";
+    const time12 = convertTimeTo12Hour(time24);
+
+    const shortDisplayName = wrapTextAtWhitespace(jsonData.display_name || "Unknown", 70);
+    const items = [
+      { title: "Location: ", text: shortDisplayName },
+      { title: "Year: ", text: year },
+      { title: "Date: ", text: `${dayName} ${monthName} ${dateNumber} ${time12}` },
+      { title: "Temperature: ", text: (jsonData.main?.temp ?? "-") + "°C" },
+      { title: "Humidity: ", text: Math.min(jsonData.main?.humidity ?? 0, 100) + "%" },
+      { title: "Pressure: ", text: Math.min(jsonData.main?.pressure ?? 0, 1084) + "hPa" },
+      { title: "Wind Speed: ", text: (jsonData.wind?.speed ?? "-") + "km/h" },
+    ];
+
+    const flyoverMasterContainer = document.createElement("div");
+    flyoverMasterContainer.className = "flyoverMasterContainer";
+
+    items.forEach((item) => {
+      const compDiv = document.createElement("div");
+      compDiv.className = "flyoverComponent";
+
+      const componentTitle = document.createElement("div");
+      componentTitle.className = "flyoverTitle";
+      componentTitle.textContent = item.title;
+
+      const componentText = document.createElement("div");
+      componentText.className = "flyoverText";
+      componentText.innerHTML = item.text;
+
+      compDiv.appendChild(componentTitle);
+      compDiv.appendChild(componentText);
+      flyoverMasterContainer.appendChild(compDiv);
+    });
+
+    const flyoverMaxWidth = window.innerWidth * 0.75;
+    marker = L.marker([jsonData.coord.lat, jsonData.coord.lon], { autoClose: false, closeOnClick: false })
+      .bindPopup(flyoverMasterContainer, { minWidth: 0, maxWidth: flyoverMaxWidth });
+    marker.addTo(map);
+  } catch (error) {
+    customLog("error", "Error loading DRIFT JSON:", error);
+    marker = null;
+  }
+
+  driftAudio[playerIndex].src = audioUrl;
+  driftAudio[playerIndex].load();
+
+  try { await driftAudio[playerIndex].play(); } catch (error) { customLog("error", "DRIFT audio play error:", error); }
+  return marker;
+}
+
+function flyToWithOffset(latlng, zoom, flyDuration, panDuration) {
+  return new Promise((resolve) => {
+    map.flyTo(latlng, zoom, { duration: flyDuration });
+    map.once("moveend", () => {
+      const size = map.getSize();
+      const desiredPoint = L.point(size.x * 0.4, size.y * 0.05);
+      const markerPoint = map.latLngToContainerPoint(latlng);
+      const offset = desiredPoint.subtract(markerPoint);
+      map.panBy(offset, { animate: true, duration: panDuration });
+      map.once("moveend", () => resolve());
+    });
+  });
+}
+
+function scheduleNext() {
+  const crossfadeStartTime = (driftConfig.fileDuration - driftConfig.crossfade) * 1000;
+  crossfadeTimeoutId = setTimeout(async () => {
+    const nextPlayer = (currentPlayer + 1) % 2;
+    const newMarker = await loadAndPlayNext(nextPlayer);
+
+    if (currentMarker) currentMarker.closePopup();
+
+    let flyPromise = null;
+    if (newMarker) flyPromise = flyToWithOffset(newMarker.getLatLng(), 11, driftConfig.crossfade - 1.5, 1.5);
+
+    const fadeSteps = 20;
+    const stepTime = (driftConfig.crossfade * 1000) / fadeSteps;
+    let currentStep = 0;
+    fadeIntervalId = setInterval(() => {
+      currentStep++;
+      driftAudio[currentPlayer].volume = Math.max(0, 1 - currentStep / fadeSteps);
+      driftAudio[nextPlayer].volume = Math.min(1, currentStep / fadeSteps);
+      if (currentStep >= fadeSteps) {
+        clearInterval(fadeIntervalId);
+        try { driftAudio[currentPlayer].pause(); driftAudio[currentPlayer].currentTime = 0; } catch {}
+        currentPlayer = nextPlayer;
+        scheduleNext();
+      }
+    }, stepTime);
+
+    if (flyPromise) {
+      await flyPromise;
+      if (currentMarker) { try { map.removeLayer(currentMarker); } catch {} }
+      currentMarker = newMarker;
+      try { newMarker.openPopup(); } catch {}
+    }
+  }, crossfadeStartTime);
+}
+
+async function startDriftMode() {
+  driftActive = true;
+  closeGeneratedContentIfOpen();
+  showInstructionPopupFor(MODES.DRIFT);
+
+  currentPlayer = 0;
+  currentMarker = await loadAndPlayNext(currentPlayer);
+  if (currentMarker) {
+    await flyToWithOffset(currentMarker.getLatLng(), 12, 1, 0.5);
+    try { currentMarker.openPopup(); } catch {}
+  }
+  scheduleNext();
+}
+
+function stopDriftMode() {
+  driftActive = false;
+  document.body.classList.remove("drift-mode");
+  customLog("debug", "Drift mode deactivated");
+  if (crossfadeTimeoutId) clearTimeout(crossfadeTimeoutId);
+  if (fadeIntervalId) clearInterval(fadeIntervalId);
+  driftAudio.forEach((audio) => { try { audio.pause(); audio.currentTime = 0; } catch {} });
+  if (currentMarker) { try { map.removeLayer(currentMarker); } catch {} currentMarker = null; }
+}
+
+// =========================
+// Utilities
+// =========================
+async function loadConfig() {
+  try {
+    const response = await fetch(`${routingPrefix}/config.json`);
+    if (!response.ok) throw new Error(`Failed to load config: ${response.status}`);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    customLog("error", "Error loading config:", error);
+    return null;
+  }
+}
+
+function showInstructionPopup() { // kept for backwards compatibility, routes to currentMode
+  showInstructionPopupFor(currentMode);
+}
+
+function hideInstructionPopupLegacy() { // not used; kept to avoid breaking imports
+  hideInstructionPopup();
+}
+
+async function getisInAustralia(lat, lon) {
+  const url = routingPrefix + "/isInAustralia";
   try {
     const response = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lat, lon }),
     });
     const data = await response.json();
-    if (data == true) {
-      customLog("debug", "User location is in Australia");
-      //lets stop the timer
-      //console.timeEnd("isInAustralia");
-      return true;
-    } else {
-      customLog("debug", "User location is not in Australia");
-      //lets stop the timer
-      //console.timeEnd("isInAustralia");
-      return false;
-    }
+    customLog("debug", "isInAustralia:", data);
+    return !!data;
   } catch (error) {
-    console.error("Error:", error);
+    customLog("error", "isInAustralia error:", error);
   }
 }
 
 function centerMarkerInView(latlngIn) {
   customLog("debug", "centerMarkerInView start");
   const mapSize = map.getSize();
-  customLog("debug", "mapSize: " + mapSize);
-
   const markerPoint = map.latLngToContainerPoint(latlngIn);
-  customLog("debug", "markerPoint: " + markerPoint);
-  var desiredPoint;
-  if (mapSize.x > 1280) {
-    // Desired container point: center horizontally, 80% down vertically.
-    desiredPoint = L.point(mapSize.x / 2, mapSize.y * 0.85);
-    customLog("debug", "desiredPoint: " + desiredPoint);
-  } else if (mapSize.x > 800) {
-    // Desired container point: center horizontally, 85% down vertically.
-    desiredPoint = L.point(mapSize.x / 2, mapSize.y * 0.9);
-    customLog("debug", "desiredPoint: " + desiredPoint);
-  } else {
-    // Desired container point: center horizontally, 80% down vertically.
-    desiredPoint = L.point(mapSize.x / 2, mapSize.y * 0.95);
-    customLog("debug", "desiredPoint: " + desiredPoint);
-  }
-
-  // Compute the offset needed to shift the marker to the desired container point.
+  let desiredPoint;
+  if (mapSize.x > 1280) desiredPoint = L.point(mapSize.x / 2, mapSize.y * 0.85);
+  else if (mapSize.x > 800) desiredPoint = L.point(mapSize.x / 2, mapSize.y * 0.9);
+  else desiredPoint = L.point(mapSize.x / 2, mapSize.y * 0.95);
   const offsetX = desiredPoint.x - markerPoint.x;
   const offsetY = desiredPoint.y - markerPoint.y;
-  // Remove the negative sign here.
   const offset = L.point(-offsetX, -offsetY);
-
-  customLog("debug", "manual offset: " + offset);
-
-  // Pan the map by the computed offset.
   map.panBy(offset, { animate: false, duration: 1 });
 }
 
 function customLog(logLevel, ...messages) {
-  const levels = ["silent", "error", "warning", "info", "debug"];
+  const levels = ["silent", "error", "warning", "info", "debug", "verbose"];
   const currentLevelIndex = levels.indexOf(globalLogLevel);
   const messageLevelIndex = levels.indexOf(logLevel);
 
   if (messageLevelIndex <= currentLevelIndex && currentLevelIndex !== 0) {
-    if (logLevel === "error") {
-      console.error(...messages);
-    } else if (logLevel === "warning") {
-      console.warn(...messages);
-    } else if (logLevel === "info") {
-      console.info(...messages);
-    } else {
-      console.log(...messages);
-    }
+    if (logLevel === "error") console.error(...messages);
+    else if (logLevel === "warning") console.warn(...messages);
+    else if (logLevel === "info") console.info(...messages);
+    else console.log(...messages);
   }
 }
+
 function wrapTextAtWhitespace(text, maxLength) {
-  if (text.length <= maxLength) {
-    return text;
-  }
+  if (!text || text.length <= maxLength) return text || "";
   let result = "";
   let remainingText = text;
-
   while (remainingText.length > maxLength) {
     let breakpoint = remainingText.lastIndexOf(",", maxLength);
-    if (breakpoint === -1) {
-      breakpoint = maxLength;
-    }
+    if (breakpoint === -1) breakpoint = maxLength;
     result += remainingText.substring(0, breakpoint) + "<br>";
     remainingText = remainingText.substring(breakpoint + 1);
   }
-
   result += remainingText;
   return result;
 }
-// Helper function to convert HH:MM:SS (24-hour) to 12-hour format with AM/PM.
+
 function convertTimeTo12Hour(timeStr) {
-  const [hourStr, minuteStr] = timeStr.split(":");
-  let hour = parseInt(hourStr, 10);
+  const [hourStr, minuteStr] = (timeStr || "00:00").split(":");
+  let hour = parseInt(hourStr || "0", 10);
   const ampm = hour >= 12 ? "PM" : "AM";
-  hour = hour % 12;
-  if (hour === 0) hour = 12;
-  return `${hour}:${minuteStr} ${ampm}`;
+  hour = hour % 12; if (hour === 0) hour = 12;
+  return `${hour}:${minuteStr || "00"} ${ampm}`;
 }
 
-/**
- * Chooses a random file number (1 to totalFiles) that has not been played yet.
- * Resets the set when all files have been played.
- */
 function getRandomFileNumber() {
-  if (playedFiles.size >= driftConfig.totalFiles) {
-    playedFiles.clear();
-  }
+  if (playedFiles.size >= driftConfig.totalFiles) playedFiles.clear();
   let fileNumber;
-  do {
-    fileNumber = Math.floor(Math.random() * driftConfig.totalFiles) + 1;
-  } while (playedFiles.has(fileNumber));
+  do { fileNumber = Math.floor(Math.random() * driftConfig.totalFiles) + 1; } while (playedFiles.has(fileNumber));
   playedFiles.add(fileNumber);
   return fileNumber;
 }
 
-/**
- * Formats the file number into a 4-digit string (e.g. 1 -> "0001").
- */
-function formatFileNumber(num) {
-  return String(num).padStart(4, "0");
-}
+function formatFileNumber(num) { return String(num).padStart(4, "0"); }
 
 async function controlHuggingFaceServer(command) {
   try {
     const response = await fetch(`${routingPrefix}/hug_space_control`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ command: command }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ command }),
     });
-
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
-    }
-
+    if (!response.ok) throw new Error("Network response was not ok");
     const result = await response.json();
-    customLog("debug", "controlHuggingFaceServer::Result from server:", JSON.stringify(result, null, 2));
+    customLog("debug", "HF control result:", result);
     return result.status;
   } catch (error) {
-    console.error("Error controlling Hugging Face server:", error);
+    customLog("error", "HF control error:", error);
     throw error;
   }
+}
+
+function detectTouchDevice() {
+  const hasTouchSupport =
+    "ontouchstart" in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints && navigator.msMaxTouchPoints > 0);
+  const isCoarsePointer = window.matchMedia?.("(pointer: coarse)")?.matches;
+  if (hasTouchSupport || isCoarsePointer) {
+    document.body.classList.add("touch-device");
+    customLog("info", "Touch device detected");
+    hasTouch = true;
+    return true;
+  }
+  customLog("info", "Touch device not detected");
+  hasTouch = false;
+  return false;
 }
