@@ -6,8 +6,9 @@ import { initCustomDatePicker, onWeatherDataAdjusted } from "./customDatePicker.
 const globalLogLevel = "debug"; // "silent", "error", "warning", "info", "debug"
 
 // Meta modes: high-level behaviour controller
-//   - normal: allows DRIFT and GENERATIVE; idle returns to DRIFT
-//   - quiet:  allows GENERATIVE only (no DRIFT); idle resets UI to generative instructions
+//   - normal:    allows DRIFT and GENERATIVE; idle returns to DRIFT
+//   - quiet:     allows GENERATIVE only (no DRIFT); idle resets UI to generative instructions
+//   - driftonly: stays in DRIFT mode only; never allows interactive GENERATIVE mode
 let metaMode = "normal"; // from config.startMetaMode
 let masterInactivityMs = 70000; // from config.masterInactivityMs (default 70s)
 let postGenerateWaitMs = 10000; // from config.postGenerateWaitMs (default 10s)
@@ -364,7 +365,7 @@ setInterval(() => {
         customLog("error", "HF restart error:", e);
       }
       // Resume sub-mode based on meta
-      if (metaMode === "normal") {
+      if (metaMode === "normal" || metaMode === "driftonly") {
         switchMode(MODES.DRIFT);
       } else {
         switchMode(MODES.GENERATIVE);
@@ -392,7 +393,7 @@ function showPermissionOverlay() {
     setTimeout(() => { suppressGlobalEvents = false; }, 1000);
 
     // Enter starting sub-mode by metaMode
-    if (metaMode === "normal") {
+    if (metaMode === "normal" || metaMode === "driftonly") {
       switchMode(MODES.DRIFT);
     } else {
       switchMode(MODES.GENERATIVE);
@@ -417,7 +418,8 @@ function showPermissionOverlay() {
     if (currentMode === MODES.SILENT) return;
 
     // Any interaction while in DRIFT → jump to GENERATIVE (usable state)
-    if (currentMode === MODES.DRIFT) {
+    // UNLESS in driftonly meta mode
+    if (currentMode === MODES.DRIFT && metaMode !== "driftonly") {
       switchMode(MODES.GENERATIVE);
       showInstructionPopupFor(MODES.GENERATIVE);
       clearUserPresenceTimer();
@@ -451,7 +453,7 @@ function startUserPresenceTimer(reason = "") {
     customLog("info", "[presence] expired in", currentMode, "meta:", metaMode);
     if (currentMode === MODES.SILENT) return;
 
-    if (metaMode === "normal") {
+    if (metaMode === "normal" || metaMode === "driftonly") {
       switchMode(MODES.DRIFT);
     } else {
       // quiet: never drift
@@ -642,16 +644,19 @@ function calculateClimateVariance(weatherData) {
 // Map interactions
 // =========================
 map.on("contextmenu", async function (event) {
+  if (metaMode === "driftonly") return; // No map interactions in driftonly mode
   if (currentMode !== MODES.NORMAL && currentMode !== MODES.GENERATIVE) return;
   handleMapClick(event.latlng);
 });
 
 let touchTimeout;
 map.on("touchstart", function (event) {
+  if (metaMode === "driftonly") return; // No map interactions in driftonly mode
   if (currentMode !== MODES.NORMAL && currentMode !== MODES.GENERATIVE) return;
   touchTimeout = setTimeout(() => { handleMapClick(event.latlng); }, 200);
 });
 map.on("touchend", function () {
+  if (metaMode === "driftonly") return; // No map interactions in driftonly mode
   if (currentMode !== MODES.NORMAL && currentMode !== MODES.GENERATIVE) return;
   clearTimeout(touchTimeout);
 });

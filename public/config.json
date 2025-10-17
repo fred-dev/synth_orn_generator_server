@@ -1,5 +1,5 @@
 {
-    "startMetaMode": "normal",
+    "startMetaMode": "driftonly",
     "silentModeStartHour": 16,
     "silentModeStartMinute": 5,
     "silentModeEndHour": 9,
