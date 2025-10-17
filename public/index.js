@@ -78,7 +78,7 @@ const generativeText = `
     to generate a location-specific simulation.
 `;
 
-let routingPrefix = "";
+let routingPrefix = "/examination";
 let suppressGlobalEvents = false;
 
 // Leaflet / Map setup
